@@ -1,36 +1,177 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gestión Morinigo — Task Drive Manager
 
-## Getting Started
+App web mobile-first (PWA) para la administración de ~50 consorcios en Buenos Aires. Reemplaza a AppSheet usando una **Google Sheet existente** como fuente de verdad y Google Drive para almacenar imágenes y videos de cada tarea.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + React 19 + TypeScript estricto
+- **Tailwind CSS v4**
+- **NextAuth v5** con Google OAuth
+- **TanStack Query v5** para data fetching
+- **Dexie.js** (IndexedDB) + Service Worker para modo offline (a integrar al final)
+- **googleapis** (Sheets + Drive con Service Account)
+- **Zod** para validación
+
+## Scripts
+
+```bash
+npm run dev    # servidor de desarrollo en http://localhost:3000
+npm run build  # build de producción
+npm start      # servir el build
+npm run lint   # ESLint
+```
+
+## Setup paso a paso
+
+### 1. Configurar Google Cloud
+
+1. Crear un proyecto en https://console.cloud.google.com
+2. Habilitar las APIs:
+   - **Google Sheets API**
+   - **Google Drive API**
+3. Crear una **Service Account**:
+   - IAM & Admin → Service Accounts → Create
+   - Generar una **key JSON** y descargarla
+4. Crear credenciales **OAuth 2.0 Client ID** (para el login de usuarios):
+   - APIs & Services → Credentials → Create credentials → OAuth client ID
+   - Application type: Web application
+   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google` (y agregar el de producción)
+
+### 2. Preparar la Google Sheet
+
+La spreadsheet existente debe tener los tabs:
+
+- `Edificios` — columna A: nombres de edificios
+- `Dptos` — A=ID dpto, B=DPTO, C=Edificio ref
+- `Ingreso de Pendiente` — ver `PROMPT_CLAUDE_CODE.md` para mapping completo de columnas
+- `Usuarios` (nueva) — A=email, B=nombre, C=rol (admin/supervisor), D=activo, E=creado_en
+- `Configuración` (nueva, opcional) — A=clave, B=valor
+- `Respuestas de Trabajadores` (existente, solo lectura)
+
+**Compartir** la spreadsheet con el email de la Service Account (rol Editor).
+
+**Crear el primer admin**: agregar manualmente una fila en `Usuarios`:
+
+```
+tu-email@gmail.com | Tu Nombre | admin | TRUE | 2026-05-28T00:00:00Z
+```
+
+Sin esa fila, nadie puede iniciar sesión.
+
+### 3. Preparar Google Drive
+
+1. Crear una carpeta llamada `Gestión Morinigo` en Drive
+2. Compartirla con el email de la Service Account (rol Editor)
+3. Copiar el ID de la carpeta de la URL: `drive.google.com/drive/folders/{ESTE_ID}`
+
+La app crea subcarpetas automáticamente: `Tareas/{Edificio}/{YYYY-MM}/{timestamp}_{objetivo}/`.
+
+### 4. Variables de entorno
+
+Copiar `.env.example` a `.env.local` y completar:
+
+```env
+GOOGLE_SHEET_ID=...                  # de la URL de la spreadsheet
+GOOGLE_SERVICE_ACCOUNT_EMAIL=...     # del JSON descargado, campo client_email
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_DRIVE_ROOT_FOLDER_ID=...      # ID de "Gestión Morinigo" en Drive
+
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=...                  # generar con: openssl rand -base64 32
+
+GOOGLE_CLIENT_ID=...                 # OAuth client ID
+GOOGLE_CLIENT_SECRET=...
+```
+
+> ⚠ `GOOGLE_PRIVATE_KEY` debe contener los `\n` literales (no saltos de línea reales). Si lo pegás del JSON, las comillas y los `\n` ya vienen correctos.
+
+### 5. Correr en dev
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir http://localhost:3000 → redirige a `/tareas`. Sin sesión, redirige a `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  (auth)/login/        # página de login (Google)
+  (app)/               # layout protegido con shell mobile/desktop
+    tareas/            # lista, nueva, detalle
+    dashboard/
+    usuarios/          # solo admin
+    configuracion/     # solo admin
+  api/
+    auth/[...nextauth] # NextAuth handler
+    tareas/            # GET (list), POST (create)
+    tareas/[id]/       # GET, PUT, PATCH (cambio de estado)
+    edificios/
+    dptos/
+    usuarios/          # solo admin
+    configuracion/     # GET público, PUT solo admin
+    upload/            # POST imagen/video → Drive
+components/
+  layout/AppShell.tsx  # bottom nav mobile / sidebar desktop
+  providers/           # SessionProvider + QueryProvider
+lib/
+  google-auth.ts       # JWT del Service Account
+  google-sheets.ts     # cliente de la Sheet (CRUD por hoja)
+  google-drive.ts      # upload + ensureFolder + permisos públicos
+  auth.ts              # NextAuth v5 + role check contra hoja Usuarios
+  schemas.ts           # validación Zod
+  api-utils.ts         # helpers de error en routes
+  utils.ts             # cn() + formateadores de fecha
+types/
+  index.ts             # Tarea, Edificio, Dpto, Usuario, Configuracion
+  next-auth.d.ts       # extiende Session con rol/activo
+middleware.ts          # redirección a /login si no hay sesión
+```
 
-## Learn More
+## Estado de implementación
 
-To learn more about Next.js, take a look at the following resources:
+✅ Scaffolding + dependencias + tipos
+✅ Cliente Google Sheets (CRUD por hoja, cache de configuración 5 min)
+✅ Cliente Google Drive (ensureFolder anidado, upload con permiso público, sanitización del path)
+✅ NextAuth v5 + validación de rol contra hoja Usuarios
+✅ Proxy (Next 16 — antes "middleware") de redirección a /login
+✅ API routes: edificios, dptos, tareas (GET/POST/PUT/PATCH), usuarios (CRUD), configuracion, upload
+✅ UI login con Google
+✅ Shell con bottom-nav mobile y sidebar desktop
+✅ Lista de tareas con filtros (edificio/estado/prioridad)
+✅ Formulario nueva tarea: selector edificio + dpto filtrado, toggle Parte Común, validación Zod
+✅ FileUploader con compresión cliente (1200px/q80) + límites de la hoja Configuración
+✅ Detalle de tarea + galería + cambio rápido de estado + modo edición inline
+✅ Gestión de usuarios (admin): crear, activar/desactivar
+✅ Configuración (admin): editar límites de archivos
+✅ Dexie schema (cola pendingSync + cache local de edificios/dptos/config)
+✅ Dashboard con KPIs, charts (recharts), tabla analítica con sort, export CSV, sección visitas (admin)
+✅ API /api/respuestas (admin) para hoja "Respuestas de Trabajadores"
+✅ Hook useOnlineStatus + badge en header con contador de pendientes
+✅ syncPendingTareas con retries (máx 3) — se dispara al cargar la app, al volver online, y cada 5 min
+✅ Fallback offline en TareaForm: encola tareas en IndexedDB cuando no hay red + cache local de edificios/dptos/config
+✅ Adjuntar PDFs externos (facturas, presupuestos, planos) a una tarea — columna `documentos` en Sheet
+✅ Generación de PDF de reporte por tarea con `@react-pdf/renderer` — incluye datos, informe, comentarios, thumbnails de imágenes
+✅ Auto-generación del reporte al cerrar tarea (estado=Realizado dispara fire-and-forget)
+✅ Botón "Generar/Descargar reporte" en detalle con regeneración manual
+✅ Demo bypass en pdf-generator — no toca Drive real en DEMO_MODE
+✅ Suite de tests con Vitest + RTL: schemas, mapping Sheets, demo data, API endpoints, componentes (33 tests)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+🔲 Service Worker (serwist) para precache de páginas y assets
+🔲 PWA manifest + icons 192/512
+🔲 Deploy a Vercel (cargar env vars en el dashboard)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ver `PROMPT_CLAUDE_CODE.md` (origen) para la spec funcional completa.
 
-## Deploy on Vercel
+## Convenciones
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- TypeScript estricto, no usar `any`
+- Validación de inputs con Zod en cliente y en API routes
+- Errores en API: `{ error: string }` con status HTTP apropiado
+- Naming: PascalCase componentes, camelCase funciones, kebab-case archivos
+- El campo `Dpto` es **obligatorio**: si `parteComun=true` se guarda como `"Parte Común"`, nunca vacío
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+
+Listo para Vercel. Cargar las mismas env vars en el dashboard del proyecto. `NEXTAUTH_URL` debe apuntar al dominio de producción y la redirect URI de OAuth debe incluirlo.
