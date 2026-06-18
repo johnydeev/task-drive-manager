@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { appendTarea, getTareas, type TareaFilters } from "@/lib/google-sheets";
-import { handleApiError } from "@/lib/api-utils";
+import { getConsorciosActivos } from "@/lib/consorcios";
+import { handleApiError, jsonError } from "@/lib/api-utils";
 import { tareaNuevaSchema } from "@/lib/schemas";
 import type { EstadoTarea, Prioridad } from "@/types";
 
@@ -38,6 +39,12 @@ export async function POST(req: NextRequest) {
     const session = await requireSession();
     const body = await req.json();
     const parsed = tareaNuevaSchema.parse(body);
+
+    const consorcios = await getConsorciosActivos();
+    const edificioValido = consorcios.some((c) => c.nombre === parsed.edificio);
+    if (!edificioValido) {
+      return jsonError(400, `Edificio "${parsed.edificio}" no es válido o no está activo`);
+    }
 
     const tarea = await appendTarea(
       {

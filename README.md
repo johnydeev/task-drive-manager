@@ -8,7 +8,7 @@ App web mobile-first (PWA) para la administración de ~50 consorcios en Buenos A
 - **Tailwind CSS v4**
 - **NextAuth v5** con Google OAuth
 - **TanStack Query v5** para data fetching
-- **Dexie.js** (IndexedDB) + Service Worker para modo offline (a integrar al final)
+- **Dexie.js** (IndexedDB) + Service Worker (serwist) para modo offline + PWA
 - **googleapis** (Sheets + Drive con Service Account)
 - **Zod** para validación
 
@@ -157,12 +157,22 @@ middleware.ts          # redirección a /login si no hay sesión
 ✅ Botón "Generar/Descargar reporte" en detalle con regeneración manual
 ✅ Demo bypass en pdf-generator — no toca Drive real en DEMO_MODE
 ✅ Suite de tests con Vitest + RTL: schemas, mapping Sheets, demo data, API endpoints, componentes (33 tests)
+✅ Hoja `Tareas` nueva paralela a `Ingreso de Pendiente` legacy
+✅ Integración con archivo externo `_Consorcios` (read-only, cache SWR)
+✅ Filtrado de consorcios inactivos (columna `ACTIVO`)
+✅ Validación estricta de edificio canónico
+✅ Endpoint `/api/health` para Docker
+✅ Dockerfile multi-stage con Next.js standalone
+✅ `docker-compose.yml` con Cloudflare Tunnel
+✅ CI/CD con GitHub Actions (build + push a GHCR)
+✅ Service Worker (serwist) para precache de páginas y assets
+✅ PWA manifest + meta tags (íconos pendientes: subir `public/logo-source.png` y correr `npm run icons`)
 
-🔲 Service Worker (serwist) para precache de páginas y assets
-🔲 PWA manifest + icons 192/512
-🔲 Deploy a Vercel (cargar env vars en el dashboard)
+🔲 Smoke test en producción con Docker (manual — ver `docs/DEPLOY.md`)
+🔲 Configurar Cloudflare Tunnel con dominio (manual)
+🔲 Tag v1.0.0 + push para disparar build de imagen en GHCR (manual)
 
-Ver `PROMPT_CLAUDE_CODE.md` (origen) para la spec funcional completa.
+Ver `PROMPT_CLAUDE_CODE.md` (origen) para la spec funcional completa y `docs/DEPLOY.md` para el deploy.
 
 ## Convenciones
 
@@ -175,3 +185,7 @@ Ver `PROMPT_CLAUDE_CODE.md` (origen) para la spec funcional completa.
 ## Deploy
 
 Listo para Vercel. Cargar las mismas env vars en el dashboard del proyecto. `NEXTAUTH_URL` debe apuntar al dominio de producción y la redirect URI de OAuth debe incluirlo.
+
+## Deploy a producción
+
+Ver [docs/DEPLOY.md](docs/DEPLOY.md) para instrucciones paso a paso.

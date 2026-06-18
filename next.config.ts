@@ -14,6 +14,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     // Permitir que <Image> consuma thumbnails de Drive.
     remotePatterns: [

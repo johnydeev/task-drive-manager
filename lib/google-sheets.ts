@@ -31,14 +31,16 @@ import {
 } from "./demo-data";
 
 // Nombres de hojas — coinciden exactamente con los tabs de la spreadsheet.
-const SHEETS = {
+export const SHEETS = {
   edificios: "Edificios",
   dptos: "Dptos",
-  ingreso: "Ingreso de Pendiente",
+  tareas: "Tareas",
   usuarios: "Usuarios",
   configuracion: "Configuración",
   respuestas: "Respuestas de Trabajadores",
 } as const;
+
+export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;
 
 let sheetsClient: sheets_v4.Sheets | null = null;
 
@@ -91,10 +93,9 @@ export async function getDptos(edificio?: string): Promise<Dpto[]> {
 }
 
 // =====================================================
-// Tareas — "Ingreso de Pendiente"
+// Tareas — tab "Tareas"
 // =====================================================
 
-const INGRESO_RANGE = `${SHEETS.ingreso}!A:Z`;
 
 // Mapea una fila plana del Sheet a Tarea tipada.
 // Las posiciones son 0-indexed (A=0).
@@ -178,7 +179,7 @@ export async function getTareas(filters: TareaFilters = {}): Promise<Tarea[]> {
       return true;
     });
   }
-  const rows = await readRange(INGRESO_RANGE);
+  const rows = await readRange(TAREAS_RANGE);
   // Saltar header (fila 1) si existe.
   const dataRows = rows.slice(1);
   const tareas = dataRows
@@ -250,7 +251,7 @@ export async function appendTarea(
   const values = [tareaToRow(tarea)];
   const res = await getSheets().spreadsheets.values.append({
     spreadsheetId: getSheetId(),
-    range: INGRESO_RANGE,
+    range: TAREAS_RANGE,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
@@ -279,7 +280,7 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
 
   await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: `${SHEETS.ingreso}!A${current.rowNumber}:V${current.rowNumber}`,
+    range: `${SHEETS.tareas}!A${current.rowNumber}:V${current.rowNumber}`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [tareaToRow(merged)] },
   });

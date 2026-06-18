@@ -39,6 +39,12 @@ export function getSheetId() {
   return id;
 }
 
+export function getMasterSheetId() {
+  const id = process.env.GOOGLE_MASTER_SHEET_ID;
+  if (!id) throw new Error("Falta GOOGLE_MASTER_SHEET_ID en el entorno");
+  return id;
+}
+
 export function getDriveRootFolderId() {
   const id = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   if (!id) throw new Error("Falta GOOGLE_DRIVE_ROOT_FOLDER_ID en el entorno");

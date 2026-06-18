@@ -7,7 +7,8 @@ export type EstadoTarea = "Pendiente" | "En Proceso" | "Realizado";
 export type Prioridad = "Alta" | "Media" | "Baja";
 
 export interface Edificio {
-  nombre: string; // identificador único — primera columna de la hoja Edificios
+  nombre: string;
+  cuit?: string | null;
 }
 
 export interface Dpto {
