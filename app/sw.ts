@@ -75,17 +75,6 @@ const customRuntimeCaching: RuntimeCaching[] = [
       ],
     }),
   },
-  // Respuestas (admin): NetworkFirst.
-  {
-    matcher: ({ url }) => url.pathname.startsWith("/api/respuestas"),
-    handler: new NetworkFirst({
-      cacheName: "api-respuestas",
-      networkTimeoutSeconds: 3,
-      plugins: [
-        new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 }),
-      ],
-    }),
-  },
   // Thumbnails de Drive: CacheFirst (las URLs incluyen el file id, así que son inmutables).
   {
     matcher: ({ url }) =>

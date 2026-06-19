@@ -39,9 +39,9 @@ export function getSheetId() {
   return id;
 }
 
-export function getMasterSheetId() {
-  const id = process.env.GOOGLE_MASTER_SHEET_ID;
-  if (!id) throw new Error("Falta GOOGLE_MASTER_SHEET_ID en el entorno");
+export function getConsorciosSheetId() {
+  const id = process.env.GOOGLE_CONSORCIOS_SHEET_ID;
+  if (!id) throw new Error("Falta GOOGLE_CONSORCIOS_SHEET_ID en el entorno");
   return id;
 }
 

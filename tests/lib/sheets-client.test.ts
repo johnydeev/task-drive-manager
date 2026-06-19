@@ -12,7 +12,7 @@ vi.mock("googleapis", () => ({
 vi.mock("@/lib/google-auth", () => ({
   getGoogleAuth: () => ({}),
   getSheetId: () => "main-sheet-id",
-  getMasterSheetId: () => "master-sheet-id",
+  getConsorciosSheetId: () => "consorcios-sheet-id",
 }));
 
 describe("readRangeFromSpreadsheet", () => {

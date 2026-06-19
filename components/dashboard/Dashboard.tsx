@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import {
   Bar,
   BarChart,
@@ -45,9 +44,6 @@ const ESTADOS: (EstadoTarea | "Todos")[] = ["Todos", "Pendiente", "En Proceso", 
 const PRIORIDADES: (Prioridad | "Todas")[] = ["Todas", "Alta", "Media", "Baja"];
 
 export function Dashboard() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.rol === "admin";
-
   const [edificio, setEdificio] = useState("");
   const [estado, setEstado] = useState<EstadoTarea | "Todos">("Todos");
   const [prioridad, setPrioridad] = useState<Prioridad | "Todas">("Todas");
@@ -201,8 +197,6 @@ export function Dashboard() {
       </Card>
 
       <TablaAnalitica tareas={tareasFiltradas} />
-
-      {isAdmin && <VisitasSection />}
     </div>
   );
 }
@@ -386,50 +380,3 @@ function Th({
   );
 }
 
-function VisitasSection() {
-  const respuestasQ = useQuery({ queryKey: ["respuestas"], queryFn: api.respuestas.list });
-
-  const porEdificio = useMemo(() => {
-    const data = respuestasQ.data ?? [];
-    const map = new Map<string, { edificio: string; visitas: number; ultima: string }>();
-    for (const r of data) {
-      const edif = r.edificio || "(sin edificio)";
-      const entry = map.get(edif) ?? { edificio: edif, visitas: 0, ultima: "" };
-      entry.visitas++;
-      if (r.fecha > entry.ultima) entry.ultima = r.fecha;
-      map.set(edif, entry);
-    }
-    return [...map.values()].sort((a, b) => b.visitas - a.visitas);
-  }, [respuestasQ.data]);
-
-  return (
-    <Card title="Visitas por edificio" subtitle="Desde 'Respuestas de Trabajadores'">
-      {respuestasQ.isLoading ? (
-        <div className="py-6 text-center text-slate-500"><Loader2 className="mx-auto animate-spin" /></div>
-      ) : porEdificio.length === 0 ? (
-        <Empty />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Edificio</th>
-                <th className="px-3 py-2 text-right">Visitas</th>
-                <th className="px-3 py-2">Última</th>
-              </tr>
-            </thead>
-            <tbody>
-              {porEdificio.map((r) => (
-                <tr key={r.edificio} className="border-t border-slate-100">
-                  <td className="px-3 py-2 text-slate-900">{r.edificio}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.visitas}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.ultima ? formatFecha(r.ultima) : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Card>
-  );
-}

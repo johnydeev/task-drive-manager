@@ -6,7 +6,6 @@ import type {
   Edificio,
   EstadoTarea,
   Prioridad,
-  RespuestaTrabajador,
   Rol,
   Tarea,
   TareaNuevaInput,
@@ -21,7 +20,6 @@ import {
   getDemoConfig,
   getDemoDptos,
   getDemoEdificios,
-  getDemoRespuestas,
   getDemoTareaById,
   getDemoTareas,
   getDemoUsuarios,
@@ -37,7 +35,6 @@ export const SHEETS = {
   tareas: "Tareas",
   usuarios: "Usuarios",
   configuracion: "Configuración",
-  respuestas: "Respuestas de Trabajadores",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;
@@ -76,6 +73,25 @@ export async function getEdificios(): Promise<Edificio[]> {
 // Dptos
 // =====================================================
 
+// Normaliza un nombre de edificio para comparar entre hojas distintas:
+// minúsculas, sin acentos, sin espacios extra. Necesario porque los edificios
+// vienen de _Consorcios (nombre canónico, ej. "BELGRANO 1429") pero los Dptos
+// referencian con el nombre de la app vieja (ej. "Belgrano 1429").
+function normalizeEdificio(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+export function edificioMatches(a: string, b: string): boolean {
+  const na = normalizeEdificio(a);
+  const nb = normalizeEdificio(b);
+  return na !== "" && na === nb;
+}
+
 export async function getDptos(edificio?: string): Promise<Dpto[]> {
   if (isDemoMode()) return getDemoDptos(edificio);
   const rows = await readRange(`${SHEETS.dptos}!A2:C`);
@@ -89,7 +105,7 @@ export async function getDptos(edificio?: string): Promise<Dpto[]> {
     .filter((d) => d.idDpto && d.dpto);
 
   if (!edificio) return all;
-  return all.filter((d) => d.edificioRef === edificio);
+  return all.filter((d) => edificioMatches(d.edificioRef, edificio));
 }
 
 // =====================================================
@@ -171,6 +187,24 @@ export interface TareaFilters {
   hasta?: string; // ISO date
 }
 
+// Detecta si la celda A de una fila parece un rowId válido (timestamp ISO).
+// Permite distinguir filas de datos de: header, filas vacías o basura.
+function looksLikeRowId(value: string | undefined): boolean {
+  if (!value) return false;
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value.trim());
+}
+
+// Convierte las filas crudas de la Sheet a Tareas, filtrando por contenido
+// (no por posición): solo incluye filas cuya columna A es un rowId válido.
+// Esto tolera: hoja sin header, hoja con header, y filas vacías intercaladas.
+// El rowNumber refleja la fila real de la Sheet (1-indexed).
+export function parseTareasRows(rows: string[][]): Tarea[] {
+  return rows
+    .map((r, i) => ({ r, rowNumber: i + 1 }))
+    .filter(({ r }) => looksLikeRowId(r[0]))
+    .map(({ r, rowNumber }) => rowToTarea(r, rowNumber));
+}
+
 export async function getTareas(filters: TareaFilters = {}): Promise<Tarea[]> {
   if (isDemoMode()) {
     return getDemoTareas(filters).filter((t) => {
@@ -180,11 +214,7 @@ export async function getTareas(filters: TareaFilters = {}): Promise<Tarea[]> {
     });
   }
   const rows = await readRange(TAREAS_RANGE);
-  // Saltar header (fila 1) si existe.
-  const dataRows = rows.slice(1);
-  const tareas = dataRows
-    .map((r, i) => rowToTarea(r, i + 2)) // +2 porque Sheets es 1-indexed y saltamos header
-    .filter((t) => t.rowId); // descartar filas vacías
+  const tareas = parseTareasRows(rows);
 
   return tareas.filter((t) => {
     if (filters.edificio && t.edificio !== filters.edificio) return false;
@@ -293,11 +323,15 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
 // =====================================================
 
 function rowToUsuario(row: string[]): Usuario {
+  // Normalizamos el rol a minúscula para tolerar "ADMIN", "Admin", "admin"
+  // (la hoja la editan humanos a mano y pueden variar mayúsculas).
+  const rolRaw = (row[2] ?? "").trim().toLowerCase();
+  const rol: Rol = rolRaw === "admin" ? "admin" : "supervisor";
   return {
     email: (row[0] ?? "").trim().toLowerCase(),
     nombre: row[1] ?? "",
-    rol: ((row[2] as Rol) || "supervisor") as Rol,
-    activo: (row[3] ?? "").toString().toLowerCase() !== "false",
+    rol,
+    activo: (row[3] ?? "").toString().trim().toLowerCase() !== "false",
     creadoEn: row[4] ?? "",
   };
 }
@@ -403,26 +437,4 @@ export async function updateConfiguracion(cfg: Configuracion): Promise<void> {
   });
 
   configCache = { data: cfg, expires: Date.now() + CONFIG_TTL_MS };
-}
-
-// =====================================================
-// Respuestas de Trabajadores (read-only, solo admin)
-// =====================================================
-
-export async function getRespuestasTrabajadores(): Promise<RespuestaTrabajador[]> {
-  if (isDemoMode()) return getDemoRespuestas();
-  const rows = await readRange(`${SHEETS.respuestas}!A2:I`);
-  return rows
-    .filter((r) => r[0])
-    .map<RespuestaTrabajador>((r) => ({
-      marcaTemporal: r[0] ?? "",
-      puntuacion: Number(r[1]) || 0,
-      edificio: r[2] ?? "",
-      departamento: r[3] ?? "",
-      informe: r[4] ?? "",
-      presupuestoEstimado: r[5] ? Number(r[5]) || undefined : undefined,
-      costoMaterial: r[6] ? Number(r[6]) || undefined : undefined,
-      fecha: r[7] ?? "",
-      email: r[8] ?? "",
-    }));
 }

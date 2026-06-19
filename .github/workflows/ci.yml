@@ -35,7 +35,7 @@ jobs:
           SERWIST_SUPPRESS_TURBOPACK_WARNING: "1"
           # Variables de entorno mínimas para build (no se conectan a APIs reales).
           GOOGLE_SHEET_ID: "fake-build-sheet"
-          GOOGLE_MASTER_SHEET_ID: "fake-master"
+          GOOGLE_CONSORCIOS_SHEET_ID: "fake-consorcios"
           GOOGLE_SERVICE_ACCOUNT_EMAIL: "build@example.com"
           GOOGLE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nfakekey\n-----END PRIVATE KEY-----\n"
           GOOGLE_DRIVE_ROOT_FOLDER_ID: "fake-drive"

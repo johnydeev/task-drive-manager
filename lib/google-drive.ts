@@ -31,6 +31,10 @@ async function ensureFolder(name: string, parentId: string): Promise<string> {
     fields: "files(id, name)",
     spaces: "drive",
     pageSize: 1,
+    // Soporte para Unidades compartidas (Shared Drives): la SA no tiene cuota
+    // propia, así que los archivos viven en la unidad compartida de la organización.
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
 
   let folderId = found.data.files?.[0]?.id;
@@ -42,6 +46,7 @@ async function ensureFolder(name: string, parentId: string): Promise<string> {
         parents: [parentId],
       },
       fields: "id",
+      supportsAllDrives: true,
     });
     folderId = created.data.id ?? undefined;
     if (!folderId) throw new Error(`No se pudo crear la carpeta ${name}`);
@@ -143,6 +148,7 @@ export async function uploadFile(opts: {
       body: Readable.from(opts.buffer),
     },
     fields: "id, name",
+    supportsAllDrives: true,
   });
 
   const fileId = created.data.id;
@@ -152,6 +158,7 @@ export async function uploadFile(opts: {
   await drive.permissions.create({
     fileId,
     requestBody: { role: "reader", type: "anyone" },
+    supportsAllDrives: true,
   });
 
   return {
@@ -171,5 +178,5 @@ export async function deleteFileByUrl(url: string): Promise<void> {
   if (isDemoMode()) return;
   const fileId = extractFileId(url);
   if (!fileId) return;
-  await getDrive().files.delete({ fileId });
+  await getDrive().files.delete({ fileId, supportsAllDrives: true });
 }

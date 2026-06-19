@@ -84,19 +84,6 @@ export const CONFIGURACION_DEFAULT: Configuracion = {
   maxSizePdfMB: 20,
 };
 
-// Respuestas de Trabajadores (solo lectura).
-export interface RespuestaTrabajador {
-  marcaTemporal: string;
-  puntuacion: number;
-  edificio: string;
-  departamento: string;
-  informe: string;
-  presupuestoEstimado?: number;
-  costoMaterial?: number;
-  fecha: string;
-  email: string;
-}
-
 // Tarea pendiente de sync (vive en IndexedDB).
 export interface TareaPendiente extends TareaNuevaInput {
   localId: string;

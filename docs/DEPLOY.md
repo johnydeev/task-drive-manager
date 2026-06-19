@@ -50,7 +50,7 @@ Copy-Item .env.example .env
 
 Llenar con los valores reales:
 - `GOOGLE_SHEET_ID` = ID del archivo principal
-- `GOOGLE_MASTER_SHEET_ID` = `1AVJ7tKv0hVU0uZF-9JyAPX3EpdgO81nzmzE-1nS6sdY` (default)
+- `GOOGLE_CONSORCIOS_SHEET_ID` = `1AVJ7tKv0hVU0uZF-9JyAPX3EpdgO81nzmzE-1nS6sdY` (default — hoja `_Consorcios`)
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` = del JSON descargado
 - `GOOGLE_PRIVATE_KEY` = del JSON descargado, **envuelto en comillas dobles**, con `\n` literales
 - `GOOGLE_DRIVE_ROOT_FOLDER_ID` = ID de la carpeta de Drive de la app

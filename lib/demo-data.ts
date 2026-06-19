@@ -5,7 +5,6 @@ import type {
   Configuracion,
   Dpto,
   Edificio,
-  RespuestaTrabajador,
   Tarea,
   Usuario,
 } from "@/types";
@@ -232,49 +231,6 @@ const TAREAS: Tarea[] = [
   },
 ];
 
-const RESPUESTAS: RespuestaTrabajador[] = [
-  {
-    marcaTemporal: "2026-05-30T08:00:00.000Z",
-    puntuacion: 5,
-    edificio: "Av. de Mayo 1316",
-    departamento: "PB",
-    informe: "Limpieza general realizada sin observaciones.",
-    presupuestoEstimado: 0,
-    costoMaterial: 0,
-    fecha: "2026-05-30",
-    email: "trabajador1@morinigo.local",
-  },
-  {
-    marcaTemporal: "2026-05-31T10:30:00.000Z",
-    puntuacion: 4,
-    edificio: "Jufré 21",
-    departamento: "Parte Común",
-    informe: "Cambio de lámparas en escalera.",
-    presupuestoEstimado: 12000,
-    costoMaterial: 8500,
-    fecha: "2026-05-31",
-    email: "trabajador2@morinigo.local",
-  },
-  {
-    marcaTemporal: "2026-06-01T09:15:00.000Z",
-    puntuacion: 5,
-    edificio: "Av. de Mayo 1316",
-    departamento: "Parte Común",
-    informe: "Revisión semanal de bombas presurizadoras.",
-    fecha: "2026-06-01",
-    email: "trabajador1@morinigo.local",
-  },
-  {
-    marcaTemporal: "2026-06-02T14:20:00.000Z",
-    puntuacion: 4,
-    edificio: "Sarmiento 845",
-    departamento: "A",
-    informe: "Limpieza profunda solicitada por propietario.",
-    fecha: "2026-06-02",
-    email: "trabajador2@morinigo.local",
-  },
-];
-
 const CONFIG: Configuracion = {
   maxImagenes: 10,
   maxVideos: 3,
@@ -338,10 +294,6 @@ export function getDemoUsuarios(): Usuario[] {
 
 export function getDemoConfig(): Configuracion {
   return { ...state.config };
-}
-
-export function getDemoRespuestas(): RespuestaTrabajador[] {
-  return [...RESPUESTAS];
 }
 
 // =====================================================

@@ -5,7 +5,7 @@ vi.mock("@/lib/sheets-client", () => ({
 }));
 
 vi.mock("@/lib/google-auth", () => ({
-  getMasterSheetId: () => "master-id",
+  getConsorciosSheetId: () => "consorcios-id",
 }));
 
 vi.mock("@/lib/demo-mode", () => ({

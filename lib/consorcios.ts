@@ -1,5 +1,5 @@
 import { readRangeFromSpreadsheet } from "./sheets-client";
-import { getMasterSheetId } from "./google-auth";
+import { getConsorciosSheetId } from "./google-auth";
 import { isDemoMode } from "./demo-mode";
 import { getDemoEdificios } from "./demo-data";
 
@@ -41,7 +41,7 @@ export async function getConsorciosActivos(): Promise<Consorcio[]> {
   }
 
   try {
-    const rows = await readRangeFromSpreadsheet(getMasterSheetId(), "_Consorcios!A2:E");
+    const rows = await readRangeFromSpreadsheet(getConsorciosSheetId(), "_Consorcios!A2:E");
     const data: Consorcio[] = rows
       .filter((r) => r[0] && r[0].trim() !== "" && isActive(r))
       .map((r) => ({

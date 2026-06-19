@@ -7,7 +7,6 @@ import type {
   Edificio,
   EstadoTarea,
   Prioridad,
-  RespuestaTrabajador,
   Tarea,
   TareaNuevaInput,
   Usuario,
@@ -109,9 +108,6 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
-  },
-  respuestas: {
-    list: () => request<RespuestaTrabajador[]>("/api/respuestas"),
   },
   upload: async (
     file: File,
