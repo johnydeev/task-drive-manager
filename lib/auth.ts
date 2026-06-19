@@ -5,6 +5,10 @@ import { getUsuarioByEmail } from "./google-sheets";
 import { demoSession, isDemoMode } from "./demo-mode";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Necesario detrás de un proxy/tunnel (Cloudflare): hace que NextAuth confíe
+  // en los headers x-forwarded-host / x-forwarded-proto en vez de intentar
+  // canonizar la URL, lo que causaba loops de redirect (ERR_TOO_MANY_REDIRECTS).
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
