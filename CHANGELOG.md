@@ -7,6 +7,30 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Added
+- Soporte de Unidades Compartidas (Shared Drives) en el cliente de Drive (`supportsAllDrives`)
+  — necesario porque el Service Account no tiene cuota de almacenamiento propia
+- `parseTareasRows`: lectura robusta de la hoja `Tareas` por contenido (detecta filas por
+  rowId válido), tolera hoja sin header y filas vacías intercaladas
+- `edificioMatches`: match de dptos por edificio insensible a mayúsculas/acentos/espacios
+  (los nombres difieren entre `_Consorcios` canónico y la hoja `Dptos` legacy)
+- `trustHost: true` en NextAuth — fix del `ERR_TOO_MANY_REDIRECTS` detrás de Cloudflare Tunnel
+
+### Changed
+- Variable de entorno `GOOGLE_MASTER_SHEET_ID` renombrada a `GOOGLE_CONSORCIOS_SHEET_ID`
+  (y la función `getMasterSheetId` → `getConsorciosSheetId`)
+- Normalización del rol de usuario a minúscula (acepta `ADMIN`/`Admin`/`admin` en la hoja)
+- Puerto de dev/start fijado en `4000` (`next dev/start -p 4000`)
+- ESLint: ignora el service worker generado (`public/sw.js`) y baja `react-hooks/set-state-in-effect`
+  a warning (falsos positivos en patrones SSR-safe)
+
+### Removed
+- Feature "Visitas por edificio" del dashboard y endpoint `/api/respuestas`
+  (leía la hoja `Respuestas de Trabajadores`, no se usa). La hoja en Sheets queda intacta.
+
+### Deployed
+- App en producción vía Docker self-hosted + Cloudflare Tunnel en `https://task.pdf-doc-processor.com`
+
 ## [1.0.0] - 2026-06-16
 
 ### Added

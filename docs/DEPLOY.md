@@ -8,7 +8,10 @@
 - Una Service Account con private key (descargada como JSON)
 - Acceso de Editor del SA al archivo principal Sheets
 - Acceso de Lector del SA al archivo `_Consorcios`
-- Acceso de Editor del SA a la carpeta de Drive donde la app guarda archivos
+- Una **Unidad Compartida (Shared Drive)** con el SA como Administrador de contenido
+  (NO una carpeta de "Mi unidad": el Service Account no tiene cuota de almacenamiento
+  propia y los uploads a "Mi unidad" fallan. Las Shared Drives resuelven esto porque
+  los archivos pertenecen a la organización, no al SA.)
 - Repo `johnydeev/task-drive-manager` (privado o público) en GitHub
 
 ## Setup inicial (primera vez)
@@ -27,16 +30,25 @@ Guardá el JSON descargado en un lugar seguro. **No lo commitees.**
 
 - Abrir el archivo Sheets principal en Google Drive → Compartir → agregar el email del SA con permiso **Editor**
 - Abrir el archivo `_Consorcios` → Compartir → agregar el email del SA con permiso **Lector**
-- Abrir la carpeta de Drive donde la app sube archivos → Compartir → agregar el email del SA con permiso **Editor**
+- Crear una **Unidad Compartida** (Drive → Unidades compartidas → Nueva) → Administrar
+  miembros → agregar el email del SA como **Administrador de contenido**. Copiar el ID de
+  la unidad de la URL (`drive.google.com/drive/folders/{ID}`) → va en `GOOGLE_DRIVE_ROOT_FOLDER_ID`
 
 ### 3. Crear Cloudflare Tunnel
 
-```bash
-# En Cloudflare > Zero Trust > Networks > Tunnels > Create a Tunnel
-# Nombre: task-drive-manager
-# Hostname: task-drive-manager.com (o tu subdominio)
-# Service: http://web:3000
 ```
+# En Cloudflare > Zero Trust > Redes > Conectores > Crear un Tunnel
+# Tipo: Cloudflared
+# Nombre: task-drive-manager
+# Guardar el TOKEN que muestra (va en CLOUDFLARE_TUNNEL_TOKEN)
+# Luego, en "Enrutar Tunnel" / public hostname:
+#   Subdominio: task   Dominio: pdf-doc-processor.com
+#   → URL final: task.pdf-doc-processor.com
+#   Servicio: HTTP  →  web:3000
+```
+
+> El servicio es `web:3000` (no `localhost`): el contenedor del tunnel resuelve el servicio
+> `web` por la red interna de Docker, donde la app escucha en el puerto 3000.
 
 Copiá el token del tunnel.
 
@@ -53,8 +65,8 @@ Llenar con los valores reales:
 - `GOOGLE_CONSORCIOS_SHEET_ID` = `1AVJ7tKv0hVU0uZF-9JyAPX3EpdgO81nzmzE-1nS6sdY` (default — hoja `_Consorcios`)
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` = del JSON descargado
 - `GOOGLE_PRIVATE_KEY` = del JSON descargado, **envuelto en comillas dobles**, con `\n` literales
-- `GOOGLE_DRIVE_ROOT_FOLDER_ID` = ID de la carpeta de Drive de la app
-- `NEXTAUTH_URL` = `https://task-drive-manager.com` (o tu dominio)
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID` = ID de la Unidad Compartida (del paso 2)
+- `NEXTAUTH_URL` = `https://task.pdf-doc-processor.com`
 - `NEXTAUTH_SECRET` = generar con `openssl rand -base64 32`
 - `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` = de GCP Console > OAuth Client ID
 - `CLOUDFLARE_TUNNEL_TOKEN` = el del paso 3
@@ -70,12 +82,18 @@ Esto llena `Usuarios` y `Configuración` en la Sheet principal.
 
 ### 6. Configurar OAuth callback URL
 
-En GCP Console > Credentials > tu OAuth Client ID, agregar en "Authorized redirect URIs":
+En GCP Console > Credentials > tu OAuth Client ID:
+- **Orígenes autorizados de JavaScript**: `https://task.pdf-doc-processor.com` y `http://localhost:4000`
+- **URIs de redireccionamiento autorizados**:
 
 ```
-https://task-drive-manager.com/api/auth/callback/google
+https://task.pdf-doc-processor.com/api/auth/callback/google
 http://localhost:4000/api/auth/callback/google
 ```
+
+> Importante: como la app está en modo OAuth "Externo" en Testing, agregá los emails que
+> van a loguear en GCP → Pantalla de consentimiento → Usuarios de prueba. Y cada email
+> debe estar también en la hoja `Usuarios` con su rol.
 
 ### 7. Pull de la imagen y arrancar
 
@@ -91,7 +109,12 @@ docker compose ps
 docker compose logs -f web
 ```
 
-La app debe responder en `localhost:4000` y en `https://task-drive-manager.com`.
+La app debe responder en `localhost:4000` y en `https://task.pdf-doc-processor.com`.
+
+> **Nota sobre build local:** evitá `docker compose build` / `docker build` en esta PC si
+> ya corren otros containers (ej. ia-drive-doc-processor): el build de webpack consume mucha
+> memoria y puede morir (`rpc error ... EOF`). Usá siempre la imagen que buildea el CI
+> (`docker compose pull`). El build pesado lo hace GitHub Actions.
 
 ## Actualizar a una nueva versión
 

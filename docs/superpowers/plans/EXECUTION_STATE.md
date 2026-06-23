@@ -4,7 +4,7 @@
 
 **Spec:** [`specs/2026-06-16-deploy-docker-cicd.md`](../specs/2026-06-16-deploy-docker-cicd.md)
 **Plan:** [`plans/2026-06-16-deploy-docker-cicd.md`](2026-06-16-deploy-docker-cicd.md)
-**Branch:** `feat/deploy-docker-cicd`
+**Branch:** `main` (la `feat/deploy-docker-cicd` se mergeó vía PR #1 y se borró)
 **Started:** 2026-06-16
 
 ## Progreso
@@ -27,10 +27,10 @@
 | 14 | Release workflow | [x] | `d701bef` |
 | 15 | `docs/DEPLOY.md` + README | [x] | `cb37fa1` |
 | 16 | `CHANGELOG.md` | [x] | `6075261` |
-| 17 | Smoke test integral local | [ ] | Manual — requiere acción del usuario |
-| 18 | Configurar Cloudflare Tunnel | [ ] | Manual — requiere acción del usuario |
-| 19 | Tag v1.0.0 + push | [ ] | Manual — requiere acción del usuario |
-| 20 | Cleanup + docs | [x] | `9d4b1ae` |
+| 17 | Smoke test integral local | [x] | Verificado: tarea real creada + Docker healthy |
+| 18 | Configurar Cloudflare Tunnel | [x] | Activo en `https://task.pdf-doc-processor.com` |
+| 19 | Tag v1.0.0 + push | [ ] | Pendiente (opcional) — versionar release en GHCR |
+| 20 | Cleanup + docs | [x] | `9d4b1ae` + docs actualizados post-deploy |
 
 **Leyenda:**
 - `[ ]` Pendiente
@@ -39,4 +39,26 @@
 
 ## Notas de ejecución
 
-(Acá voy a anotar cualquier cosa relevante: desvíos del plan, decisiones tomadas en el camino, blockers, etc.)
+### Deploy completado (2026-06-19)
+La app está en producción en `https://task.pdf-doc-processor.com` (Docker self-hosted + Cloudflare Tunnel).
+
+**Desvíos / aprendizajes respecto al plan original:**
+- **Variable renombrada:** `GOOGLE_MASTER_SHEET_ID` → `GOOGLE_CONSORCIOS_SHEET_ID` (más descriptiva).
+- **Shared Drives obligatorio:** el SA no tiene cuota propia → los archivos van a una Unidad
+  Compartida ("Control de tareas"). Hubo que agregar `supportsAllDrives` al cliente de Drive.
+- **Lectura de Tareas robusta:** la hoja arranca sin header → se reemplazó el `slice(1)` por
+  `parseTareasRows` (detecta filas por rowId válido, tolera filas vacías).
+- **Match de dptos:** los nombres difieren entre `_Consorcios` (canónico) y `Dptos` (legacy) →
+  `edificioMatches` compara normalizando mayúsculas/acentos/espacios.
+- **trustHost:** sin esto, NextAuth loopeaba (`ERR_TOO_MANY_REDIRECTS`) detrás del tunnel.
+- **Build local imposible:** la PC no tiene RAM para buildear con los otros containers corriendo
+  → se usa siempre la imagen del CI (`docker compose pull`).
+- **Feature Visitas/Respuestas eliminada** (el cliente no la usa).
+- **Dominio:** `task.pdf-doc-processor.com` (subdominio del dominio de boletas, gratis).
+
+**Pendiente real:** solo el tag `v1.0.0` (opcional) y los íconos PWA reales.
+
+### Anexo de migración (futuro)
+La migración de las 1134 tareas legacy de `Ingreso de Pendiente` + archivos de Drive sigue
+pendiente de aprobación del cliente. Ver Anexo A del spec del PDF/reportes y la conversación
+de planificación. La hoja `Tareas` nueva ya está operativa en paralelo.
