@@ -29,7 +29,7 @@
 | 16 | `CHANGELOG.md` | [x] | `6075261` |
 | 17 | Smoke test integral local | [x] | Verificado: tarea real creada + Docker healthy |
 | 18 | Configurar Cloudflare Tunnel | [x] | Activo en `https://task.pdf-doc-processor.com` |
-| 19 | Tag v1.0.0 + push | [ ] | Pendiente (opcional) — versionar release en GHCR |
+| 19 | Tag v1.0.0 + push | [x] | Tag `v1.0.0` pusheado — dispara build versionado en GHCR |
 | 20 | Cleanup + docs | [x] | `9d4b1ae` + docs actualizados post-deploy |
 
 **Leyenda:**
