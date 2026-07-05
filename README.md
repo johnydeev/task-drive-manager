@@ -45,7 +45,7 @@ npm run icons  # genera íconos PWA desde public/logo-source.png
 
 **Archivo principal** (`GOOGLE_SHEET_ID`) — tabs:
 
-- `Tareas` — hoja nueva donde escribe la app (ver `PROMPT_CLAUDE_CODE.md` para el mapping de columnas)
+- `Tareas` — hoja nueva donde escribe la app (mapping de columnas en `rowToTarea`, `lib/google-sheets.ts`)
 - `Dptos` — A=ID dpto, B=DPTO, C=Edificio ref
 - `Usuarios` — A=email, B=nombre, C=rol (admin/supervisor), D=activo, E=creado_en
 - `Configuración` — A=clave, B=valor
@@ -189,11 +189,12 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Lectura robusta de la hoja Tareas (tolera sin header / filas vacías) y match de dptos por nombre normalizado
 ✅ Deploy en producción: Docker self-hosted + Cloudflare Tunnel en `https://task.pdf-doc-processor.com`
 ✅ NextAuth con `trustHost` (funciona detrás del tunnel sin loops de redirect)
+✅ Tag `v1.0.0` pusheado — versiona la release en GHCR
 
 🔲 Íconos PWA reales (subir `public/logo-source.png` + `npm run icons`)
-🔲 Tag `v1.0.0` (opcional — versiona la release en GHCR)
+🔲 Migración de las ~1134 tareas legacy de `Ingreso de Pendiente` (pendiente de aprobación del cliente)
 
-Ver `PROMPT_CLAUDE_CODE.md` (origen) para la spec funcional completa y `docs/DEPLOY.md` para el deploy.
+Ver `docs/DEPLOY.md` para el deploy y `docs/superpowers/plans/EXECUTION_STATE.md` para el historial de ejecución.
 
 ## Convenciones
 

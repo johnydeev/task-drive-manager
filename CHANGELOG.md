@@ -7,6 +7,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+Sin cambios desde el tag `v1.0.0`.
+
+## [1.0.0] - 2026-06-23
+
+> El tag `v1.0.0` de git apunta a este estado (commit `3e09f32`), que incluye tanto el trabajo
+> de deploy Docker/CI-CD del 2026-06-16 (ver detalle en [1.0.0-rc1] más abajo) como los ajustes
+> post-deploy que siguieron hasta quedar estable en producción.
+
 ### Added
 - Soporte de Unidades Compartidas (Shared Drives) en el cliente de Drive (`supportsAllDrives`)
   — necesario porque el Service Account no tiene cuota de almacenamiento propia
@@ -31,7 +39,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Deployed
 - App en producción vía Docker self-hosted + Cloudflare Tunnel en `https://task.pdf-doc-processor.com`
 
-## [1.0.0] - 2026-06-16
+## [1.0.0-rc1] - 2026-06-16
 
 ### Added
 - Lectura de edificios desde archivo Sheets externo `_Consorcios` (SOT de ia-drive-doc-processor)
