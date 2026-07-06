@@ -116,21 +116,28 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_DIR != ''
     runs-on: [self-hosted]
+    # Los pasos usan PowerShell (no bash): en un runner self-hosted de Windows,
+    # "shell: bash" resuelve al bash de WSL (sin distro) y falla. PowerShell 5.1
+    # siempre está presente y habla nativo con Docker Desktop.
     steps:
       - name: Login a GHCR (para el pull de la imagen)
-        shell: bash
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        shell: powershell
+        run: |
+          "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Pull y reiniciar contenedores
-        shell: bash
+        shell: powershell
         env:
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
         run: |
-          if [ -z "$DEPLOY_DIR" ]; then
-            echo "::error::Falta la variable de repo DEPLOY_DIR (ruta del docker-compose.yml + .env en el servidor)."
+          if ([string]::IsNullOrWhiteSpace($env:DEPLOY_DIR)) {
+            Write-Error "Falta la variable de repo DEPLOY_DIR (ruta del docker-compose.yml + .env en el servidor)."
             exit 1
-          fi
-          cd "$DEPLOY_DIR"
+          }
+          Set-Location -LiteralPath $env:DEPLOY_DIR
           docker compose pull
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           docker compose up -d
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           docker compose ps
