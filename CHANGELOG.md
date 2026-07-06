@@ -30,6 +30,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
 
 ### Changed
+- **CI/CD unificado en 3 fases encadenadas** (`ci-cd.yml`): Test → Build → Deploy, en un solo
+  workflow. Reemplaza `ci.yml` + `release.yml`, que corrían sueltos y en paralelo (la imagen
+  se buildeaba aunque los tests fallaran). El deploy automático corre en un self-hosted runner
+  y requiere el alta del runner + la variable de repo `DEPLOY_DIR` (ver `docs/DEPLOY.md`)
 - **PDF de reporte**: la ubicación (dpto o parte común) ahora va en el encabezado junto al
   edificio (ej. `ALMIRANTE BROWN 706 - HALL`). Se quitaron del cuerpo las filas Dpto,
   Prioridad y Fecha estimada

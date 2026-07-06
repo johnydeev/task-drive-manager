@@ -1,0 +1,136 @@
+name: CI/CD
+
+# Pipeline de 3 fases encadenadas: Test -> Build -> Deploy.
+#   - En Pull Requests: corre solo Test (valida el PR, no despliega).
+#   - En push a main:    Test -> Build (imagen a GHCR) -> Deploy (automatico al servidor).
+#   - En tags v*:        Test -> Build (release versionada; NO despliega).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Fase 1 — Test: lint + typecheck + tests + build smoke.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test
+
+      - name: Build (smoke test)
+        env:
+          SERWIST_SUPPRESS_TURBOPACK_WARNING: "1"
+          # Variables minimas para el build (no se conectan a APIs reales).
+          GOOGLE_SHEET_ID: "fake-build-sheet"
+          GOOGLE_CONSORCIOS_SHEET_ID: "fake-consorcios"
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: "build@example.com"
+          GOOGLE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nfakekey\n-----END PRIVATE KEY-----\n"
+          GOOGLE_DRIVE_ROOT_FOLDER_ID: "fake-drive"
+          NEXTAUTH_URL: "http://localhost:4000"
+          NEXTAUTH_SECRET: "ci-only-secret-not-real-just-for-build"
+          GOOGLE_CLIENT_ID: "fake-client-id"
+          GOOGLE_CLIENT_SECRET: "fake-client-secret"
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Fase 2 — Build: buildea la imagen Docker y la sube a GHCR.
+  # Solo en push (main o tags). No corre en PRs. Requiere que Test pase.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build & push image
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/johnydeev/task-drive-manager
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Fase 3 — Deploy: actualiza los contenedores en el servidor.
+  # Solo desde main (no desde tags). Requiere que Build pase.
+  # Corre en un self-hosted runner instalado en el servidor (detras de Cloudflare
+  # Tunnel, sin SSH expuesto). Configurar la variable de repo DEPLOY_DIR con la ruta
+  # donde viven docker-compose.yml y .env en el servidor.
+  #
+  # Guarda: mientras la variable DEPLOY_DIR NO exista, esta fase se saltea (Test y
+  # Build corren igual). Asi se puede pushear a main sin tener el runner todavia, sin
+  # que el job quede colgado esperando un runner. Al setear DEPLOY_DIR se activa sola.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_DIR != ''
+    runs-on: [self-hosted]
+    steps:
+      - name: Login a GHCR (para el pull de la imagen)
+        shell: bash
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull y reiniciar contenedores
+        shell: bash
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+        run: |
+          if [ -z "$DEPLOY_DIR" ]; then
+            echo "::error::Falta la variable de repo DEPLOY_DIR (ruta del docker-compose.yml + .env en el servidor)."
+            exit 1
+          fi
+          cd "$DEPLOY_DIR"
+          docker compose pull
+          docker compose up -d
+          docker compose ps

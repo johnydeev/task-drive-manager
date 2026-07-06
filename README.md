@@ -211,6 +211,8 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 
 🔲 Íconos PWA reales (subir `public/logo-source.png` + `npm run icons`)
 🔲 Migración de las ~1134 tareas legacy de `Ingreso de Pendiente` (pendiente de aprobación del cliente)
+✅ CI/CD de 3 fases encadenadas (Test → Build → Deploy) en `ci-cd.yml`
+🔲 Alta del self-hosted runner + variable `DEPLOY_DIR` para activar el deploy automático (ver `docs/DEPLOY.md`)
 
 Ver `docs/DEPLOY.md` para el deploy y `docs/superpowers/plans/EXECUTION_STATE.md` para el historial de ejecución.
 

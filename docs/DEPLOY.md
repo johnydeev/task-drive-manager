@@ -158,3 +158,37 @@ docker images ghcr.io/johnydeev/task-drive-manager
 # Hacer rollback a un tag anterior
 $env:IMAGE_TAG="sha-abc1234"; docker compose up -d
 ```
+
+## CI/CD — pipeline de 3 fases
+
+El workflow `.github/workflows/ci-cd.yml` encadena **Test → Build → Deploy**:
+
+```
+Test  ──(si pasa)──▶  Build  ──(si pasa)──▶  Deploy (automático)
+```
+
+- **Test** (siempre, incluso en PRs): lint + typecheck + tests + build smoke.
+- **Build** (solo en push a `main` o tags `v*`, si Test pasa): buildea la imagen y la sube a GHCR.
+- **Deploy** (solo en push a `main`, si Build pasa): actualiza los contenedores en el servidor.
+
+Si Test o Build fallan, **no se despliega** (antes los workflows corrían sueltos y la imagen
+se buildeaba aunque los tests fallaran).
+
+### Setup del Deploy (una sola vez)
+
+El Deploy corre en un **self-hosted runner** instalado en el servidor, porque está detrás de
+Cloudflare Tunnel y no hay SSH expuesto.
+
+1. **Instalar el runner**: repo → **Settings → Actions → Runners → New self-hosted runner** y
+   seguir las instrucciones para tu SO (Windows). Requisitos en el servidor: **Docker Desktop
+   corriendo** y **bash disponible** (Git Bash). Conviene registrarlo como servicio para que
+   arranque solo.
+2. **Configurar la variable `DEPLOY_DIR`**: repo → **Settings → Secrets and variables → Actions
+   → Variables → New variable** → `DEPLOY_DIR` = ruta absoluta en el servidor donde viven
+   `docker-compose.yml` y `.env`. Ej: `C:\Users\jony\Desktop\...\task-drive-manager` (o donde
+   los tengas). El job de deploy hace `cd $DEPLOY_DIR && docker compose pull && docker compose up -d`.
+
+Con eso, cada push a `main` despliega solo. **Mientras la variable `DEPLOY_DIR` no exista,
+la fase Deploy se saltea** (Test y Build corren igual), así se puede pushear a main sin tener
+el runner todavía y sin que el job quede colgado. El deploy manual
+(`docker compose pull && docker compose up -d`) sigue disponible como fallback.
