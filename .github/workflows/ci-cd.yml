@@ -119,13 +119,11 @@ jobs:
     # Los pasos usan PowerShell (no bash): en un runner self-hosted de Windows,
     # "shell: bash" resuelve al bash de WSL (sin distro) y falla. PowerShell 5.1
     # siempre está presente y habla nativo con Docker Desktop.
+    #
+    # No hay paso de "docker login": la máquina ya tiene credenciales para pull-ear la
+    # imagen de GHCR (mismo mecanismo que usa ia-drive-doc-processor). El login manual por
+    # PowerShell corrompía el token (encoding del pipe) y daba "denied".
     steps:
-      - name: Login a GHCR (para el pull de la imagen)
-        shell: powershell
-        run: |
-          "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
       - name: Pull y reiniciar contenedores
         shell: powershell
         env:
