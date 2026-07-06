@@ -67,7 +67,7 @@ async function seedTab(tabName, values) {
 async function main() {
   console.log(`📊 Spreadsheet: ${SHEET_ID}`);
   await seedTab("Usuarios", USUARIOS_SEED);
-  await seedTab("Configuración", CONFIG_SEED);
+  await seedTab("Configuracion", CONFIG_SEED); // sin tilde: así se llama la pestaña real
   console.log("\n✅ Seed completo.");
 }
 

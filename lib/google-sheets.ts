@@ -35,7 +35,9 @@ export const SHEETS = {
   dptos: "Dptos",
   tareas: "Tareas",
   usuarios: "Usuarios",
-  configuracion: "Configuración",
+  // La pestaña real en la Sheet es "Configuracion" (sin tilde). Con tilde, Google
+  // devuelve 400 "Unable to parse range" y la config nunca se lee ni se puede guardar.
+  configuracion: "Configuracion",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;

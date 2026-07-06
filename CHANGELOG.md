@@ -51,6 +51,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   proveedores sin conexión
 
 ### Fixed
+- **Hoja de Configuración nunca se leía** (400 en los logs): el código apuntaba a la pestaña
+  `Configuración` (con tilde) pero la real es `Configuracion` (sin tilde). Google devolvía
+  `Unable to parse range` en cada lectura y la app caía a los límites por defecto; además el
+  guardado de config desde el admin fallaba. Corregido en `SHEETS.configuracion` y en el seed
 - **Una tarea generaba varias carpetas en Drive.** El nombre de la carpeta dependía del
   momento de cada subida (`spreadsheets.values` con timestamp por request), y como cada
   archivo es un request que tarda varios segundos, cada uno caía en una carpeta distinta.

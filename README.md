@@ -222,7 +222,25 @@ Ver `docs/DEPLOY.md` para el deploy y `docs/superpowers/plans/EXECUTION_STATE.md
 - Validación de inputs con Zod en cliente y en API routes
 - Errores en API: `{ error: string }` con status HTTP apropiado
 - Naming: PascalCase componentes, camelCase funciones, kebab-case archivos
-- El campo `Dpto` es **obligatorio**: si `parteComun=true` se guarda como `"Parte Común"`, nunca vacío
+- El campo `Dpto`/ubicación es **obligatorio** siempre: si `parteComun=false` se elige un dpto;
+  si `parteComun=true` se elige una **parte común específica** (ej. `HALL`), no un genérico
+
+## Actualización de la PWA (aviso de nueva versión)
+
+La app es una PWA con Service Worker (serwist) que precachea páginas y assets (de ahí el modo
+offline y la carga rápida). Cuando el CI/CD deploya una versión nueva, el usuario ve una **barra
+inferior** avisando que hay una actualización disponible. El flujo:
+
+1. El SW nuevo se descarga en segundo plano y queda en estado **`waiting`** (no interrumpe la sesión).
+2. [`RegisterPWA`](components/providers/RegisterPWA.tsx) detecta el SW en espera y emite el evento
+   `sw-update-available`.
+3. [`UpdateBanner`](components/providers/UpdateBanner.tsx) escucha ese evento y muestra la barra
+   con el botón **Actualizar**.
+4. Al tocarlo, el SW nuevo toma control (`skipWaiting` + `controllerchange`) y la página recarga
+   con la versión fresca. Sin reinstalar ni limpiar caché a mano.
+
+> En **desarrollo** el SW está deshabilitado y `RegisterPWA` desregistra cualquier SW viejo
+> (para no servir bundles cacheados). El flujo de actualización solo aplica en **producción**.
 
 ## Deploy
 
