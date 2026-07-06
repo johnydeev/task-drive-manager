@@ -44,6 +44,9 @@ export const api = {
         edificio ? `/api/dptos?edificio=${encodeURIComponent(edificio)}` : "/api/dptos"
       ),
   },
+  proveedores: {
+    list: () => request<string[]>("/api/proveedores"),
+  },
   tareas: {
     list: (filters: {
       edificio?: string;
@@ -87,6 +90,10 @@ export const api = {
         `/api/tareas/${encodeURIComponent(rowId)}/reporte`,
         { method: "POST" }
       ),
+    remove: (rowId: string) =>
+      request<{ ok: true }>(`/api/tareas/${encodeURIComponent(rowId)}`, {
+        method: "DELETE",
+      }),
   },
   usuarios: {
     list: () => request<Usuario[]>("/api/usuarios"),
@@ -112,12 +119,16 @@ export const api = {
   upload: async (
     file: File,
     edificio: string,
-    objetivo: string
+    objetivo: string,
+    dpto: string,
+    rowId: string
   ): Promise<{ url: string; kind: "imagen" | "video" | "documento" }> => {
     const form = new FormData();
     form.append("file", file);
     form.append("edificio", edificio);
     form.append("objetivo", objetivo);
+    form.append("dpto", dpto);
+    form.append("rowId", rowId);
     const res = await fetch("/api/upload", { method: "POST", body: form });
     if (!res.ok) {
       let message = `Error ${res.status}`;

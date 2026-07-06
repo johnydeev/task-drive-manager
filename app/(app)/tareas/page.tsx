@@ -1,11 +1,15 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { api } from "@/lib/api-client";
 import { cn, formatFecha } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Trash2 } from "lucide-react";
 
 const ESTADOS: (EstadoTarea | "Todos")[] = ["Todos", "Pendiente", "En Proceso", "Realizado"];
 const PRIORIDADES: (Prioridad | "Todas")[] = ["Todas", "Alta", "Media", "Baja"];
@@ -48,6 +52,11 @@ export default function TareasPage() {
     return p;
   }, [edificio, estado, prioridad]);
 
+  const qc = useQueryClient();
+  const { data: session } = useSession();
+  const [toDelete, setToDelete] = useState<Tarea | null>(null);
+  const [deleteDone, setDeleteDone] = useState(false);
+
   const tareasQ = useQuery({
     queryKey: ["tareas", params.toString()],
     queryFn: () => fetchTareas(params),
@@ -58,6 +67,22 @@ export default function TareasPage() {
     queryFn: fetchEdificios,
     staleTime: 5 * 60_000,
   });
+
+  const eliminar = useMutation({
+    mutationFn: (rowId: string) => api.tareas.remove(rowId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tareas"] });
+      setToDelete(null);
+      setDeleteDone(true);
+    },
+  });
+
+  // Puede eliminar el admin o quien creó la tarea. Sin sesión (demo/carga) es permisivo;
+  // el servidor igual valida el permiso.
+  const canDelete = (t: Tarea) =>
+    !session?.user ||
+    session.user.rol === "admin" ||
+    session.user.email?.toLowerCase() === t.supervisor?.toLowerCase();
 
   return (
     <div className="px-4 py-4 md:px-8 md:py-6 max-w-5xl mx-auto w-full">
@@ -130,10 +155,13 @@ export default function TareasPage() {
 
       <ul className="mt-4 space-y-2">
         {tareasQ.data?.map((t) => (
-          <li key={t.rowId}>
+          <li
+            key={t.rowId}
+            className="relative rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition"
+          >
             <Link
               href={`/tareas/${encodeURIComponent(t.rowId)}`}
-              className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 transition"
+              className="block p-4 pr-12"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -155,6 +183,15 @@ export default function TareasPage() {
                 </div>
               </div>
             </Link>
+            {canDelete(t) && (
+              <button
+                onClick={() => setToDelete(t)}
+                aria-label="Eliminar tarea"
+                className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </li>
         ))}
         {tareasQ.data?.length === 0 && !tareasQ.isLoading && (
@@ -163,6 +200,21 @@ export default function TareasPage() {
           </li>
         )}
       </ul>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Eliminar tarea"
+        message={`Se va a eliminar "${toDelete?.objetivo || "esta tarea"}" y su carpeta de Drive se moverá a la papelera (recuperable). ¿Confirmás?`}
+        loading={eliminar.isPending}
+        onConfirm={() => toDelete && eliminar.mutate(toDelete.rowId)}
+        onCancel={() => setToDelete(null)}
+      />
+
+      <SuccessDialog
+        open={deleteDone}
+        message="Tarea eliminada exitosamente"
+        onClose={() => setDeleteDone(false)}
+      />
     </div>
   );
 }

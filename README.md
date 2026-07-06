@@ -49,13 +49,18 @@ npm run icons  # genera íconos PWA desde public/logo-source.png
 - `Dptos` — A=ID dpto, B=DPTO, C=Edificio ref
 - `Usuarios` — A=email, B=nombre, C=rol (admin/supervisor), D=activo, E=creado_en
 - `Configuración` — A=clave, B=valor
+- `Dptos` — incluye además un "edificio" virtual con `Edificio ref = Parte Común`: sus filas
+  son las partes comunes posibles (Hall, Palier, Terraza, etc.) que se ofrecen en el dropdown
+  cuando la tarea es de parte común
 - `Ingreso de Pendiente` — hoja legacy (la app NO la toca; queda como histórico)
 - `Edificios` — hoja legacy deprecada (los edificios ahora salen de `_Consorcios`, ver abajo)
 
-**Archivo de consorcios** (`GOOGLE_CONSORCIOS_SHEET_ID`, externo) — tab `_Consorcios`:
-columnas A=NOMBRE CANÓNICO, B=CUIT, E=ACTIVO. La app lo lee **solo lectura** para el listado de edificios.
+**Archivo de consorcios** (`GOOGLE_CONSORCIOS_SHEET_ID`, externo) — tabs:
 
-**Compartir** el archivo principal con el SA como **Editor**, y el de `_Consorcios` como **Lector**.
+- `_Consorcios` — A=NOMBRE CANÓNICO, B=CUIT, E=ACTIVO. Listado de edificios (solo lectura)
+- `_Proveedores` — A=nombre del proveedor. Alimenta el dropdown de proveedores (solo lectura)
+
+**Compartir** el archivo principal con el SA como **Editor**, y el de consorcios/proveedores como **Lector**.
 
 **Crear el primer admin** (o usar `npm run seed`): agregar una fila en `Usuarios`:
 
@@ -73,7 +78,15 @@ Sin esa fila, nadie puede iniciar sesión.
 
 > Debe ser **Unidad Compartida**, no carpeta de "Mi unidad": el SA no tiene cuota propia.
 
-La app crea subcarpetas automáticamente: `Tareas/{Edificio}/{YYYY-MM}/{timestamp}_{objetivo}/`.
+La app crea las carpetas automáticamente:
+```
+Tareas/{Edificio}/{Año}/{Mes}/{fecha · ubicación · objetivo}/
+  Imagenes/    imagen-01.jpg, imagen-02.jpg, …
+  Videos/      video-01.mp4, …
+  Documentos/  documento-01.pdf, …
+  Reporte/     reporte-01.pdf, …   (si se generó reporte)
+```
+El "Mes" es el nombre en español (ej. `Julio`) y la "ubicación" es el valor del dpto (`3A`) o de la parte común (`HALL`). La carpeta se deriva del `rowId` de la tarea, así todos los archivos caen en una sola carpeta.
 
 ### 4. Variables de entorno
 
@@ -122,7 +135,8 @@ app/
     tareas/[id]/       # GET, PUT, PATCH (cambio de estado)
     tareas/[id]/reporte/ # POST genera PDF de reporte y lo sube a Drive
     edificios/         # GET (lee _Consorcios externo)
-    dptos/
+    dptos/             # GET (incluye el "edificio" virtual Parte Común)
+    proveedores/       # GET (lee _Proveedores externo)
     usuarios/          # solo admin
     configuracion/     # GET público, PUT solo admin
     upload/            # POST imagen/video/PDF → Drive
@@ -135,6 +149,7 @@ lib/
   sheets-client.ts     # cliente Sheets genérico multi-spreadsheet
   google-sheets.ts     # CRUD de Tareas/Dptos/Usuarios/Configuración (hoja principal)
   consorcios.ts        # lee edificios de _Consorcios externo (cache SWR)
+  proveedores.ts       # lee proveedores de _Proveedores externo (cache SWR)
   google-drive.ts      # upload + ensureFolder + Shared Drives + permisos públicos
   pdf-generator.tsx    # renderiza el PDF de reporte y lo sube a Drive
   auth.ts              # NextAuth v5 (trustHost) + role check contra hoja Usuarios
@@ -190,6 +205,9 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Deploy en producción: Docker self-hosted + Cloudflare Tunnel en `https://task.pdf-doc-processor.com`
 ✅ NextAuth con `trustHost` (funciona detrás del tunnel sin loops de redirect)
 ✅ Tag `v1.0.0` pusheado — versiona la release en GHCR
+✅ Dropdown de partes comunes (edificio virtual `Parte Común` en la hoja `Dptos`)
+✅ Dropdown de proveedores desde la hoja externa `_Proveedores` (datalist: elegir o escribir)
+✅ FileUploader: imagen con cámara/galería y video con grabar/buscar
 
 🔲 Íconos PWA reales (subir `public/logo-source.png` + `npm run icons`)
 🔲 Migración de las ~1134 tareas legacy de `Ingreso de Pendiente` (pendiente de aprobación del cliente)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,16 +10,20 @@ import { nanoid } from "nanoid";
 import { api } from "@/lib/api-client";
 import { CONFIGURACION_DEFAULT, type Configuracion, type Tarea } from "@/types";
 import { FileUploader } from "./FileUploader";
+import { Combobox } from "@/components/ui/Combobox";
+import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { Loader2, CloudOff } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
   cacheConfig,
   cacheDptos,
   cacheEdificios,
+  cacheProveedores,
   enqueueTarea,
   readCachedConfig,
   readCachedDptos,
   readCachedEdificios,
+  readCachedProveedores,
 } from "@/lib/offline-db";
 import { registerBackgroundSync } from "@/lib/background-sync";
 
@@ -40,12 +44,23 @@ const formSchema = z
     presupuesto: z.number().nonnegative().optional(),
     prioridad: z.enum(["Alta", "Media", "Baja"]),
   })
-  .refine((d) => d.parteComun || (d.dpto && d.dpto.trim().length > 0), {
-    message: "Dpto es obligatorio cuando Parte Común está desactivado",
-    path: ["dpto"],
+  .superRefine((d, ctx) => {
+    // Dpto/Parte común siempre obligatorio: si parteComun=false hay que elegir dpto;
+    // si parteComun=true hay que elegir una parte común.
+    if (!d.dpto || d.dpto.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dpto"],
+        message: d.parteComun ? "Seleccioná una parte común" : "Seleccioná un dpto",
+      });
+    }
   });
 
 type FormValues = z.infer<typeof formSchema>;
+
+// "Edificio" virtual en la hoja Dptos que agrupa las partes comunes posibles
+// (columna C = "Parte Común"). El match real es tolerante a acentos/mayúsculas.
+const PARTE_COMUN_EDIFICIO = "Parte Común";
 
 interface Props {
   mode: "create" | "edit";
@@ -60,6 +75,12 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
   const [videos, setVideos] = useState<string[]>(initial?.videos ?? []);
   const [documentos, setDocumentos] = useState<string[]>(initial?.documentos ?? []);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Modal de éxito tras crear/editar. Guarda la tarea resultante para navegar al cerrarlo.
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [successResult, setSuccessResult] = useState<Tarea | null>(null);
+  // ID estable de la tarea (timestamp ISO): agrupa los archivos en una sola carpeta de Drive
+  // y se usa como rowId al guardar. En edición se reutiliza el de la tarea existente.
+  const [taskRowId] = useState<string>(() => initial?.rowId ?? new Date().toISOString());
 
   const {
     register,
@@ -90,6 +111,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
   const edificio = watch("edificio");
   const objetivo = watch("objetivo");
   const parteComun = watch("parteComun");
+  const dptoActual = watch("dpto");
 
   const edificiosQ = useQuery({
     queryKey: ["edificios"],
@@ -122,6 +144,24 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
     enabled: !!edificio && !parteComun,
     staleTime: 5 * 60_000,
   });
+  // Partes comunes: dptos del "edificio" virtual Parte Común. Se cachean offline
+  // bajo la key del edificio (misma tabla cacheDptos) para poblar el dropdown sin red.
+  const partesComunesQ = useQuery({
+    queryKey: ["dptos", PARTE_COMUN_EDIFICIO],
+    queryFn: async () => {
+      try {
+        const data = await api.dptos.list(PARTE_COMUN_EDIFICIO);
+        cacheDptos(PARTE_COMUN_EDIFICIO, data).catch(() => {});
+        return data;
+      } catch (err) {
+        const cached = await readCachedDptos(PARTE_COMUN_EDIFICIO);
+        if (cached) return cached;
+        throw err;
+      }
+    },
+    enabled: parteComun,
+    staleTime: 5 * 60_000,
+  });
   const configQ = useQuery({
     queryKey: ["configuracion"],
     queryFn: async () => {
@@ -137,25 +177,51 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
     },
     staleTime: 5 * 60_000,
   });
+  const proveedoresQ = useQuery({
+    queryKey: ["proveedores"],
+    queryFn: async () => {
+      try {
+        const data = await api.proveedores.list();
+        cacheProveedores(data).catch(() => {});
+        return data;
+      } catch (err) {
+        const cached = await readCachedProveedores();
+        if (cached) return cached;
+        throw err;
+      }
+    },
+    staleTime: 5 * 60_000,
+  });
   const config: Configuracion = configQ.data ?? CONFIGURACION_DEFAULT;
 
-  // Si el usuario cambia de edificio, limpiar el dpto seleccionado.
+  // Al cambiar de edificio o al alternar Parte Común, limpiar la selección previa
+  // de dpto/parte común. Se saltea el primer render para no pisar el valor inicial
+  // en modo edición.
+  const firstDptoReset = useRef(true);
   useEffect(() => {
-    if (edificio && !parteComun) setValue("dpto", "");
+    if (firstDptoReset.current) {
+      firstDptoReset.current = false;
+      return;
+    }
+    setValue("dpto", "");
   }, [edificio, parteComun, setValue]);
 
   const dptoOptions = useMemo(() => dptosQ.data ?? [], [dptosQ.data]);
+  const partesComunesOptions = useMemo(() => partesComunesQ.data ?? [], [partesComunesQ.data]);
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     try {
       const payload = {
+        rowId: taskRowId,
         objetivo: values.objetivo,
         fechaInicio: values.fechaInicio,
         fechaEstimada: values.fechaEstimada,
         edificio: values.edificio,
         parteComun: values.parteComun,
-        dpto: values.parteComun ? "Parte Común" : (values.dpto ?? ""),
+        // dpto es obligatorio (validado por el schema): la parte común específica
+        // (ej. "Terraza") si parteComun=true, o el dpto elegido si es false.
+        dpto: values.dpto?.trim() ?? "",
         informe: values.informe,
         proveedor: values.proveedor,
         estado: values.estado,
@@ -187,25 +253,42 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
           return;
         }
         result = await api.tareas.create(payload);
+        setSuccessResult(result);
+        setSuccessMsg("Tarea creada exitosamente");
+        return;
       } else if (initial) {
         result = await api.tareas.update(initial.rowId, {
           ...payload,
           comentarioEnProceso: values.comentarioEnProceso,
           comentarioRealizado: values.comentarioRealizado,
         });
+        setSuccessResult(result);
+        setSuccessMsg("Tarea editada exitosamente");
+        return;
       } else {
         throw new Error("Falta tarea inicial para modo edit");
       }
-
-      onSubmitSuccess?.(result);
-      router.push(`/tareas/${encodeURIComponent(result.rowId)}`);
-      router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error al guardar");
     }
   };
 
+  // Al cerrar el modal de éxito: navegar (create) o cerrar la edición (edit).
+  const handleSuccessClose = () => {
+    const r = successResult;
+    setSuccessMsg(null);
+    setSuccessResult(null);
+    if (!r) return;
+    onSubmitSuccess?.(r);
+    if (mode === "create") {
+      router.push(`/tareas/${encodeURIComponent(r.rowId)}`);
+      router.refresh();
+    }
+  };
+
   return (
+    <>
+    <SuccessDialog open={!!successMsg} message={successMsg ?? ""} onClose={handleSuccessClose} />
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {!online && mode === "create" && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -257,13 +340,26 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         />
       </div>
 
-      {!parteComun && (
+      {!parteComun ? (
         <Field label="Dpto" error={errors.dpto?.message}>
           <select {...register("dpto")} className="input" disabled={!edificio || dptosQ.isLoading}>
             <option value="">
               {dptosQ.isLoading ? "Cargando…" : edificio ? "Seleccionar dpto" : "Elegí un edificio primero"}
             </option>
             {dptoOptions.map((d) => (
+              <option key={d.idDpto} value={d.dpto}>
+                {d.dpto}
+              </option>
+            ))}
+          </select>
+        </Field>
+      ) : (
+        <Field label="Parte común" error={errors.dpto?.message}>
+          <select {...register("dpto")} className="input" disabled={partesComunesQ.isLoading}>
+            <option value="">
+              {partesComunesQ.isLoading ? "Cargando…" : "Seleccionar parte común"}
+            </option>
+            {partesComunesOptions.map((d) => (
               <option key={d.idDpto} value={d.dpto}>
                 {d.dpto}
               </option>
@@ -314,7 +410,18 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
       </div>
 
       <Field label="Proveedor">
-        <input {...register("proveedor")} className="input" />
+        <Controller
+          control={control}
+          name="proveedor"
+          render={({ field }) => (
+            <Combobox
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              options={proveedoresQ.data ?? []}
+              placeholder="Elegí de la lista o escribí uno nuevo"
+            />
+          )}
+        />
       </Field>
 
       {mode === "edit" && (
@@ -333,6 +440,8 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         <FileUploader
           edificio={edificio}
           objetivo={objetivo}
+          dpto={dptoActual ?? ""}
+          rowId={taskRowId}
           config={config}
           imagenes={imagenes}
           videos={videos}
@@ -368,6 +477,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         </button>
       </div>
     </form>
+    </>
   );
 }
 

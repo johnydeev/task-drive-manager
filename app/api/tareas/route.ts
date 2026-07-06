@@ -49,7 +49,9 @@ export async function POST(req: NextRequest) {
     const tarea = await appendTarea(
       {
         ...parsed,
-        dpto: parsed.parteComun ? "Parte Común" : (parsed.dpto ?? ""),
+        // dpto es obligatorio (validado por tareaNuevaSchema): parte común específica
+        // si parteComun=true, o el dpto elegido si es false.
+        dpto: parsed.dpto?.trim() ?? "",
       },
       session.user.email
     );

@@ -4,11 +4,23 @@ import { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { api } from "@/lib/api-client";
 import type { Configuracion } from "@/types";
-import { Camera, FileText, Film, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  Camera,
+  FileText,
+  Film,
+  FolderOpen,
+  Image as ImageIcon,
+  Loader2,
+  Trash2,
+  Upload,
+  Video,
+} from "lucide-react";
 
 interface Props {
   edificio: string;
   objetivo: string;
+  dpto: string; // ubicación: dpto o parte común — forma parte del nombre de la carpeta en Drive
+  rowId: string; // id estable de la tarea — agrupa todos los archivos en una sola carpeta
   config: Configuracion;
   imagenes: string[];
   videos: string[];
@@ -31,6 +43,8 @@ function thumbUrl(url: string): string {
 export function FileUploader({
   edificio,
   objetivo,
+  dpto,
+  rowId,
   config,
   imagenes,
   videos,
@@ -38,8 +52,12 @@ export function FileUploader({
   onChange,
   disabled,
 }: Props) {
-  const imgInput = useRef<HTMLInputElement | null>(null);
-  const vidInput = useRef<HTMLInputElement | null>(null);
+  // Inputs separados para cámara (capture) y galería/archivos (sin capture),
+  // así el usuario elige entre tomar/grabar en el momento o buscar en el teléfono.
+  const imgCameraInput = useRef<HTMLInputElement | null>(null);
+  const imgGalleryInput = useRef<HTMLInputElement | null>(null);
+  const vidCameraInput = useRef<HTMLInputElement | null>(null);
+  const vidBrowseInput = useRef<HTMLInputElement | null>(null);
   const docInput = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +65,12 @@ export function FileUploader({
   const imgFull = imagenes.length >= config.maxImagenes;
   const vidFull = videos.length >= config.maxVideos;
   const docFull = documentos.length >= config.maxDocumentos;
-  const canUpload = !!edificio && !!objetivo;
+  const canUpload = !!edificio && !!objetivo && !!dpto;
 
   const handleFiles = async (files: FileList | null, kind: "imagen" | "video" | "documento") => {
     if (!files || files.length === 0) return;
     if (!canUpload) {
-      setError("Completá edificio y objetivo antes de subir archivos");
+      setError("Completá edificio, objetivo y la ubicación (dpto/parte común) antes de subir archivos");
       return;
     }
     setError(null);
@@ -108,7 +126,7 @@ export function FileUploader({
           }
         }
 
-        const result = await api.upload(file, edificio, objetivo);
+        const result = await api.upload(file, edificio, objetivo, dpto, rowId);
         if (result.kind === "imagen") newImgs.push(result.url);
         else if (result.kind === "video") newVids.push(result.url);
         else newDocs.push(result.url);
@@ -121,8 +139,10 @@ export function FileUploader({
     } finally {
       setBusy(false);
       // Limpiar inputs para permitir reselección del mismo archivo.
-      if (imgInput.current) imgInput.current.value = "";
-      if (vidInput.current) vidInput.current.value = "";
+      if (imgCameraInput.current) imgCameraInput.current.value = "";
+      if (imgGalleryInput.current) imgGalleryInput.current.value = "";
+      if (vidCameraInput.current) vidCameraInput.current.value = "";
+      if (vidBrowseInput.current) vidBrowseInput.current.value = "";
       if (docInput.current) docInput.current.value = "";
     }
   };
@@ -136,17 +156,34 @@ export function FileUploader({
 
   return (
     <div className="space-y-3">
+      {/* Imagen: cámara (capture) vs galería (sin capture) */}
       <input
-        ref={imgInput}
+        ref={imgCameraInput}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        multiple
         capture="environment"
         hidden
         onChange={(e) => handleFiles(e.target.files, "imagen")}
       />
       <input
-        ref={vidInput}
+        ref={imgGalleryInput}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        hidden
+        onChange={(e) => handleFiles(e.target.files, "imagen")}
+      />
+      {/* Video: grabar (capture) vs buscar en el teléfono (sin capture) */}
+      <input
+        ref={vidCameraInput}
+        type="file"
+        accept="video/mp4,video/quicktime"
+        capture="environment"
+        hidden
+        onChange={(e) => handleFiles(e.target.files, "video")}
+      />
+      <input
+        ref={vidBrowseInput}
         type="file"
         accept="video/mp4,video/quicktime"
         hidden
@@ -161,39 +198,81 @@ export function FileUploader({
         onChange={(e) => handleFiles(e.target.files, "documento")}
       />
 
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          disabled={disabled || busy || imgFull || !canUpload}
-          onClick={() => imgInput.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
-        >
-          {busy ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-          Imagen ({imagenes.length}/{config.maxImagenes})
-        </button>
-        <button
-          type="button"
-          disabled={disabled || busy || vidFull || !canUpload}
-          onClick={() => vidInput.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
-        >
-          {busy ? <Loader2 size={16} className="animate-spin" /> : <Film size={16} />}
-          Video ({videos.length}/{config.maxVideos})
-        </button>
-        <button
-          type="button"
-          disabled={disabled || busy || docFull || !canUpload}
-          onClick={() => docInput.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
-        >
-          {busy ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
-          Documento ({documentos.length}/{config.maxDocumentos})
-        </button>
+      <div className="space-y-3">
+        {/* Imágenes */}
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-slate-600">
+            Imágenes ({imagenes.length}/{config.maxImagenes})
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={disabled || busy || imgFull || !canUpload}
+              onClick={() => imgCameraInput.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+              Tomar foto
+            </button>
+            <button
+              type="button"
+              disabled={disabled || busy || imgFull || !canUpload}
+              onClick={() => imgGalleryInput.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+              Galería
+            </button>
+          </div>
+        </div>
+
+        {/* Videos */}
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-slate-600">
+            Videos ({videos.length}/{config.maxVideos})
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={disabled || busy || vidFull || !canUpload}
+              onClick={() => vidCameraInput.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <Video size={16} />}
+              Grabar
+            </button>
+            <button
+              type="button"
+              disabled={disabled || busy || vidFull || !canUpload}
+              onClick={() => vidBrowseInput.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        {/* Documentos */}
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-slate-600">
+            Documentos ({documentos.length}/{config.maxDocumentos})
+          </p>
+          <button
+            type="button"
+            disabled={disabled || busy || docFull || !canUpload}
+            onClick={() => docInput.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+          >
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+            Adjuntar PDF
+          </button>
+        </div>
       </div>
 
       {!canUpload && (
         <p className="text-xs text-slate-500 flex items-center gap-1">
-          <Upload size={12} /> Completá Edificio y Objetivo para habilitar subida.
+          <Upload size={12} /> Completá Edificio, Objetivo y la ubicación (dpto/parte común) para habilitar subida.
         </p>
       )}
 

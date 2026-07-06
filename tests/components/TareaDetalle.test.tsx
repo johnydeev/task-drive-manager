@@ -7,6 +7,14 @@ import type { Tarea } from "@/types";
 const TAREA_ROW_ID = "2026-06-14T10:00:00.000Z";
 const DOC_URL = "https://drive.google.com/file/d/doc1/view";
 
+vi.mock("next-auth/react", () => ({
+  useSession: () => ({ data: { user: { email: "a@b.com", rol: "admin" } }, status: "authenticated" }),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }),
+}));
+
 vi.mock("@/lib/api-client", () => {
   const fakeTarea: Tarea = {
     rowId: "2026-06-14T10:00:00.000Z",
@@ -30,6 +38,7 @@ vi.mock("@/lib/api-client", () => {
         get: vi.fn().mockResolvedValue(fakeTarea),
         patchEstado: vi.fn(),
         generarReporte: vi.fn(),
+        remove: vi.fn(),
       },
     },
   };

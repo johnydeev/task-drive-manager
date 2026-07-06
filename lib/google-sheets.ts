@@ -17,6 +17,7 @@ import { isDemoMode } from "./demo-mode";
 import {
   createDemoTarea,
   createDemoUsuario,
+  deleteDemoTarea,
   getDemoConfig,
   getDemoDptos,
   getDemoEdificios,
@@ -245,7 +246,8 @@ export async function appendTarea(
         fechaEstimada: input.fechaEstimada,
         edificio: input.edificio,
         parteComun: input.parteComun,
-        dpto: input.parteComun ? "Parte Común" : input.dpto,
+        // El dpto ya viene resuelto por el caller (parte común específica o "Parte Común").
+        dpto: input.dpto,
         informe: input.informe,
         imagenes: input.imagenes ?? [],
         videos: input.videos ?? [],
@@ -258,7 +260,9 @@ export async function appendTarea(
       supervisor
     );
   }
-  const rowId = new Date().toISOString();
+  // El cliente manda el rowId (para que coincida con la carpeta de Drive donde ya subió
+  // los archivos). Si no viene, lo generamos acá.
+  const rowId = input.rowId?.trim() || new Date().toISOString();
   const tarea: Tarea = {
     rowId,
     objetivo: input.objetivo,
@@ -266,7 +270,7 @@ export async function appendTarea(
     fechaEstimada: input.fechaEstimada,
     edificio: input.edificio,
     parteComun: input.parteComun,
-    dpto: input.parteComun ? "Parte Común" : input.dpto,
+    dpto: input.dpto,
     informe: input.informe,
     imagenes: input.imagenes ?? [],
     videos: input.videos ?? [],
@@ -278,21 +282,66 @@ export async function appendTarea(
     supervisor,
   };
 
-  const values = [tareaToRow(tarea)];
-  const res = await getSheets().spreadsheets.values.append({
+  // NO usar spreadsheets.values.append: la pestaña "Tareas" tiene contenido en
+  // columnas altas (tablas auxiliares) y el "table detection" de append termina
+  // escribiendo la fila en la columna equivocada (ej. U en vez de A). En su lugar,
+  // calculamos la próxima fila libre por la columna A (los rowId son timestamps ISO)
+  // y escribimos con update en el rango exacto A:V.
+  const colA = await readRange(`${SHEETS.tareas}!A:A`);
+  const nextRow = colA.length + 1;
+  await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: TAREAS_RANGE,
+    range: `${SHEETS.tareas}!A${nextRow}:V${nextRow}`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values },
+    requestBody: { values: [tareaToRow(tarea)] },
   });
-
-  // Intentar extraer el número de fila del updatedRange (ej: "Sheet!A12:V12")
-  const updatedRange = res.data.updates?.updatedRange ?? "";
-  const match = updatedRange.match(/!A(\d+):/);
-  tarea.rowNumber = match ? Number(match[1]) : undefined;
+  tarea.rowNumber = nextRow;
 
   return tarea;
+}
+
+// gid (sheetId interno) de la pestaña Tareas — necesario para borrar filas.
+let tareasGidCache: number | null = null;
+async function getTareasGid(): Promise<number> {
+  if (tareasGidCache != null) return tareasGidCache;
+  const meta = await getSheets().spreadsheets.get({
+    spreadsheetId: getSheetId(),
+    fields: "sheets(properties(sheetId,title))",
+  });
+  const sheet = meta.data.sheets?.find((s) => s.properties?.title === SHEETS.tareas);
+  const gid = sheet?.properties?.sheetId;
+  if (gid == null) throw new Error(`No se encontró la hoja "${SHEETS.tareas}"`);
+  tareasGidCache = gid;
+  return gid;
+}
+
+export async function deleteTarea(rowId: string): Promise<void> {
+  if (isDemoMode()) {
+    if (!deleteDemoTarea(rowId)) throw new Error(`Tarea con rowId ${rowId} no encontrada`);
+    return;
+  }
+  const current = await getTareaByRowId(rowId);
+  if (!current) throw new Error(`Tarea con rowId ${rowId} no encontrada`);
+  if (!current.rowNumber) throw new Error("rowNumber no disponible para eliminar");
+
+  const gid = await getTareasGid();
+  await getSheets().spreadsheets.batchUpdate({
+    spreadsheetId: getSheetId(),
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: gid,
+              dimension: "ROWS",
+              startIndex: current.rowNumber - 1, // 0-based
+              endIndex: current.rowNumber, // exclusivo
+            },
+          },
+        },
+      ],
+    },
+  });
 }
 
 export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
@@ -306,7 +355,8 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
   if (!current.rowNumber) throw new Error("rowNumber no disponible para update");
 
   const merged: Tarea = { ...current, ...input, rowId: current.rowId };
-  if (merged.parteComun) merged.dpto = "Parte Común";
+  // Parte común: solo cae al marcador genérico si no hay una parte común específica.
+  if (merged.parteComun && !merged.dpto?.trim()) merged.dpto = "Parte Común";
 
   await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),

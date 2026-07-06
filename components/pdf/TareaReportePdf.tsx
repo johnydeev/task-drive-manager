@@ -45,6 +45,7 @@ interface Props {
 export function TareaReportePdf({ tarea, generatedAt }: Props) {
   const fmtCurrency = (n?: number) => (n != null ? `$${n.toLocaleString("es-AR")}` : "—");
   const fmtDate = (s?: string) => (s ? s.slice(0, 10) : "—");
+  const ubicacion = tarea.dpto?.trim();
 
   return (
     <Document>
@@ -53,6 +54,7 @@ export function TareaReportePdf({ tarea, generatedAt }: Props) {
           <Text style={styles.title}>Reporte de Tarea</Text>
           <Text style={styles.subtitle}>
             Administración Morinigo · {tarea.edificio}
+            {ubicacion ? ` - ${ubicacion}` : ""}
           </Text>
         </View>
 
@@ -63,24 +65,12 @@ export function TareaReportePdf({ tarea, generatedAt }: Props) {
             <Text style={styles.value}>{tarea.objetivo}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Dpto:</Text>
-            <Text style={styles.value}>{tarea.parteComun ? "Parte Común" : tarea.dpto}</Text>
-          </View>
-          <View style={styles.row}>
             <Text style={styles.label}>Estado:</Text>
             <Text style={styles.value}>{tarea.estado}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Prioridad:</Text>
-            <Text style={styles.value}>{tarea.prioridad}</Text>
-          </View>
-          <View style={styles.row}>
             <Text style={styles.label}>Fecha inicio:</Text>
             <Text style={styles.value}>{fmtDate(tarea.fechaInicio)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Fecha estimada:</Text>
-            <Text style={styles.value}>{fmtDate(tarea.fechaEstimada)}</Text>
           </View>
           {tarea.fechaRealizado && (
             <View style={styles.row}>

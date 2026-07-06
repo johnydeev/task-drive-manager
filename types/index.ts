@@ -52,10 +52,13 @@ export interface Tarea {
 }
 
 // DTO para crear una tarea desde el cliente.
+// El cliente genera el rowId (timestamp ISO) para vincular la tarea con su carpeta en Drive
+// desde la primera subida de archivos; el server lo respeta si viene, o lo genera si no.
 export type TareaNuevaInput = Omit<
   Tarea,
   "rowId" | "rowNumber" | "comentarioEnProceso" | "comentarioRealizado" | "fechaRealizado" | "supervisor" | "reporteUrl"
 > & {
+  rowId?: string;
   imagenes?: string[];
   videos?: string[];
   documentos?: string[];

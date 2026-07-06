@@ -1,6 +1,6 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { TareaReportePdf } from "@/components/pdf/TareaReportePdf";
-import { ensureTareaFolder, uploadFile } from "./google-drive";
+import { uploadTareaFile } from "./google-drive";
 import { isDemoMode } from "./demo-mode";
 import type { Tarea } from "@/types";
 
@@ -22,23 +22,17 @@ export async function generateAndUploadReporte(tarea: Tarea): Promise<{ url: str
     <TareaReportePdf tarea={tarea} generatedAt={generatedAt} />
   );
 
-  const folderId = await ensureTareaFolder({
+  // Va a la subcarpeta "Reporte" de la misma carpeta de la tarea (derivada del rowId).
+  // Si ya hay reportes previos, uploadTareaFile lo nombra reporte-02, reporte-03, etc.
+  const result = await uploadTareaFile({
+    buffer,
+    originalName: "reporte.pdf",
+    mimeType: "application/pdf",
+    kind: "reporte",
     edificio: tarea.edificio,
     objetivo: tarea.objetivo,
-  });
-
-  const safeName = tarea.objetivo
-    .replace(/[^a-z0-9]/gi, "_")
-    .toLowerCase()
-    .slice(0, 40);
-  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const fileName = `reporte_${safeName}_${ts}.pdf`;
-
-  const result = await uploadFile({
-    buffer,
-    name: fileName,
-    mimeType: "application/pdf",
-    folderId,
+    ubicacion: tarea.dpto,
+    rowId: tarea.rowId,
   });
 
   return { url: result.url, fileId: result.fileId };

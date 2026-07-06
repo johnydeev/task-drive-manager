@@ -3,10 +3,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { Tarea } from "@/types";
 
 vi.mock("@/lib/google-drive", () => ({
-  ensureTareaFolder: vi.fn().mockResolvedValue("folder-id"),
-  uploadFile: vi.fn().mockResolvedValue({
+  uploadTareaFile: vi.fn().mockResolvedValue({
     fileId: "reporte-id",
-    name: "reporte.pdf",
+    name: "reporte-01.pdf",
     url: "https://drive.google.com/file/d/reporte-id/view",
   }),
 }));
@@ -40,22 +39,27 @@ describe("generateAndUploadReporte", () => {
     expect(result.url).toMatch(/drive\.google\.com\/file\/d\/.+\/view/);
   }, 30000);
 
-  it("usa ensureTareaFolder con edificio y objetivo de la tarea", async () => {
+  it("sube el reporte a la subcarpeta Reporte de la tarea (kind=reporte)", async () => {
     const { generateAndUploadReporte } = await import("@/lib/pdf-generator");
-    const { ensureTareaFolder } = await import("@/lib/google-drive");
+    const { uploadTareaFile } = await import("@/lib/google-drive");
     await generateAndUploadReporte(tareaBase);
-    expect(ensureTareaFolder).toHaveBeenCalledWith({
-      edificio: tareaBase.edificio,
-      objetivo: tareaBase.objetivo,
-    });
+    expect(uploadTareaFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "reporte",
+        edificio: tareaBase.edificio,
+        objetivo: tareaBase.objetivo,
+        ubicacion: tareaBase.dpto,
+        rowId: tareaBase.rowId,
+      })
+    );
   }, 30000);
 
-  it("en DEMO_MODE no llama a uploadFile y devuelve URL fake", async () => {
+  it("en DEMO_MODE no llama a uploadTareaFile y devuelve URL fake", async () => {
     process.env.DEMO_MODE = "1";
     const { generateAndUploadReporte } = await import("@/lib/pdf-generator");
-    const { uploadFile } = await import("@/lib/google-drive");
+    const { uploadTareaFile } = await import("@/lib/google-drive");
     const result = await generateAndUploadReporte(tareaBase);
-    expect(uploadFile).not.toHaveBeenCalled();
+    expect(uploadTareaFile).not.toHaveBeenCalled();
     expect(result.url).toContain("demo-reporte-");
   });
 });

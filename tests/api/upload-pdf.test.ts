@@ -7,10 +7,9 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/google-drive", () => ({
-  ensureTareaFolder: vi.fn().mockResolvedValue("folder-id"),
-  uploadFile: vi.fn().mockResolvedValue({
+  uploadTareaFile: vi.fn().mockResolvedValue({
     fileId: "fake-id",
-    name: "doc.pdf",
+    name: "documento-01.pdf",
     url: "https://drive.google.com/file/d/fake-id/view",
   }),
 }));
@@ -31,6 +30,8 @@ function makeRequest(file: File): Request {
   form.append("file", file);
   form.append("edificio", "Av. 123");
   form.append("objetivo", "Test");
+  form.append("dpto", "3A");
+  form.append("rowId", "2026-07-05T18:00:00.000Z");
   return new Request("http://localhost/api/upload", { method: "POST", body: form });
 }
 

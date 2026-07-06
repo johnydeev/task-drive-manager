@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { ensureTareaFolder, uploadFile } from "@/lib/google-drive";
+import { uploadTareaFile } from "@/lib/google-drive";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 
@@ -20,10 +20,14 @@ export async function POST(req: NextRequest) {
     const file = form.get("file");
     const edificio = (form.get("edificio") ?? "").toString();
     const objetivo = (form.get("objetivo") ?? "").toString();
+    const ubicacion = (form.get("dpto") ?? "").toString();
+    const rowId = (form.get("rowId") ?? "").toString();
 
     if (!(file instanceof File)) return jsonError(400, "Falta archivo");
     if (!edificio) return jsonError(400, "Falta edificio");
     if (!objetivo) return jsonError(400, "Falta objetivo");
+    if (!ubicacion) return jsonError(400, "Falta la ubicación (dpto/parte común)");
+    if (!rowId) return jsonError(400, "Falta el identificador de la tarea");
 
     const isImage = IMAGE_MIMES.has(file.type);
     const isVideo = VIDEO_MIMES.has(file.type);
@@ -44,16 +48,19 @@ export async function POST(req: NextRequest) {
       return jsonError(413, `PDF excede el máximo de ${cfg.maxSizePdfMB}MB`);
     }
 
-    const folderId = await ensureTareaFolder({ edificio, objetivo });
+    const kind = isImage ? "imagen" : isVideo ? "video" : "documento";
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadFile({
+    const result = await uploadTareaFile({
       buffer,
-      name: file.name,
+      originalName: file.name,
       mimeType: file.type,
-      folderId,
+      kind,
+      edificio,
+      objetivo,
+      ubicacion,
+      rowId,
     });
 
-    const kind = isImage ? "imagen" : isVideo ? "video" : "documento";
     return NextResponse.json({ url: result.url, fileId: result.fileId, kind });
   } catch (err) {
     return handleApiError(err);
