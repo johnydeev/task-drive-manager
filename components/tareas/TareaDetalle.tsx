@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { cn, formatFecha, formatDateTime } from "@/lib/utils";
 import { TareaForm } from "./TareaForm";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
-import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
 
 const ESTADOS: EstadoTarea[] = ["Pendiente", "En Proceso", "Realizado"];
 
@@ -31,11 +35,24 @@ function thumbUrl(url: string): string {
 
 export function TareaDetalle({ rowId }: { rowId: string }) {
   const qc = useQueryClient();
+  const router = useRouter();
+  const { data: session } = useSession();
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteDone, setDeleteDone] = useState(false);
 
   const tareaQ = useQuery({
     queryKey: ["tarea", rowId],
     queryFn: () => api.tareas.get(rowId),
+  });
+
+  const eliminar = useMutation({
+    mutationFn: () => api.tareas.remove(rowId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tareas"] });
+      setConfirmDelete(false);
+      setDeleteDone(true);
+    },
   });
 
   const patchEstado = useMutation({
@@ -79,6 +96,13 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
 
   const t: Tarea = tareaQ.data;
 
+  // Puede eliminar el admin o quien creó la tarea. Sin sesión (demo/carga) es permisivo;
+  // el servidor igual valida el permiso.
+  const canDelete =
+    !session?.user ||
+    session.user.rol === "admin" ||
+    session.user.email?.toLowerCase() === t.supervisor?.toLowerCase();
+
   if (editing) {
     return (
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-3xl mx-auto w-full">
@@ -109,13 +133,48 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         <Link href="/tareas" className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900">
           <ArrowLeft size={14} /> Tareas
         </Link>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <Edit3 size={14} /> Editar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Edit3 size={14} /> Editar
+          </button>
+          {canDelete && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={14} /> Eliminar
+            </button>
+          )}
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Eliminar tarea"
+        message={`Se va a eliminar "${t.objetivo || "esta tarea"}" y su carpeta de Drive se moverá a la papelera (recuperable). ¿Confirmás?`}
+        loading={eliminar.isPending}
+        onConfirm={() => eliminar.mutate()}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
+      <SuccessDialog
+        open={deleteDone}
+        message="Tarea eliminada exitosamente"
+        onClose={() => {
+          qc.removeQueries({ queryKey: ["tarea", rowId] });
+          router.push("/tareas");
+          router.refresh();
+        }}
+      />
+
+      {eliminar.isError && (
+        <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          No se pudo eliminar la tarea.
+        </div>
+      )}
 
       <div className="mt-4 space-y-4">
         <header>

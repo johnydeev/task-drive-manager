@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getTareaByRowId, updateTarea } from "@/lib/google-sheets";
+import { deleteTarea, getTareaByRowId, updateTarea } from "@/lib/google-sheets";
+import { trashTareaFolder } from "@/lib/google-drive";
 import { generateAndUploadReporte } from "@/lib/pdf-generator";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { tareaPatchEstadoSchema, tareaUpdateSchema } from "@/lib/schemas";
@@ -43,6 +44,34 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const parsed = tareaUpdateSchema.parse(body);
     const updated = await updateTarea({ ...parsed, rowId: result.rowId });
     return NextResponse.json(updated);
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const session = await requireSession();
+    const { id } = await params;
+    const result = await getOwnedTarea(id, session);
+    if (!result) return jsonError(404, "Tarea no encontrada");
+    if (result === "forbidden") return jsonError(403, "Sin permisos sobre esta tarea");
+
+    // Papelera de Drive primero (best-effort): si falla, igual borramos la fila para no
+    // dejar la tarea a medias. La operación es idempotente en reintentos.
+    try {
+      await trashTareaFolder({
+        edificio: result.edificio,
+        objetivo: result.objetivo,
+        ubicacion: result.dpto,
+        rowId: result.rowId,
+      });
+    } catch (err) {
+      console.error("[delete-tarea] no se pudo mover la carpeta a papelera:", err);
+    }
+
+    await deleteTarea(result.rowId);
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return handleApiError(err);
   }

@@ -18,6 +18,7 @@ class AppDB extends Dexie {
   cacheEdificios!: Table<CacheEntry<Edificio[]>, string>;
   cacheDptos!: Table<CacheEntry<Dpto[]>, string>;
   cacheConfig!: Table<CacheEntry<Configuracion>, string>;
+  cacheProveedores!: Table<CacheEntry<string[]>, string>;
 
   constructor() {
     super("task-drive-manager");
@@ -27,6 +28,10 @@ class AppDB extends Dexie {
       cacheEdificios: "key",
       cacheDptos: "key",
       cacheConfig: "key",
+    });
+    // v2: cache de proveedores para poblar el dropdown sin red.
+    this.version(2).stores({
+      cacheProveedores: "key",
     });
   }
 }
@@ -84,6 +89,18 @@ export async function cacheConfig(value: Configuracion) {
 export async function readCachedConfig(): Promise<Configuracion | null> {
   const db = getDb();
   const entry = await db.cacheConfig.get("current");
+  if (!entry || !isFresh(entry.updatedAt)) return null;
+  return entry.value;
+}
+
+export async function cacheProveedores(value: string[]) {
+  const db = getDb();
+  await db.cacheProveedores.put({ key: "all", value, updatedAt: new Date().toISOString() });
+}
+
+export async function readCachedProveedores(): Promise<string[] | null> {
+  const db = getDb();
+  const entry = await db.cacheProveedores.get("all");
   if (!entry || !isFresh(entry.updatedAt)) return null;
   return entry.value;
 }

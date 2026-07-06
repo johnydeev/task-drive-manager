@@ -21,6 +21,7 @@ const baseInput = {
   fechaInicio: "2026-06-16",
   fechaEstimada: "2026-06-20",
   parteComun: true,
+  dpto: "Terraza",
   informe: "x",
   prioridad: "Media" as const,
 };

@@ -6,9 +6,12 @@ export const rolEnum = z.enum(["admin", "supervisor"]);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Fecha en formato ISO requerida");
 
-// Crear nueva tarea — el Dpto es obligatorio salvo que parteComun=true.
+// Crear nueva tarea — el Dpto/Parte común siempre es obligatorio: si parteComun=false
+// hay que elegir un dpto; si parteComun=true hay que elegir una parte común.
 export const tareaNuevaSchema = z
   .object({
+    // Generado por el cliente (timestamp ISO) para alinear la tarea con su carpeta de Drive.
+    rowId: z.string().optional(),
     objetivo: z.string().min(1, "Objetivo requerido"),
     fechaInicio: isoDate,
     fechaEstimada: isoDate,
@@ -24,9 +27,14 @@ export const tareaNuevaSchema = z
     presupuesto: z.number().nonnegative().optional(),
     prioridad: prioridadEnum,
   })
-  .refine((d) => d.parteComun || (d.dpto && d.dpto.trim().length > 0), {
-    message: "Dpto es obligatorio cuando Parte Común está desactivado",
-    path: ["dpto"],
+  .superRefine((d, ctx) => {
+    if (!d.dpto || d.dpto.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dpto"],
+        message: d.parteComun ? "Seleccioná una parte común" : "Seleccioná un dpto",
+      });
+    }
   });
 
 export const tareaUpdateSchema = z
@@ -49,14 +57,20 @@ export const tareaUpdateSchema = z
     fechaRealizado: isoDate.optional(),
     prioridad: prioridadEnum.optional(),
   })
-  .refine(
-    (d) => {
-      // Si parteComun llega como false explícito, exigir dpto no vacío.
-      if (d.parteComun === false) return !!d.dpto && d.dpto.trim().length > 0;
-      return true;
-    },
-    { message: "Dpto es obligatorio cuando Parte Común está desactivado", path: ["dpto"] }
-  );
+  .superRefine((d, ctx) => {
+    // En edición los campos son parciales. Solo validamos el dpto cuando viene incluido
+    // (o cuando se está cambiando parteComun): en ese caso no puede quedar vacío.
+    if (d.dpto !== undefined || d.parteComun !== undefined) {
+      const vacio = !d.dpto || d.dpto.trim().length === 0;
+      if (vacio) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["dpto"],
+          message: d.parteComun ? "Seleccioná una parte común" : "Seleccioná un dpto",
+        });
+      }
+    }
+  });
 
 export const tareaPatchEstadoSchema = z.object({
   estado: estadoEnum,

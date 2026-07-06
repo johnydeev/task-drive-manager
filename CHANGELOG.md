@@ -7,7 +7,74 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
-Sin cambios desde el tag `v1.0.0`.
+### Added
+- **Modales de éxito** tras crear ("Tarea creada exitosamente"), editar ("Tarea editada
+  exitosamente") y eliminar ("Tarea eliminada exitosamente") una tarea. Nuevo
+  `components/ui/SuccessDialog.tsx`. Al cerrarlo, crear/eliminar navegan y editar cierra la edición
+- **Eliminar tarea**: botón en el listado (por fila) y en el detalle, con confirmación.
+  Al eliminar, la carpeta de la tarea en Drive se **mueve a la papelera** (recuperable ~30 días)
+  y la fila se borra de la planilla. Solo pueden eliminar el **admin** o **quien creó** la tarea
+  (validado en el server, `DELETE /api/tareas/[id]`). Nuevo `components/ui/ConfirmDialog.tsx`
+- Dropdown de **Parte Común** en el alta/edición de tareas: al tildar "Parte común del
+  edificio" aparece la lista de partes comunes del "edificio" virtual `Parte Común` de la
+  hoja `Dptos` (columna C = `Parte Común`, tolerante a acentos/mayúsculas). Si la hoja aún
+  no tiene esas filas, cae con gracia al valor genérico `"Parte Común"`
+- Dropdown de **proveedores** alimentado desde la hoja externa `_Proveedores` (columna A)
+  del archivo de consorcios (`lib/proveedores.ts`, cache SWR 5 min + cache offline). Usa un
+  combobox propio (`components/ui/Combobox.tsx`) estilado como los selects del form: se
+  despliega debajo del input, filtra mientras se escribe y permite tipear un proveedor nuevo
+- Endpoint `GET /api/proveedores`
+- `components/ui/Combobox.tsx`: combobox reutilizable (input + dropdown estilado con
+  filtrado por acentos/mayúsculas y navegación por teclado)
+- `FileUploader`: la **imagen** ahora ofrece dos opciones ("Tomar foto" con cámara / "Galería"),
+  y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
+
+### Changed
+- **PDF de reporte**: la ubicación (dpto o parte común) ahora va en el encabezado junto al
+  edificio (ej. `ALMIRANTE BROWN 706 - HALL`). Se quitaron del cuerpo las filas Dpto,
+  Prioridad y Fecha estimada
+- **Reestructuración de carpetas en Drive.** Nueva jerarquía legible y escalable:
+  `Tareas/{Edificio}/{Año}/{Mes en nombre}/{fecha · ubicación · objetivo}/` con subcarpetas
+  `Imagenes/`, `Videos/`, `Documentos/` y `Reporte/`. Los archivos se renombran a
+  `imagen-01.jpg`, `video-01.mp4`, `documento-01.pdf`, `reporte-01.pdf` (con índice
+  incremental). La "ubicación" es el valor del dpto (`3A`) o de la parte común (`HALL`)
+- El cliente genera el `rowId` de la tarea (timestamp ISO) y lo manda en cada subida y al
+  crear la tarea: vincula la carpeta de Drive con la fila de Sheets 1:1 y garantiza que todos
+  los archivos de una tarea caigan en la MISMA carpeta
+- La subida de archivos ahora requiere elegir la ubicación (dpto/parte común) además de
+  edificio y objetivo, porque forma parte del nombre de la carpeta
+- `offline-db`: nueva tabla Dexie `cacheProveedores` (schema v2) para poblar el dropdown de
+  proveedores sin conexión
+
+### Fixed
+- **Una tarea generaba varias carpetas en Drive.** El nombre de la carpeta dependía del
+  momento de cada subida (`spreadsheets.values` con timestamp por request), y como cada
+  archivo es un request que tarda varios segundos, cada uno caía en una carpeta distinta.
+  Ahora la carpeta se deriva del `rowId` estable de la tarea → una sola carpeta por tarea
+- El **reporte** también creaba su propia carpeta aparte; ahora va a la subcarpeta `Reporte/`
+  de la tarea y admite varios (`reporte-01`, `reporte-02`, …)
+- **Fechas corridas un día en la app** (`formatFecha`): las fechas "solas" (`YYYY-MM-DD`)
+  se parseaban con `new Date()` como medianoche UTC y al mostrarlas en horario Argentina
+  (UTC-3) retrocedían un día (ej. `2026-07-13` se veía `12/07/2026`). Los datos en Sheets
+  siempre estuvieron bien; era solo el formateo. Ahora las fechas calendario se formatean por
+  string, sin timezone. Afecta al detalle, listado y dashboard
+- **Parte común ahora es obligatoria**: al tildar "Parte común del edificio" hay que elegir
+  una parte común de la lista, igual que el dpto es obligatorio cuando está destildado. Antes
+  dejaba crear la tarea sin seleccionar ninguna (caía al genérico "Parte Común"). Validado en
+  cliente (`formSchema`) y servidor (`tareaNuevaSchema`/`tareaUpdateSchema`) con mensajes
+  contextuales ("Seleccioná una parte común" / "Seleccioná un dpto")
+- **Alta de tareas rota** (`appendTarea`): se dejaba de usar `spreadsheets.values.append`.
+  La pestaña `Tareas` tiene tablas auxiliares en columnas altas y el "table detection" de
+  `append` escribía la fila nueva corrida a la columna U en vez de la A. Como el `rowId`
+  no quedaba en la columna A, el detalle no encontraba la tarea recién creada
+  (404 "No se pudo cargar la tarea"). Ahora se calcula la próxima fila libre por la columna A
+  y se escribe con `values.update` en el rango exacto `A:V`
+- `dpto` de parte común: se preservaba mal. El valor específico elegido (ej. "Terraza") se
+  pisaba con el marcador genérico "Parte Común" en la ruta POST, en `appendTarea` y en
+  `updateTarea`. Ahora los tres conservan la parte común específica y solo caen a "Parte Común"
+  si no se eligió ninguna
+- `TareaForm`: el reset de `dpto` al cambiar de edificio/Parte Común ya no pisa el valor
+  inicial en modo edición (se saltea el primer render)
 
 ## [1.0.0] - 2026-06-23
 

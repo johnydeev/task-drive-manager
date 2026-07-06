@@ -8,9 +8,27 @@ describe("tareaNuevaSchema", () => {
     fechaEstimada: "2026-01-10",
     edificio: "Av. 123",
     parteComun: true,
+    dpto: "Terraza",
     informe: "test",
     prioridad: "Media" as const,
   };
+
+  it("rechaza parteComun=true sin parte común seleccionada", () => {
+    const { dpto, ...sinDpto } = base;
+    void dpto;
+    expect(() => tareaNuevaSchema.parse({ ...sinDpto, parteComun: true })).toThrow();
+  });
+
+  it("rechaza parteComun=false sin dpto", () => {
+    const { dpto, ...sinDpto } = base;
+    void dpto;
+    expect(() => tareaNuevaSchema.parse({ ...sinDpto, parteComun: false })).toThrow();
+  });
+
+  it("acepta parteComun=true con parte común seleccionada", () => {
+    const result = tareaNuevaSchema.parse({ ...base, parteComun: true, dpto: "Hall de entrada" });
+    expect(result.dpto).toBe("Hall de entrada");
+  });
 
   it("acepta documentos como array de URLs", () => {
     const result = tareaNuevaSchema.parse({

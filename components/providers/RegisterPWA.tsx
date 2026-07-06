@@ -12,6 +12,30 @@ export function RegisterPWA() {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
 
+    // En desarrollo el SW está deshabilitado (next.config: disable en dev), pero un SW
+    // registrado en una sesión anterior puede seguir sirviendo HTML/JS viejos desde caché
+    // (cacheOnNavigation), causando mismatches de hidratación y UI vieja. Lo desregistramos
+    // y limpiamos las caches; si había uno controlando, recargamos una vez para traer HTML fresco.
+    if (process.env.NODE_ENV === "development") {
+      (async () => {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        let had = false;
+        for (const r of regs) {
+          had = true;
+          await r.unregister();
+        }
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+        if (had && navigator.serviceWorker.controller && !sessionStorage.getItem("sw-dev-cleared")) {
+          sessionStorage.setItem("sw-dev-cleared", "1");
+          window.location.reload();
+        }
+      })().catch(() => {});
+      return;
+    }
+
     const onUpdateFound = (reg: ServiceWorkerRegistration) => {
       const newWorker = reg.installing;
       if (!newWorker) return;

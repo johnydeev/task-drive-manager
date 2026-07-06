@@ -37,6 +37,26 @@ const DPTOS: Dpto[] = [
   // Lavalle 567
   { idDpto: "l567-A", dpto: "A", edificioRef: "Lavalle 567" },
   { idDpto: "l567-B", dpto: "B", edificioRef: "Lavalle 567" },
+  // Parte Común — "edificio" virtual que lista las partes comunes posibles de
+  // cualquier consorcio. Aparece cuando se tilda "Parte común del edificio".
+  { idDpto: "pc-hall", dpto: "Hall de entrada", edificioRef: "Parte Común" },
+  { idDpto: "pc-palier", dpto: "Palier", edificioRef: "Parte Común" },
+  { idDpto: "pc-escalera", dpto: "Escalera", edificioRef: "Parte Común" },
+  { idDpto: "pc-terraza", dpto: "Terraza", edificioRef: "Parte Común" },
+  { idDpto: "pc-cochera", dpto: "Cochera", edificioRef: "Parte Común" },
+  { idDpto: "pc-sum", dpto: "SUM", edificioRef: "Parte Común" },
+  { idDpto: "pc-tanque", dpto: "Tanque de agua", edificioRef: "Parte Común" },
+  { idDpto: "pc-ascensor", dpto: "Ascensor", edificioRef: "Parte Común" },
+  { idDpto: "pc-fachada", dpto: "Fachada", edificioRef: "Parte Común" },
+];
+
+// Proveedores demo — en producción salen de la hoja `_Proveedores` externa.
+const PROVEEDORES: string[] = [
+  "Ascensores Cóndor",
+  "Electricista Matriculado SA",
+  "Pinturería del Centro",
+  "Plomería 24h",
+  "Termo Service SRL",
 ];
 
 const USUARIOS: Usuario[] = [
@@ -269,6 +289,10 @@ export function getDemoDptos(edificio?: string): Dpto[] {
   return edificio ? DPTOS.filter((d) => d.edificioRef === edificio) : [...DPTOS];
 }
 
+export function getDemoProveedores(): string[] {
+  return [...PROVEEDORES];
+}
+
 export function getDemoTareas(filters: {
   edificio?: string;
   estado?: string;
@@ -320,6 +344,13 @@ export function updateDemoTarea(rowId: string, patch: Partial<Tarea>): Tarea | n
   if (idx === -1) return null;
   state.tareas[idx] = { ...state.tareas[idx], ...patch };
   return state.tareas[idx];
+}
+
+export function deleteDemoTarea(rowId: string): boolean {
+  const idx = state.tareas.findIndex((t) => t.rowId === rowId);
+  if (idx === -1) return false;
+  state.tareas.splice(idx, 1);
+  return true;
 }
 
 export function createDemoUsuario(input: Omit<Usuario, "creadoEn">): Usuario {
