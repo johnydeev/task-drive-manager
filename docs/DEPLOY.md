@@ -78,7 +78,7 @@ npm install
 npm run seed
 ```
 
-Esto llena `Usuarios` y `Configuración` en la Sheet principal.
+Esto llena `Usuarios` y `Configuracion` (sin tilde) en la Sheet principal.
 
 ### 6. Configurar OAuth callback URL
 

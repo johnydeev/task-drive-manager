@@ -20,7 +20,7 @@ npm run build  # build de producción (webpack)
 npm start      # servir el build (puerto 4000)
 npm run lint   # ESLint
 npm test       # suite de tests (Vitest)
-npm run seed   # llena hojas Usuarios y Configuración (requiere .env.local)
+npm run seed   # llena hojas Usuarios y Configuracion (requiere .env.local)
 npm run icons  # genera íconos PWA desde public/logo-source.png
 ```
 
@@ -48,7 +48,8 @@ npm run icons  # genera íconos PWA desde public/logo-source.png
 - `Tareas` — hoja nueva donde escribe la app (mapping de columnas en `rowToTarea`, `lib/google-sheets.ts`)
 - `Dptos` — A=ID dpto, B=DPTO, C=Edificio ref
 - `Usuarios` — A=email, B=nombre, C=rol (admin/supervisor), D=activo, E=creado_en
-- `Configuración` — A=clave, B=valor
+- `Configuracion` — A=clave, B=valor. **⚠ El tab va SIN tilde** (`Configuracion`): con tilde el
+  código no lo encuentra y cae a los límites por defecto
 - `Dptos` — incluye además un "edificio" virtual con `Edificio ref = Parte Común`: sus filas
   son las partes comunes posibles (Hall, Palier, Terraza, etc.) que se ofrecen en el dropdown
   cuando la tarea es de parte común
@@ -93,7 +94,7 @@ El "Mes" es el nombre en español (ej. `Julio`) y la "ubicación" es el valor de
 Copiar `.env.example` a `.env.local` y completar:
 
 ```env
-GOOGLE_SHEET_ID=...                  # archivo principal (Tareas/Dptos/Usuarios/Configuración)
+GOOGLE_SHEET_ID=...                  # archivo principal (Tareas/Dptos/Usuarios/Configuracion)
 GOOGLE_CONSORCIOS_SHEET_ID=...       # archivo externo con el tab _Consorcios
 GOOGLE_SERVICE_ACCOUNT_EMAIL=...     # del JSON descargado, campo client_email
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
@@ -132,7 +133,7 @@ app/
     auth/[...nextauth] # NextAuth handler
     health/            # healthcheck para Docker
     tareas/            # GET (list), POST (create)
-    tareas/[id]/       # GET, PUT, PATCH (cambio de estado)
+    tareas/[id]/       # GET, PUT, PATCH (estado), DELETE (elimina fila + papelera Drive)
     tareas/[id]/reporte/ # POST genera PDF de reporte y lo sube a Drive
     edificios/         # GET (lee _Consorcios externo)
     dptos/             # GET (incluye el "edificio" virtual Parte Común)
@@ -142,15 +143,17 @@ app/
     upload/            # POST imagen/video/PDF → Drive
 components/
   layout/AppShell.tsx  # bottom nav mobile / sidebar desktop
-  providers/           # SessionProvider + QueryProvider + PWA + offline sync
+  providers/           # SessionProvider + QueryProvider + PWA (RegisterPWA/UpdateBanner) + offline sync
+  tareas/              # TareaForm · TareaDetalle · FileUploader (cámara/galería, video)
+  ui/                  # Combobox (proveedores) · ConfirmDialog · SuccessDialog
   pdf/TareaReportePdf.tsx # template del PDF de reporte (@react-pdf/renderer)
 lib/
   google-auth.ts       # JWT del Service Account + getSheetId/getConsorciosSheetId
   sheets-client.ts     # cliente Sheets genérico multi-spreadsheet
-  google-sheets.ts     # CRUD de Tareas/Dptos/Usuarios/Configuración (hoja principal)
+  google-sheets.ts     # CRUD de Tareas/Dptos/Usuarios/Configuracion + deleteTarea (hoja principal)
   consorcios.ts        # lee edificios de _Consorcios externo (cache SWR)
   proveedores.ts       # lee proveedores de _Proveedores externo (cache SWR)
-  google-drive.ts      # upload + ensureFolder + Shared Drives + permisos públicos
+  google-drive.ts      # carpetas Edificio/Año/Mes/tarea + subcarpetas por tipo · uploadTareaFile · trashTareaFolder · Shared Drives
   pdf-generator.tsx    # renderiza el PDF de reporte y lo sube a Drive
   auth.ts              # NextAuth v5 (trustHost) + role check contra hoja Usuarios
   demo-mode.ts         # bypass DEMO_MODE  ·  demo-data.ts # datos fake
@@ -170,12 +173,12 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Cliente Google Drive (ensureFolder anidado, upload con permiso público, sanitización del path)
 ✅ NextAuth v5 + validación de rol contra hoja Usuarios
 ✅ Proxy (Next 16 — antes "middleware") de redirección a /login
-✅ API routes: edificios, dptos, tareas (GET/POST/PUT/PATCH), usuarios (CRUD), configuracion, upload
+✅ API routes: edificios, dptos, proveedores, tareas (GET/POST/PUT/PATCH/DELETE), usuarios (CRUD), configuracion, upload
 ✅ UI login con Google
 ✅ Shell con bottom-nav mobile y sidebar desktop
 ✅ Lista de tareas con filtros (edificio/estado/prioridad)
 ✅ Formulario nueva tarea: selector edificio + dpto filtrado, toggle Parte Común, validación Zod
-✅ FileUploader con compresión cliente (1200px/q80) + límites de la hoja Configuración
+✅ FileUploader con compresión cliente (1200px/q80) + límites de la hoja Configuracion
 ✅ Detalle de tarea + galería + cambio rápido de estado + modo edición inline
 ✅ Gestión de usuarios (admin): crear, activar/desactivar
 ✅ Configuración (admin): editar límites de archivos
@@ -189,7 +192,7 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Auto-generación del reporte al cerrar tarea (estado=Realizado dispara fire-and-forget)
 ✅ Botón "Generar/Descargar reporte" en detalle con regeneración manual
 ✅ Demo bypass en pdf-generator — no toca Drive real en DEMO_MODE
-✅ Suite de tests con Vitest + RTL: schemas, mapping Sheets, demo data, API endpoints, componentes (60 tests)
+✅ Suite de tests con Vitest + RTL: schemas, mapping Sheets, demo data, API endpoints, componentes (84 tests)
 ✅ Hoja `Tareas` nueva paralela a `Ingreso de Pendiente` legacy
 ✅ Integración con archivo externo `_Consorcios` (read-only, cache SWR)
 ✅ Filtrado de consorcios inactivos (columna `ACTIVO`)
@@ -197,7 +200,7 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Endpoint `/api/health` para Docker
 ✅ Dockerfile multi-stage con Next.js standalone
 ✅ `docker-compose.yml` con Cloudflare Tunnel
-✅ CI/CD con GitHub Actions (build + push a GHCR)
+✅ Imagen Docker publicada en GHCR desde GitHub Actions
 ✅ Service Worker (serwist) para precache de páginas y assets
 ✅ PWA manifest + meta tags (íconos pendientes: subir `public/logo-source.png` y correr `npm run icons`)
 ✅ Soporte de Unidades Compartidas (Shared Drives) en uploads a Drive
@@ -205,14 +208,18 @@ proxy.ts               # (Next 16, ex middleware.ts) redirección a /login si no
 ✅ Deploy en producción: Docker self-hosted + Cloudflare Tunnel en `https://task.pdf-doc-processor.com`
 ✅ NextAuth con `trustHost` (funciona detrás del tunnel sin loops de redirect)
 ✅ Tag `v1.0.0` pusheado — versiona la release en GHCR
-✅ Dropdown de partes comunes (edificio virtual `Parte Común` en la hoja `Dptos`)
-✅ Dropdown de proveedores desde la hoja externa `_Proveedores` (datalist: elegir o escribir)
+✅ Dropdown de partes comunes (edificio virtual `Parte Común` en la hoja `Dptos`) — obligatorio elegir una
+✅ Dropdown de proveedores desde la hoja externa `_Proveedores` (combobox propio: elegir de la lista o escribir)
 ✅ FileUploader: imagen con cámara/galería y video con grabar/buscar
+✅ Reestructura de carpetas en Drive: `Edificio/Año/Mes/tarea` + subcarpetas `Imagenes/Videos/Documentos/Reporte`, archivos renombrados
+✅ Eliminar tarea (admin o creador): carpeta de Drive a papelera + borra la fila, con confirmación
+✅ Modales de éxito al crear / editar / eliminar
+✅ CI/CD de 3 fases encadenadas (Test → Build → Deploy) en `ci-cd.yml`, con deploy automático vía self-hosted runner (`DEPLOY_DIR`)
+✅ Aviso de nueva versión de la PWA (banner de actualización) — ver "Actualización de la PWA"
+✅ Fixes: fechas por timezone, alta de tareas (fila en columna A), pestaña `Configuracion` (sin tilde)
 
 🔲 Íconos PWA reales (subir `public/logo-source.png` + `npm run icons`)
 🔲 Migración de las ~1134 tareas legacy de `Ingreso de Pendiente` (pendiente de aprobación del cliente)
-✅ CI/CD de 3 fases encadenadas (Test → Build → Deploy) en `ci-cd.yml`
-🔲 Alta del self-hosted runner + variable `DEPLOY_DIR` para activar el deploy automático (ver `docs/DEPLOY.md`)
 
 Ver `docs/DEPLOY.md` para el deploy y `docs/superpowers/plans/EXECUTION_STATE.md` para el historial de ejecución.
 
