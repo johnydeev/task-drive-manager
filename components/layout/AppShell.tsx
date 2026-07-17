@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Plus,
+  Building2,
 } from "lucide-react";
 
 interface NavItem {
@@ -24,6 +25,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/tareas", label: "Tareas", Icon: ClipboardList },
+  { href: "/edificios", label: "Edificios", Icon: Building2 },
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/usuarios", label: "Usuarios", Icon: Users, adminOnly: true },
   { href: "/configuracion", label: "Config", Icon: Settings, adminOnly: true },

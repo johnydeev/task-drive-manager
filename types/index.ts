@@ -95,3 +95,33 @@ export interface TareaPendiente extends TareaNuevaInput {
   retries: number;
   sheetRowId?: string; // se setea al sincronizar
 }
+
+// =====================================================
+// Directivas y asignaciones (feature "Edificios")
+// =====================================================
+
+// Directiva: indicación puntual que el admin asigna a un integrante (independiente de
+// edificio). Distinta de la Tarea (trabajo de proveedor en un edificio).
+export type DirectivaEstado = "Asignada"; // La Pieza B extenderá este union.
+
+export interface Directiva {
+  id: string; // timestamp ISO, id estable
+  descripcion: string;
+  fecha: string; // fecha a cumplir (ISO date)
+  asignadoA: string; // email del asignado
+  creadoPor: string; // email del admin creador
+  creadoEn: string; // ISO datetime
+  estado: DirectivaEstado;
+}
+
+export interface DirectivaNuevaInput {
+  descripcion: string;
+  fecha: string;
+  asignadoA: string;
+}
+
+// Asignación organizativa usuario↔edificio (informativa, no restringe nada).
+export interface Asignacion {
+  email: string;
+  edificio: string;
+}

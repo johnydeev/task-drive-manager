@@ -10,6 +10,8 @@ export const SHEETS = {
   // La pestaña real en la Sheet es "Configuracion" (sin tilde). Con tilde, Google
   // devuelve 400 "Unable to parse range" y la config nunca se lee ni se puede guardar.
   configuracion: "Configuracion",
+  asignaciones: "Asignaciones",
+  directivas: "Directivas",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;
@@ -30,4 +32,20 @@ export async function readRange(range: string): Promise<string[][]> {
     range,
   });
   return (res.data.values ?? []) as string[][];
+}
+
+// gid (sheetId interno) por título de pestaña, cacheado. Necesario para borrar filas
+// con batchUpdate/deleteDimension.
+const gidCache: Record<string, number> = {};
+export async function getSheetGid(title: string): Promise<number> {
+  if (gidCache[title] != null) return gidCache[title];
+  const meta = await getSheets().spreadsheets.get({
+    spreadsheetId: getSheetId(),
+    fields: "sheets(properties(sheetId,title))",
+  });
+  const sheet = meta.data.sheets?.find((s) => s.properties?.title === title);
+  const gid = sheet?.properties?.sheetId;
+  if (gid == null) throw new Error(`No se encontró la hoja "${title}"`);
+  gidCache[title] = gid;
+  return gid;
 }

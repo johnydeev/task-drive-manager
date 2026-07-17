@@ -123,3 +123,16 @@ export const configuracionSchema = z.object({
   maxSizeVideoMB: z.number().positive(),
   maxSizePdfMB: z.number().positive(),
 });
+
+// Directiva que el admin crea/asigna a un integrante. Reusa isoDate.
+export const directivaNuevaSchema = z.object({
+  descripcion: z.string().min(1, "Descripción requerida"),
+  fecha: isoDate,
+  asignadoA: z.string().email().transform((e) => e.toLowerCase()),
+});
+
+// Asignación organizativa usuario↔edificio.
+export const asignacionSchema = z.object({
+  email: z.string().email().transform((e) => e.toLowerCase()),
+  edificio: z.string().min(1, "Edificio requerido"),
+});

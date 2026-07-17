@@ -2,7 +2,10 @@
 // No usar desde el servidor — para eso están las funciones de google-sheets directamente.
 
 import type {
+  Asignacion,
   Configuracion,
+  Directiva,
+  DirectivaNuevaInput,
   Dpto,
   Edificio,
   EstadoTarea,
@@ -115,6 +118,29 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+  },
+  asignaciones: {
+    list: () => request<Asignacion[]>("/api/asignaciones"),
+    add: (email: string, edificio: string) =>
+      request<Asignacion>("/api/asignaciones", {
+        method: "POST",
+        body: JSON.stringify({ email, edificio }),
+      }),
+    remove: (email: string, edificio: string) =>
+      request<{ ok: true }>(
+        `/api/asignaciones?email=${encodeURIComponent(email)}&edificio=${encodeURIComponent(edificio)}`,
+        { method: "DELETE" }
+      ),
+  },
+  directivas: {
+    list: () => request<Directiva[]>("/api/directivas"),
+    create: (input: DirectivaNuevaInput) =>
+      request<Directiva>("/api/directivas", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    remove: (id: string) =>
+      request<{ ok: true }>(`/api/directivas?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
   },
   upload: async (
     file: File,

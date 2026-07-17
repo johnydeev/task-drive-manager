@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { tareaNuevaSchema, tareaFormSchema, configuracionSchema } from "@/lib/schemas";
+import {
+  tareaNuevaSchema,
+  tareaFormSchema,
+  configuracionSchema,
+  directivaNuevaSchema,
+  asignacionSchema,
+} from "@/lib/schemas";
 
 describe("tareaNuevaSchema", () => {
   const base = {
@@ -116,5 +122,30 @@ describe("configuracionSchema", () => {
     expect(() =>
       configuracionSchema.parse({ ...validConfig, maxDocumentos: -1 })
     ).toThrow();
+  });
+});
+
+describe("directivaNuevaSchema", () => {
+  const base = { descripcion: "Visitar edificio X", fecha: "2026-07-17", asignadoA: "OP@X.com" };
+  it("acepta una directiva válida y baja el email", () => {
+    const r = directivaNuevaSchema.parse(base);
+    expect(r.asignadoA).toBe("op@x.com");
+  });
+  it("rechaza descripcion vacía", () => {
+    expect(directivaNuevaSchema.safeParse({ ...base, descripcion: "" }).success).toBe(false);
+  });
+  it("rechaza asignadoA no-email", () => {
+    expect(directivaNuevaSchema.safeParse({ ...base, asignadoA: "x" }).success).toBe(false);
+  });
+});
+
+describe("asignacionSchema", () => {
+  it("acepta email+edificio y baja el email", () => {
+    const r = asignacionSchema.parse({ email: "A@X.com", edificio: "Belgrano 1429" });
+    expect(r.email).toBe("a@x.com");
+    expect(r.edificio).toBe("Belgrano 1429");
+  });
+  it("rechaza edificio vacío", () => {
+    expect(asignacionSchema.safeParse({ email: "a@x.com", edificio: "" }).success).toBe(false);
   });
 });
