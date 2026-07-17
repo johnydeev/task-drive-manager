@@ -187,11 +187,12 @@ Cloudflare Tunnel y no hay SSH expuesto.
    > **Credenciales de GHCR (importante):** el deploy NO usa el credential helper de Docker
    > Desktop (`"credsStore": "desktop"`). Ese helper necesita la sesión interactiva de Windows
    > y, cuando el runner corre como servicio o esa sesión se cierra (reboot / logoff / RDP
-   > desconectado), el `docker compose pull` falla con
-   > `error getting credentials ... A specified logon session does not exist` — incluso en
-   > imágenes públicas. Por eso el job apunta `DOCKER_CONFIG` a un directorio aislado y hace
-   > login con `docker/login-action` usando el `GITHUB_TOKEN`: el token queda en base64 en ese
-   > config, sin depender del vault de Docker Desktop, y sobrevive a reinicios/logoffs.
+   > desconectado), **cualquier** operación de credenciales falla con
+   > `A specified logon session does not exist` — tanto leer (`docker compose pull`) como
+   > guardar (`docker login`), incluso en imágenes públicas. Por eso el job tampoco corre
+   > `docker login`: escribe él mismo un `config.json` en un `DOCKER_CONFIG` aislado con el
+   > `GITHUB_TOKEN` en base64 bajo `auths`. Sin clave `credsStore`, Docker usa ese auth en
+   > texto plano y nunca llama al helper, así que sobrevive a reinicios/logoffs.
 2. **Configurar la variable `DEPLOY_DIR`**: repo → **Settings → Secrets and variables → Actions
    → Variables → New variable** → `DEPLOY_DIR` = ruta absoluta en el servidor donde viven
    `docker-compose.yml` y `.env`. Ej: `C:\Users\jony\Desktop\...\task-drive-manager` (o donde

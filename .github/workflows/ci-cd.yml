@@ -123,29 +123,29 @@ jobs:
     # Credenciales de GHCR: NO usamos el credential helper de Docker Desktop
     # ("credsStore": "desktop" en ~/.docker/config.json). Ese helper necesita la sesión
     # interactiva de Windows del usuario que abrió Docker Desktop; cuando el runner corre
-    # como servicio (sesión 0) o esa sesión se cierra (reboot / logoff / RDP), el pull
-    # falla con "error getting credentials ... A specified logon session does not exist"
-    # incluso en imágenes públicas, porque Docker invoca el helper para CUALQUIER pull.
+    # como servicio (sesión 0) o esa sesión se cierra (reboot / logoff / RDP), CUALQUIER
+    # operación de credenciales falla con "A specified logon session does not exist"
+    # —tanto leer (pull) como guardar (docker login)—.
     #
-    # Solución: apuntamos DOCKER_CONFIG a un directorio propio y vacío (sin credsStore) y
-    # hacemos login con docker/login-action, que escribe el token en base64 dentro de ese
-    # config aislado. Así el pull no depende del vault de Docker Desktop y sobrevive a
-    # reinicios/logoffs. login-action pasa el token por stdin desde Node (no el pipe de
-    # PowerShell, que corrompía el token y daba "denied").
+    # Por eso tampoco corremos "docker login" (invoca el helper para GUARDAR y falla igual).
+    # En su lugar escribimos nosotros el config.json en un DOCKER_CONFIG aislado, con el
+    # token en base64 bajo "auths". Sin clave "credsStore", Docker usa ese auth en texto
+    # plano directamente y nunca llama al helper. Sobrevive a reinicios/logoffs.
     steps:
-      - name: Preparar DOCKER_CONFIG aislado (sin credsStore)
+      - name: Escribir credenciales de GHCR (config.json aislado, sin credsStore)
         shell: powershell
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $cfg = Join-Path $env:RUNNER_TEMP 'docker-cfg-tdm'
-          New-Item -ItemType Directory -Force -Path $cfg | Out-Null
-          "DOCKER_CONFIG=$cfg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
-
-      - name: Login a GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          $cfgDir = Join-Path $env:RUNNER_TEMP 'docker-cfg-tdm'
+          New-Item -ItemType Directory -Force -Path $cfgDir | Out-Null
+          $pair = '{0}:{1}' -f $env:GHCR_USER, $env:GHCR_TOKEN
+          $b64  = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+          $config = @{ auths = @{ 'ghcr.io' = @{ auth = $b64 } } } | ConvertTo-Json -Depth 5
+          # ASCII sin BOM: un BOM al inicio rompe el parseo de config.json de Docker.
+          [System.IO.File]::WriteAllText((Join-Path $cfgDir 'config.json'), $config, (New-Object System.Text.ASCIIEncoding))
+          "DOCKER_CONFIG=$cfgDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
 
       - name: Pull y reiniciar contenedores
         shell: powershell
