@@ -24,6 +24,7 @@ import {
   timelinePorMes,
 } from "@/lib/dashboard";
 import { api } from "@/lib/api-client";
+import { filterTareas } from "@/lib/tareas-filter";
 import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
 import { cn, formatFecha } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
@@ -56,17 +57,17 @@ export function Dashboard() {
   });
   const edificiosQ = useQuery({ queryKey: ["edificios"], queryFn: api.edificios.list });
 
-  const tareasFiltradas = useMemo(() => {
-    const all = tareasQ.data ?? [];
-    return all.filter((t) => {
-      if (edificio && t.edificio !== edificio) return false;
-      if (estado !== "Todos" && t.estado !== estado) return false;
-      if (prioridad !== "Todas" && t.prioridad !== prioridad) return false;
-      if (desde && t.fechaInicio < desde) return false;
-      if (hasta && t.fechaInicio > hasta) return false;
-      return true;
-    });
-  }, [tareasQ.data, edificio, estado, prioridad, desde, hasta]);
+  const tareasFiltradas = useMemo(
+    () =>
+      filterTareas(tareasQ.data ?? [], {
+        edificio: edificio || undefined,
+        estado: estado === "Todos" ? undefined : estado,
+        prioridad: prioridad === "Todas" ? undefined : prioridad,
+        desde: desde || undefined,
+        hasta: hasta || undefined,
+      }),
+    [tareasQ.data, edificio, estado, prioridad, desde, hasta]
+  );
 
   const kpis = useMemo(() => buildKpis(tareasFiltradas), [tareasFiltradas]);
   const porEdificio = useMemo(() => groupByEdificio(tareasFiltradas), [tareasFiltradas]);

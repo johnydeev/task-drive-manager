@@ -6,36 +6,62 @@ export const rolEnum = z.enum(["admin", "supervisor"]);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Fecha en formato ISO requerida");
 
-// Crear nueva tarea — el Dpto/Parte común siempre es obligatorio: si parteComun=false
-// hay que elegir un dpto; si parteComun=true hay que elegir una parte común.
+// Regla compartida: el Dpto/Parte común siempre es obligatorio. Si parteComun=false
+// hay que elegir un dpto; si parteComun=true, una parte común. Vive UNA sola vez y la
+// usan tanto el schema del servidor (tareaNuevaSchema) como el del form (tareaFormSchema),
+// para que la validación no pueda divergir entre cliente y servidor.
+function dptoRequiredRefine(
+  d: { dpto?: string; parteComun?: boolean },
+  ctx: z.RefinementCtx
+) {
+  if (!d.dpto || d.dpto.trim().length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["dpto"],
+      message: d.parteComun ? "Seleccioná una parte común" : "Seleccioná un dpto",
+    });
+  }
+}
+
+// Campos base de una tarea, compartidos entre el form del cliente y el POST del servidor.
+// `estado` NO va acá: el servidor lo acepta opcional con default, pero el form siempre lo
+// provee (requerido) — mezclarlos rompe el tipado de react-hook-form (input ≠ output).
+const tareaBaseFields = {
+  objetivo: z.string().min(1, "Objetivo requerido"),
+  fechaInicio: isoDate,
+  fechaEstimada: isoDate,
+  edificio: z.string().min(1, "Edificio requerido"),
+  parteComun: z.boolean(),
+  dpto: z.string().optional(),
+  informe: z.string().min(1, "Informe requerido"),
+  proveedor: z.string().optional(),
+  presupuesto: z.number().nonnegative().optional(),
+  prioridad: prioridadEnum,
+};
+
+// Crear nueva tarea (servidor). Suma rowId + arrays de URLs de adjuntos.
 export const tareaNuevaSchema = z
   .object({
     // Generado por el cliente (timestamp ISO) para alinear la tarea con su carpeta de Drive.
     rowId: z.string().optional(),
-    objetivo: z.string().min(1, "Objetivo requerido"),
-    fechaInicio: isoDate,
-    fechaEstimada: isoDate,
-    edificio: z.string().min(1, "Edificio requerido"),
-    parteComun: z.boolean(),
-    dpto: z.string().optional(),
-    informe: z.string().min(1, "Informe requerido"),
+    ...tareaBaseFields,
+    estado: estadoEnum.optional().default("Pendiente"),
     imagenes: z.array(z.string().url()).optional().default([]),
     videos: z.array(z.string().url()).optional().default([]),
     documentos: z.array(z.string().url()).optional().default([]),
-    proveedor: z.string().optional(),
-    estado: estadoEnum.optional().default("Pendiente"),
-    presupuesto: z.number().nonnegative().optional(),
-    prioridad: prioridadEnum,
   })
-  .superRefine((d, ctx) => {
-    if (!d.dpto || d.dpto.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["dpto"],
-        message: d.parteComun ? "Seleccioná una parte común" : "Seleccioná un dpto",
-      });
-    }
-  });
+  .superRefine(dptoRequiredRefine);
+
+// Form del cliente. Mismos campos base + comentarios de edición; sin rowId ni arrays
+// de adjuntos (esos los maneja el componente por separado). Comparte la regla del dpto.
+export const tareaFormSchema = z
+  .object({
+    ...tareaBaseFields,
+    estado: estadoEnum,
+    comentarioEnProceso: z.string().optional(),
+    comentarioRealizado: z.string().optional(),
+  })
+  .superRefine(dptoRequiredRefine);
 
 export const tareaUpdateSchema = z
   .object({

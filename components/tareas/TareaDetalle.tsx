@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api-client";
 import { cn, formatFecha, formatDateTime } from "@/lib/utils";
+import { thumbUrl } from "@/lib/drive-url";
 import { TareaForm } from "./TareaForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
+import { useTareaDetalle } from "./hooks/useTareaDetalle";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
 
@@ -27,52 +24,21 @@ const prioridadBadge: Record<Prioridad, string> = {
   Baja: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
-function thumbUrl(url: string): string {
-  const m = url.match(/\/file\/d\/([^/]+)/);
-  if (!m) return url;
-  return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
-}
-
 export function TareaDetalle({ rowId }: { rowId: string }) {
-  const qc = useQueryClient();
-  const router = useRouter();
-  const { data: session } = useSession();
-  const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleteDone, setDeleteDone] = useState(false);
-
-  const tareaQ = useQuery({
-    queryKey: ["tarea", rowId],
-    queryFn: () => api.tareas.get(rowId),
-  });
-
-  const eliminar = useMutation({
-    mutationFn: () => api.tareas.remove(rowId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tareas"] });
-      setConfirmDelete(false);
-      setDeleteDone(true);
-    },
-  });
-
-  const patchEstado = useMutation({
-    mutationFn: (estado: EstadoTarea) => api.tareas.patchEstado(rowId, { estado }),
-    onSuccess: (updated) => {
-      qc.setQueryData(["tarea", rowId], updated);
-      qc.invalidateQueries({ queryKey: ["tareas"] });
-    },
-  });
-
-  const generarReporte = useMutation({
-    mutationFn: () => api.tareas.generarReporte(rowId),
-    onSuccess: ({ reporteUrl }) => {
-      qc.setQueryData(["tarea", rowId], (prev: Tarea | undefined) =>
-        prev ? { ...prev, reporteUrl } : prev
-      );
-      // Abrir el reporte recién generado en una pestaña nueva.
-      if (typeof window !== "undefined") window.open(reporteUrl, "_blank");
-    },
-  });
+  const {
+    tareaQ,
+    eliminar,
+    patchEstado,
+    generarReporte,
+    canDelete,
+    editing,
+    setEditing,
+    confirmDelete,
+    setConfirmDelete,
+    deleteDone,
+    onEditSuccess,
+    onDeleteDoneClose,
+  } = useTareaDetalle(rowId);
 
   if (tareaQ.isLoading) {
     return (
@@ -94,14 +60,8 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     );
   }
 
+  // Narrowing local: tras los guards de arriba, tareaQ.data está definido.
   const t: Tarea = tareaQ.data;
-
-  // Puede eliminar el admin o quien creó la tarea. Sin sesión (demo/carga) es permisivo;
-  // el servidor igual valida el permiso.
-  const canDelete =
-    !session?.user ||
-    session.user.rol === "admin" ||
-    session.user.email?.toLowerCase() === t.supervisor?.toLowerCase();
 
   if (editing) {
     return (
@@ -113,15 +73,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           <ArrowLeft size={14} /> Cancelar edición
         </button>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6">
-          <TareaForm
-            mode="edit"
-            initial={t}
-            onSubmitSuccess={(updated) => {
-              qc.setQueryData(["tarea", rowId], updated);
-              qc.invalidateQueries({ queryKey: ["tareas"] });
-              setEditing(false);
-            }}
-          />
+          <TareaForm mode="edit" initial={t} onSubmitSuccess={onEditSuccess} />
         </div>
       </div>
     );
@@ -160,15 +112,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         onCancel={() => setConfirmDelete(false)}
       />
 
-      <SuccessDialog
-        open={deleteDone}
-        message="Tarea eliminada exitosamente"
-        onClose={() => {
-          qc.removeQueries({ queryKey: ["tarea", rowId] });
-          router.push("/tareas");
-          router.refresh();
-        }}
-      />
+      <SuccessDialog open={deleteDone} message="Tarea eliminada exitosamente" onClose={onDeleteDoneClose} />
 
       {eliminar.isError && (
         <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
@@ -311,7 +255,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
               {t.imagenes.map((url) => (
                 <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumbUrl(url)} alt="" className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
+                  <img src={thumbUrl(url, 800)} alt="" className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
                 </a>
               ))}
             </div>

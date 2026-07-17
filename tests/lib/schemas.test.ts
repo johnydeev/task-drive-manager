@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tareaNuevaSchema, configuracionSchema } from "@/lib/schemas";
+import { tareaNuevaSchema, tareaFormSchema, configuracionSchema } from "@/lib/schemas";
 
 describe("tareaNuevaSchema", () => {
   const base = {
@@ -47,6 +47,46 @@ describe("tareaNuevaSchema", () => {
     expect(() =>
       tareaNuevaSchema.parse({ ...base, documentos: ["no-es-url"] })
     ).toThrow();
+  });
+});
+
+// El form del cliente comparte la regla del dpto con el servidor (misma fuente).
+describe("tareaFormSchema", () => {
+  const base = {
+    objetivo: "x",
+    fechaInicio: "2026-01-01",
+    fechaEstimada: "2026-01-10",
+    edificio: "Av. 123",
+    parteComun: false,
+    dpto: "1A",
+    informe: "test",
+    estado: "Pendiente" as const,
+    prioridad: "Media" as const,
+  };
+
+  it("rechaza parteComun=false sin dpto (misma regla que el servidor)", () => {
+    const { dpto, ...sinDpto } = base;
+    void dpto;
+    expect(tareaFormSchema.safeParse({ ...sinDpto, parteComun: false }).success).toBe(false);
+  });
+
+  it("rechaza parteComun=true sin parte común", () => {
+    const { dpto, ...sinDpto } = base;
+    void dpto;
+    expect(tareaFormSchema.safeParse({ ...sinDpto, parteComun: true }).success).toBe(false);
+  });
+
+  it("acepta una tarea válida", () => {
+    expect(tareaFormSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("acepta los comentarios de edición (no están en el schema del servidor)", () => {
+    const r = tareaFormSchema.safeParse({
+      ...base,
+      comentarioEnProceso: "en curso",
+      comentarioRealizado: "listo",
+    });
+    expect(r.success).toBe(true);
   });
 });
 

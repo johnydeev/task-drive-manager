@@ -36,7 +36,7 @@ describe("POST /api/tareas con validación de edificio canónico", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...baseInput, edificio: "EDIFICIO_FANTASMA" }),
     });
-    const res = await POST(req as never);
+    const res = await POST(req as never, undefined as never);
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toMatch(/edificio/i);
@@ -49,7 +49,7 @@ describe("POST /api/tareas con validación de edificio canónico", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...baseInput, edificio: "ACEVEDO 1079" }),
     });
-    const res = await POST(req as never);
+    const res = await POST(req as never, undefined as never);
     // Acepta el body — el status puede variar (200 o 201) según el endpoint actual.
     expect([200, 201]).toContain(res.status);
   });

@@ -1,5 +1,12 @@
 # Execution State — Deploy Docker + CI/CD Plan
 
+> **Nota histórica:** este tracker (y los specs/plans de `docs/superpowers/`) son registros
+> **point-in-time** del plan de deploy del **2026-06-16**, que quedó 100% completado. **No se
+> reescriben.** El estado ACTUAL del proyecto está en `CHANGELOG.md`, `README.md` y `docs/DEPLOY.md`.
+> En particular, los "CI workflow" y "Release workflow" que se listan abajo (tasks 13-14, `ci.yml` +
+> `release.yml`) **se consolidaron después en un pipeline único de 3 fases `ci-cd.yml`** (Test →
+> Build → Deploy automático); ver `docs/DEPLOY.md`.
+
 > **Para retomar después de un reset de cuota:** este archivo es el tracker live. Buscá la primera task con `[ ]` y arrancá desde ahí. La task `[~]` indica que estaba en curso cuando se cortó (revisar el branch para ver si el commit ya se hizo).
 
 **Spec:** [`specs/2026-06-16-deploy-docker-cicd.md`](../specs/2026-06-16-deploy-docker-cicd.md)

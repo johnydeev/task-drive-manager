@@ -1,0 +1,33 @@
+import { google, sheets_v4 } from "googleapis";
+import { getGoogleAuth, getSheetId } from "../google-auth";
+
+// Nombres de hojas — coinciden exactamente con los tabs de la spreadsheet.
+export const SHEETS = {
+  edificios: "Edificios",
+  dptos: "Dptos",
+  tareas: "Tareas",
+  usuarios: "Usuarios",
+  // La pestaña real en la Sheet es "Configuracion" (sin tilde). Con tilde, Google
+  // devuelve 400 "Unable to parse range" y la config nunca se lee ni se puede guardar.
+  configuracion: "Configuracion",
+} as const;
+
+export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;
+
+let sheetsClient: sheets_v4.Sheets | null = null;
+
+// Cliente de Sheets memoizado. Compartido por todos los módulos de la capa de datos.
+export function getSheets() {
+  if (!sheetsClient) {
+    sheetsClient = google.sheets({ version: "v4", auth: getGoogleAuth() });
+  }
+  return sheetsClient;
+}
+
+export async function readRange(range: string): Promise<string[][]> {
+  const res = await getSheets().spreadsheets.values.get({
+    spreadsheetId: getSheetId(),
+    range,
+  });
+  return (res.data.values ?? []) as string[][];
+}

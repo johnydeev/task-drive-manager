@@ -231,6 +231,8 @@ Ver `docs/DEPLOY.md` para el deploy y `docs/superpowers/plans/EXECUTION_STATE.md
 - Naming: PascalCase componentes, camelCase funciones, kebab-case archivos
 - El campo `Dpto`/ubicación es **obligatorio** siempre: si `parteComun=false` se elige un dpto;
   si `parteComun=true` se elige una **parte común específica** (ej. `HALL`), no un genérico
+- **Tests + estructura escalable:** ver [docs/CONTRIBUTING-tests.md](docs/CONTRIBUTING-tests.md)
+  (lógica en hooks finos, tests colocados, feature-folders, `withAuth`, schema único)
 
 ## Actualización de la PWA (aviso de nueva versión)
 

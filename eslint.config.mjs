@@ -23,6 +23,17 @@ const eslintConfig = defineConfig([
     // La bajamos a warning para no romper el CI por falsos positivos.
     rules: {
       "react-hooks/set-state-in-effect": "warn",
+      // Red preventiva de tamaño: avisa (no rompe) cuando un archivo se vuelve un
+      // "monstruo". No usamos max-lines-per-function: en componentes JSX da falsos
+      // positivos (un solo return con mucho markup).
+      "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Los tests son legítimamente largos (describe/it, fixtures): sin límite de tamaño.
+    files: ["**/*.test.{ts,tsx}", "tests/**"],
+    rules: {
+      "max-lines": "off",
     },
   },
 ]);

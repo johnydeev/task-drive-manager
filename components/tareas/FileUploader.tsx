@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { api } from "@/lib/api-client";
+import { thumbUrl } from "@/lib/drive-url";
 import type { Configuracion } from "@/types";
 import {
   Camera,
@@ -32,13 +33,6 @@ interface Props {
 const IMAGE_MIMES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const VIDEO_MIMES = ["video/mp4", "video/quicktime"];
 const PDF_MIMES = ["application/pdf"];
-
-// Convierte una URL de Drive (https://drive.google.com/file/d/{id}/view) en un thumbnail.
-function thumbUrl(url: string): string {
-  const m = url.match(/\/file\/d\/([^/]+)/);
-  if (!m) return url;
-  return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
-}
 
 export function FileUploader({
   edificio,

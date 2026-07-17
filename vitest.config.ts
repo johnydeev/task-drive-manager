@@ -8,7 +8,11 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     globals: true,
-    include: ["tests/**/*.test.{ts,tsx}"],
+    // Tests centrales (heredados) + tests colocados junto al código fuente.
+    include: [
+      "tests/**/*.test.{ts,tsx}",
+      "{app,components,hooks,lib}/**/*.test.{ts,tsx}",
+    ],
   },
   resolve: {
     alias: {
