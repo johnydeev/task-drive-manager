@@ -180,9 +180,18 @@ El Deploy corre en un **self-hosted runner** instalado en el servidor, porque es
 Cloudflare Tunnel y no hay SSH expuesto.
 
 1. **Instalar el runner**: repo → **Settings → Actions → Runners → New self-hosted runner** y
-   seguir las instrucciones para tu SO (Windows). Requisitos en el servidor: **Docker Desktop
-   corriendo** y **bash disponible** (Git Bash). Conviene registrarlo como servicio para que
-   arranque solo.
+   seguir las instrucciones para tu SO (Windows). Requisito en el servidor: **Docker Desktop
+   corriendo**. Los pasos del deploy usan PowerShell (no bash). Conviene registrarlo como
+   servicio para que arranque solo.
+
+   > **Credenciales de GHCR (importante):** el deploy NO usa el credential helper de Docker
+   > Desktop (`"credsStore": "desktop"`). Ese helper necesita la sesión interactiva de Windows
+   > y, cuando el runner corre como servicio o esa sesión se cierra (reboot / logoff / RDP
+   > desconectado), el `docker compose pull` falla con
+   > `error getting credentials ... A specified logon session does not exist` — incluso en
+   > imágenes públicas. Por eso el job apunta `DOCKER_CONFIG` a un directorio aislado y hace
+   > login con `docker/login-action` usando el `GITHUB_TOKEN`: el token queda en base64 en ese
+   > config, sin depender del vault de Docker Desktop, y sobrevive a reinicios/logoffs.
 2. **Configurar la variable `DEPLOY_DIR`**: repo → **Settings → Secrets and variables → Actions
    → Variables → New variable** → `DEPLOY_DIR` = ruta absoluta en el servidor donde viven
    `docker-compose.yml` y `.env`. Ej: `C:\Users\jony\Desktop\...\task-drive-manager` (o donde

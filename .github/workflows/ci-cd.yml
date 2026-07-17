@@ -120,10 +120,33 @@ jobs:
     # "shell: bash" resuelve al bash de WSL (sin distro) y falla. PowerShell 5.1
     # siempre está presente y habla nativo con Docker Desktop.
     #
-    # No hay paso de "docker login": la máquina ya tiene credenciales para pull-ear la
-    # imagen de GHCR (mismo mecanismo que usa ia-drive-doc-processor). El login manual por
-    # PowerShell corrompía el token (encoding del pipe) y daba "denied".
+    # Credenciales de GHCR: NO usamos el credential helper de Docker Desktop
+    # ("credsStore": "desktop" en ~/.docker/config.json). Ese helper necesita la sesión
+    # interactiva de Windows del usuario que abrió Docker Desktop; cuando el runner corre
+    # como servicio (sesión 0) o esa sesión se cierra (reboot / logoff / RDP), el pull
+    # falla con "error getting credentials ... A specified logon session does not exist"
+    # incluso en imágenes públicas, porque Docker invoca el helper para CUALQUIER pull.
+    #
+    # Solución: apuntamos DOCKER_CONFIG a un directorio propio y vacío (sin credsStore) y
+    # hacemos login con docker/login-action, que escribe el token en base64 dentro de ese
+    # config aislado. Así el pull no depende del vault de Docker Desktop y sobrevive a
+    # reinicios/logoffs. login-action pasa el token por stdin desde Node (no el pipe de
+    # PowerShell, que corrompía el token y daba "denied").
     steps:
+      - name: Preparar DOCKER_CONFIG aislado (sin credsStore)
+        shell: powershell
+        run: |
+          $cfg = Join-Path $env:RUNNER_TEMP 'docker-cfg-tdm'
+          New-Item -ItemType Directory -Force -Path $cfg | Out-Null
+          "DOCKER_CONFIG=$cfg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
+
+      - name: Login a GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Pull y reiniciar contenedores
         shell: powershell
         env:
