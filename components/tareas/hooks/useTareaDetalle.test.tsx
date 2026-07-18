@@ -42,18 +42,18 @@ beforeEach(() => {
 });
 
 describe("useTareaDetalle", () => {
-  it("canDelete es true para admin aunque no sea el dueño", async () => {
+  it("canModify es true para admin aunque no sea el dueño", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "admin" } } });
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    expect(result.current.canDelete).toBe(true);
+    expect(result.current.canModify).toBe(true);
   });
 
-  it("canDelete es false para un supervisor que no es el dueño", async () => {
+  it("canModify es false para un supervisor que no es el dueño", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } } });
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    expect(result.current.canDelete).toBe(false);
+    expect(result.current.canModify).toBe(false);
   });
 
   it("eliminar llama a la API y marca deleteDone", async () => {

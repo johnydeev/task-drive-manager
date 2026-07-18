@@ -30,7 +30,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     eliminar,
     patchEstado,
     generarReporte,
-    canDelete,
+    canModify,
     editing,
     setEditing,
     confirmDelete,
@@ -86,19 +86,21 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           <ArrowLeft size={14} /> Tareas
         </Link>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Edit3 size={14} /> Editar
-          </button>
-          {canDelete && (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-            >
-              <Trash2 size={14} /> Eliminar
-            </button>
+          {canModify && (
+            <>
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Edit3 size={14} /> Editar
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={14} /> Eliminar
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -137,37 +139,39 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           </div>
         </header>
 
-        {/* Cambio rápido de estado */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-medium text-slate-700">Cambiar estado</p>
-          <div className="mt-2 flex gap-2">
-            {ESTADOS.map((e) => (
-              <button
-                key={e}
-                disabled={patchEstado.isPending || e === t.estado}
-                onClick={() => patchEstado.mutate(e)}
-                className={cn(
-                  "rounded-lg border px-3 py-1.5 text-sm transition",
-                  e === t.estado
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                )}
-              >
-                {e}
-              </button>
-            ))}
+        {/* Cambio rápido de estado — solo el creador o el admin. */}
+        {canModify && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-medium text-slate-700">Cambiar estado</p>
+            <div className="mt-2 flex gap-2">
+              {ESTADOS.map((e) => (
+                <button
+                  key={e}
+                  disabled={patchEstado.isPending || e === t.estado}
+                  onClick={() => patchEstado.mutate(e)}
+                  className={cn(
+                    "rounded-lg border px-3 py-1.5 text-sm transition",
+                    e === t.estado
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            {patchEstado.isError && (
+              <p className="mt-2 text-xs text-red-600">No se pudo actualizar el estado.</p>
+            )}
           </div>
-          {patchEstado.isError && (
-            <p className="mt-2 text-xs text-red-600">No se pudo actualizar el estado.</p>
-          )}
-        </div>
+        )}
 
-        {/* Reporte PDF */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-medium text-slate-700">Reporte PDF</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {t.reporteUrl ? (
-              <>
+        {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo creador/admin. */}
+        {(canModify || t.reporteUrl) && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-medium text-slate-700">Reporte PDF</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {t.reporteUrl && (
                 <a
                   href={t.reporteUrl}
                   target="_blank"
@@ -176,43 +180,37 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                 >
                   <FileDown size={14} /> Descargar reporte
                 </a>
+              )}
+              {canModify && (
                 <button
                   onClick={() => generarReporte.mutate()}
                   disabled={generarReporte.isPending}
-                  className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-60",
+                    t.reporteUrl
+                      ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                      : "bg-slate-900 text-white"
+                  )}
                 >
                   {generarReporte.isPending ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
                     <FileText size={14} />
                   )}
-                  Regenerar
+                  {t.reporteUrl ? "Regenerar" : "Generar reporte"}
                 </button>
-              </>
-            ) : (
-              <button
-                onClick={() => generarReporte.mutate()}
-                disabled={generarReporte.isPending}
-                className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-              >
-                {generarReporte.isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <FileText size={14} />
-                )}
-                Generar reporte
-              </button>
+              )}
+            </div>
+            {canModify && generarReporte.isError && (
+              <p className="mt-1 text-xs text-red-600">No se pudo generar el reporte.</p>
+            )}
+            {canModify && t.estado === "Realizado" && !t.reporteUrl && (
+              <p className="mt-2 text-xs text-slate-500">
+                El reporte se genera automáticamente al cerrar la tarea. Si no apareció todavía, puede tardar unos segundos.
+              </p>
             )}
           </div>
-          {generarReporte.isError && (
-            <p className="mt-1 text-xs text-red-600">No se pudo generar el reporte.</p>
-          )}
-          {t.estado === "Realizado" && !t.reporteUrl && (
-            <p className="mt-2 text-xs text-slate-500">
-              El reporte se genera automáticamente al cerrar la tarea. Si no apareció todavía, puede tardar unos segundos.
-            </p>
-          )}
-        </div>
+        )}
 
         <Section title="Datos">
           <Row label="Fecha inicio">{formatFecha(t.fechaInicio)}</Row>

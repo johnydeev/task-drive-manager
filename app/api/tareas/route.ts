@@ -8,9 +8,12 @@ import type { EstadoTarea, Prioridad } from "@/types";
 
 export const runtime = "nodejs";
 
-export const GET = withAuth(async (req, session) => {
+export const GET = withAuth(async (req) => {
   const sp = req.nextUrl.searchParams;
 
+  // Las tareas de edificio son trabajo operativo compartido: todos los integrantes
+  // (admin y supervisores) ven todas. El filtro por `supervisor` queda disponible solo
+  // como filtro opcional por query param (ej. para el admin), no como restricción de rol.
   const filters: TareaFilters = {
     edificio: sp.get("edificio") || undefined,
     estado: (sp.get("estado") as EstadoTarea) || undefined,
@@ -19,11 +22,6 @@ export const GET = withAuth(async (req, session) => {
     desde: sp.get("desde") || undefined,
     hasta: sp.get("hasta") || undefined,
   };
-
-  // Los supervisores solo ven sus propias tareas.
-  if (session.user.rol !== "admin") {
-    filters.supervisor = session.user.email;
-  }
 
   const data = await getTareas(filters);
   return NextResponse.json(data);

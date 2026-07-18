@@ -52,9 +52,10 @@ export function useTareaDetalle(rowId: string) {
 
   const t = tareaQ.data;
 
-  // Puede eliminar el admin o quien creó la tarea. Sin sesión (demo/carga) es permisivo;
-  // el servidor igual valida el permiso.
-  const canDelete =
+  // Puede MODIFICAR (editar / cambiar estado / borrar / generar reporte) el admin o quien
+  // creó la tarea. El resto solo la ve. Sin sesión (demo/carga) es permisivo; el servidor
+  // igual valida el permiso en cada endpoint de escritura.
+  const canModify =
     !session?.user ||
     session.user.rol === "admin" ||
     session.user.email?.toLowerCase() === t?.supervisor?.toLowerCase();
@@ -79,7 +80,7 @@ export function useTareaDetalle(rowId: string) {
     eliminar,
     patchEstado,
     generarReporte,
-    canDelete,
+    canModify,
     editing,
     setEditing,
     confirmDelete,

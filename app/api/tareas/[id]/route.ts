@@ -19,12 +19,13 @@ async function getOwnedTarea(rowId: string, session: { user: { email: string; ro
   return tarea;
 }
 
-export const GET = withAuth<Params>(async (_req, session, { params }) => {
+// Lectura del detalle: las tareas de edificio son compartidas, cualquier integrante
+// autenticado puede abrir cualquiera. La escritura (PUT/DELETE/PATCH) sí valida dueño/admin.
+export const GET = withAuth<Params>(async (_req, _session, { params }) => {
   const { id } = await params;
-  const result = await getOwnedTarea(id, session);
-  if (!result) return jsonError(404, "Tarea no encontrada");
-  if (result === "forbidden") return jsonError(403, "Sin permisos sobre esta tarea");
-  return NextResponse.json(result);
+  const tarea = await getTareaByRowId(decodeURIComponent(id));
+  if (!tarea) return jsonError(404, "Tarea no encontrada");
+  return NextResponse.json(tarea);
 });
 
 export const PUT = withAuth<Params>(async (req, session, { params }) => {

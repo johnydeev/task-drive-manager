@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireSession } from "@/lib/auth";
 import { appendUsuario, getUsuarioByEmail, getUsuarios, setUsuarioActivo } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { usuarioNuevoSchema, usuarioPatchSchema } from "@/lib/schemas";
@@ -8,9 +8,14 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    await requireAdmin();
+    const session = await requireSession();
     const usuarios = await getUsuarios();
-    return NextResponse.json(usuarios);
+    // El admin recibe todos (gestión de usuarios). Un no-admin recibe solo su propio
+    // registro: lo necesita la vista Edificios para renderizar su tarjeta y su nombre,
+    // sin exponer la lista completa del equipo.
+    if (session.user.rol === "admin") return NextResponse.json(usuarios);
+    const email = session.user.email.toLowerCase();
+    return NextResponse.json(usuarios.filter((u) => u.email.toLowerCase() === email));
   } catch (err) {
     return handleApiError(err);
   }
