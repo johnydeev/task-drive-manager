@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { Directiva } from "@/types";
+import { Trash2, Loader2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const badge: Record<string, string> = {
   Asignada: "bg-slate-100 text-slate-700",
@@ -24,6 +26,7 @@ export function DirectivaItem({
   const qc = useQueryClient();
   const [nota, setNota] = useState("");
   const [modo, setModo] = useState<null | "cerrar" | "objetar">(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const m = useMutation({
     mutationFn: (v: { accion: "aceptar" | "cerrar" | "objetar"; nota?: string }) =>
@@ -35,13 +38,32 @@ export function DirectivaItem({
     },
   });
 
+  const eliminar = useMutation({
+    mutationFn: () => api.directivas.remove(d.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["directivas"] });
+      setConfirmOpen(false);
+    },
+  });
+
   return (
     <li className="rounded-lg border border-slate-200 p-2 text-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-slate-700">
           {d.descripcion} <span className="text-slate-400">({d.fecha})</span>
         </span>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${badge[d.estado] ?? ""}`}>{d.estado}</span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-xs ${badge[d.estado] ?? ""}`}>{d.estado}</span>
+          {esAdmin && (
+            <button
+              onClick={() => setConfirmOpen(true)}
+              aria-label="Eliminar directiva"
+              className="text-slate-400 hover:text-red-600"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {d.notaObjecion && d.estado === "Aceptada" && (
@@ -53,8 +75,9 @@ export function DirectivaItem({
         <button
           onClick={() => m.mutate({ accion: "aceptar" })}
           disabled={m.isPending}
-          className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
+          className="mt-2 flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
         >
+          {m.isPending && <Loader2 size={12} className="animate-spin" />}
           Aceptar
         </button>
       )}
@@ -97,13 +120,23 @@ export function DirectivaItem({
             <button
               disabled={!nota.trim() || m.isPending}
               onClick={() => m.mutate({ accion: modo, nota })}
-              className="rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
+              className="flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
             >
+              {m.isPending && <Loader2 size={12} className="animate-spin" />}
               {modo === "cerrar" ? "Cerrar" : "Objetar"}
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Eliminar directiva"
+        message={`Se va a eliminar la directiva "${d.descripcion}". Esta acción no se puede deshacer. ¿Confirmás?`}
+        loading={eliminar.isPending}
+        onConfirm={() => eliminar.mutate()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </li>
   );
 }

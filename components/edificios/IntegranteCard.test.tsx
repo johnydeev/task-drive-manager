@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntegranteCard } from "./IntegranteCard";
+import { api } from "@/lib/api-client";
 import type { Directiva, Usuario } from "@/types";
 
 vi.mock("@/lib/api-client", () => ({
@@ -86,5 +88,40 @@ describe("IntegranteCard", () => {
     );
     expect(screen.getByRole("button", { name: /objetar/i })).toBeInTheDocument();
     expect(screen.getByText(/nota de cierre/i)).toBeInTheDocument();
+  });
+
+  it("admin puede eliminar una directiva con confirmación", async () => {
+    const user = userEvent.setup();
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[]}
+        directivas={[dir({ id: "d1", estado: "Asignada" })]}
+        readOnly={false}
+        currentEmail="admin@x.com"
+        isAdmin
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "Eliminar directiva" }));
+    // Aparece el diálogo de confirmación
+    expect(screen.getByText(/no se puede deshacer/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Eliminar" }));
+    expect(vi.mocked(api.directivas.remove)).toHaveBeenCalledWith("d1");
+  });
+
+  it("un supervisor NO ve el botón de eliminar directiva", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[]}
+        directivas={[dir({ estado: "Asignada" })]}
+        readOnly
+        currentEmail="op@x.com"
+        isAdmin={false}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "Eliminar directiva" })).not.toBeInTheDocument();
   });
 });

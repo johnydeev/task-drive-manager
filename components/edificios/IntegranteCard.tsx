@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { displayName } from "@/lib/user-display";
 import type { Asignacion, Directiva, Usuario } from "@/types";
-import { Trash2, Plus, ClipboardList } from "lucide-react";
+import { Trash2, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { DirectivaForm } from "./DirectivaForm";
 import { DirectivaItem } from "./DirectivaItem";
 
@@ -65,10 +65,15 @@ export function IntegranteCard({
               {!readOnly && (
                 <button
                   onClick={() => removeM.mutate(a.edificio)}
+                  disabled={removeM.isPending && removeM.variables === a.edificio}
                   aria-label={`Quitar ${a.edificio}`}
-                  className="text-red-600"
+                  className="text-red-600 disabled:opacity-50"
                 >
-                  <Trash2 size={14} />
+                  {removeM.isPending && removeM.variables === a.edificio ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
                 </button>
               )}
             </li>
@@ -97,7 +102,7 @@ export function IntegranteCard({
               aria-label="Agregar edificio"
               className="rounded-lg bg-slate-900 px-3 text-sm text-white disabled:opacity-50"
             >
-              <Plus size={16} />
+              {addM.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
             </button>
           </div>
         )}
