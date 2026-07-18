@@ -102,7 +102,8 @@ export interface TareaPendiente extends TareaNuevaInput {
 
 // Directiva: indicación puntual que el admin asigna a un integrante (independiente de
 // edificio). Distinta de la Tarea (trabajo de proveedor en un edificio).
-export type DirectivaEstado = "Asignada"; // La Pieza B extenderá este union.
+// "Cerrada" es un estado DERIVADO (Realizada + 72h sin objeción); nunca se persiste.
+export type DirectivaEstado = "Asignada" | "Aceptada" | "Realizada" | "Cerrada";
 
 export interface Directiva {
   id: string; // timestamp ISO, id estable
@@ -112,12 +113,23 @@ export interface Directiva {
   creadoPor: string; // email del admin creador
   creadoEn: string; // ISO datetime
   estado: DirectivaEstado;
+  aceptadaEn?: string; // cuándo el operario aceptó
+  realizadaEn?: string; // cuándo cerró con nota (arranca el reloj de 72h)
+  notaCierre?: string; // bitácora de cierre del operario
+  objetadaEn?: string; // última objeción del admin
+  notaObjecion?: string; // motivo de la última objeción
 }
 
 export interface DirectivaNuevaInput {
   descripcion: string;
   fecha: string;
   asignadoA: string;
+}
+
+export interface DirectivaPatchInput {
+  id: string;
+  accion: "aceptar" | "cerrar" | "objetar";
+  nota?: string;
 }
 
 // Asignación organizativa usuario↔edificio (informativa, no restringe nada).

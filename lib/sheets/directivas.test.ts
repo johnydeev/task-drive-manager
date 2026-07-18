@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { valuesGet, valuesAppend, spreadsheetsGet, batchUpdate } = vi.hoisted(() => ({
+const { valuesGet, valuesAppend, valuesUpdate, spreadsheetsGet, batchUpdate } = vi.hoisted(() => ({
   valuesGet: vi.fn(),
   valuesAppend: vi.fn(),
+  valuesUpdate: vi.fn(),
   spreadsheetsGet: vi.fn(),
   batchUpdate: vi.fn(),
 }));
@@ -10,7 +11,7 @@ vi.mock("googleapis", () => ({
   google: {
     sheets: () => ({
       spreadsheets: {
-        values: { get: valuesGet, append: valuesAppend, update: vi.fn() },
+        values: { get: valuesGet, append: valuesAppend, update: valuesUpdate },
         get: spreadsheetsGet,
         batchUpdate,
       },
@@ -20,7 +21,7 @@ vi.mock("googleapis", () => ({
 vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getSheetId: () => "sheet-id" }));
 vi.mock("@/lib/demo-mode", () => ({ isDemoMode: () => false }));
 
-import { getDirectivas, appendDirectiva, deleteDirectiva } from "./directivas";
+import { getDirectivas, appendDirectiva, deleteDirectiva, updateDirectiva } from "./directivas";
 
 const row = (id: string, asignadoA = "op@x.com") =>
   [id, "desc", "2026-07-17", asignadoA, "admin@x.com", id, "Asignada"];
@@ -28,6 +29,7 @@ const row = (id: string, asignadoA = "op@x.com") =>
 beforeEach(() => {
   valuesGet.mockReset();
   valuesAppend.mockReset().mockResolvedValue({});
+  valuesUpdate.mockReset().mockResolvedValue({});
   spreadsheetsGet.mockReset();
   batchUpdate.mockReset().mockResolvedValue({});
 });
@@ -49,7 +51,43 @@ describe("appendDirectiva", () => {
     expect(d.asignadoA).toBe("op@x.com");
     expect(d.creadoPor).toBe("admin@x.com");
     expect(d.estado).toBe("Asignada");
-    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A:G" }));
+    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A:L" }));
+  });
+});
+
+describe("getDirectivas — estado efectivo", () => {
+  const rowFull = (over: Record<string, string> = {}) => [
+    over.id ?? "2026-07-17T10:00:00.000Z", "desc", "2026-07-17", "op@x.com", "admin@x.com",
+    "2026-07-17T10:00:00.000Z", over.estado ?? "Aceptada",
+    over.aceptadaEn ?? "", over.realizadaEn ?? "", over.notaCierre ?? "", "", "",
+  ];
+  it("aplica Cerrada si Realizada venció las 72h", async () => {
+    const viejo = new Date(Date.now() - 100 * 60 * 60 * 1000).toISOString();
+    rows([rowFull({ estado: "Realizada", realizadaEn: viejo, notaCierre: "listo" })]);
+    const [d] = await getDirectivas();
+    expect(d.notaCierre).toBe("listo");
+    expect(d.estado).toBe("Cerrada");
+  });
+  it("Realizada reciente sigue Realizada", async () => {
+    rows([rowFull({ estado: "Realizada", realizadaEn: new Date().toISOString() })]);
+    const [d] = await getDirectivas();
+    expect(d.estado).toBe("Realizada");
+  });
+});
+
+describe("updateDirectiva", () => {
+  it("mergea el patch y escribe la fila A–L con update", async () => {
+    rows([row("2026-07-17T10:00:00.000Z")]); // Asignada en fila 2
+    const upd = await updateDirectiva("2026-07-17T10:00:00.000Z", {
+      estado: "Aceptada",
+      aceptadaEn: "2026-07-18T00:00:00.000Z",
+    });
+    expect(upd?.estado).toBe("Aceptada");
+    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A2:L2" }));
+  });
+  it("devuelve null si el id no existe", async () => {
+    rows([]);
+    expect(await updateDirectiva("nope", { estado: "Aceptada" })).toBeNull();
   });
 });
 

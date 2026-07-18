@@ -6,6 +6,7 @@ import type {
   Configuracion,
   Directiva,
   DirectivaNuevaInput,
+  DirectivaPatchInput,
   Dpto,
   Edificio,
   EstadoTarea,
@@ -141,6 +142,8 @@ export const api = {
       }),
     remove: (id: string) =>
       request<{ ok: true }>(`/api/directivas?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+    patch: (input: DirectivaPatchInput) =>
+      request<Directiva>("/api/directivas", { method: "PATCH", body: JSON.stringify(input) }),
   },
   upload: async (
     file: File,

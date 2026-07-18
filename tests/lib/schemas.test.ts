@@ -4,6 +4,7 @@ import {
   tareaFormSchema,
   configuracionSchema,
   directivaNuevaSchema,
+  directivaPatchSchema,
   asignacionSchema,
 } from "@/lib/schemas";
 
@@ -93,6 +94,19 @@ describe("tareaFormSchema", () => {
       comentarioRealizado: "listo",
     });
     expect(r.success).toBe(true);
+  });
+});
+
+describe("directivaPatchSchema", () => {
+  it("acepta una acción válida", () => {
+    expect(directivaPatchSchema.safeParse({ id: "1", accion: "aceptar" }).success).toBe(true);
+  });
+  it("rechaza acción inválida", () => {
+    expect(directivaPatchSchema.safeParse({ id: "1", accion: "xx" }).success).toBe(false);
+  });
+  it("acepta nota opcional", () => {
+    const r = directivaPatchSchema.parse({ id: "1", accion: "cerrar", nota: "listo" });
+    expect(r.nota).toBe("listo");
   });
 });
 

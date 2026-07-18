@@ -7,6 +7,7 @@ import { displayName } from "@/lib/user-display";
 import type { Asignacion, Directiva, Usuario } from "@/types";
 import { Trash2, Plus, ClipboardList } from "lucide-react";
 import { DirectivaForm } from "./DirectivaForm";
+import { DirectivaItem } from "./DirectivaItem";
 
 interface Props {
   usuario: Usuario;
@@ -14,9 +15,19 @@ interface Props {
   asignaciones: Asignacion[];
   directivas: Directiva[];
   readOnly: boolean;
+  currentEmail: string;
+  isAdmin: boolean;
 }
 
-export function IntegranteCard({ usuario, usuarios, asignaciones, directivas, readOnly }: Props) {
+export function IntegranteCard({
+  usuario,
+  usuarios,
+  asignaciones,
+  directivas,
+  readOnly,
+  currentEmail,
+  isAdmin,
+}: Props) {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [nuevoEdificio, setNuevoEdificio] = useState("");
@@ -95,11 +106,14 @@ export function IntegranteCard({ usuario, usuarios, asignaciones, directivas, re
       {/* Directivas */}
       <div>
         <p className="text-xs font-medium uppercase text-slate-500">Directivas</p>
-        <ul className="mt-1 space-y-1">
+        <ul className="mt-1 space-y-1.5">
           {directivas.map((d) => (
-            <li key={d.id} className="text-sm text-slate-700">
-              • {d.descripcion} <span className="text-slate-400">({d.fecha})</span>
-            </li>
+            <DirectivaItem
+              key={d.id}
+              d={d}
+              puedeOperar={usuario.email.toLowerCase() === currentEmail.toLowerCase()}
+              esAdmin={isAdmin}
+            />
           ))}
           {directivas.length === 0 && <li className="text-sm text-slate-400">Sin directivas</li>}
         </ul>

@@ -136,3 +136,9 @@ export const asignacionSchema = z.object({
   email: z.string().email().transform((e) => e.toLowerCase()),
   edificio: z.string().min(1, "Edificio requerido"),
 });
+
+export const directivaPatchSchema = z.object({
+  id: z.string().min(1),
+  accion: z.enum(["aceptar", "cerrar", "objetar"]),
+  nota: z.string().optional(),
+});

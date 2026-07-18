@@ -38,6 +38,8 @@ export function EdificiosView() {
               (d) => d.asignadoA.toLowerCase() === u.email.toLowerCase()
             )}
             readOnly={!isAdmin}
+            currentEmail={myEmail}
+            isAdmin={isAdmin}
           />
         ))}
       </div>
