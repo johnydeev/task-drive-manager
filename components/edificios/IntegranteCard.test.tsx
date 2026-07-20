@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntegranteCard } from "./IntegranteCard";
@@ -8,7 +8,11 @@ import type { Directiva, Usuario } from "@/types";
 
 vi.mock("@/lib/api-client", () => ({
   api: {
-    asignaciones: { add: vi.fn().mockResolvedValue({}), remove: vi.fn().mockResolvedValue({}) },
+    asignaciones: {
+      add: vi.fn().mockResolvedValue({}),
+      remove: vi.fn().mockResolvedValue({}),
+      sinAsignar: vi.fn().mockResolvedValue([]),
+    },
     directivas: { create: vi.fn().mockResolvedValue({}), remove: vi.fn().mockResolvedValue({}), patch: vi.fn().mockResolvedValue({}) },
     edificios: { list: vi.fn().mockResolvedValue([{ nombre: "Garay 350" }, { nombre: "Belgrano 1429" }]) },
   },
@@ -108,6 +112,31 @@ describe("IntegranteCard", () => {
     expect(screen.getByText(/no se puede deshacer/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Eliminar" }));
     expect(vi.mocked(api.directivas.remove)).toHaveBeenCalledWith("d1");
+  });
+
+  it("admin: el dropdown ofrece los edificios sin asignar y muestra el error si la asignación falla", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.asignaciones.sinAsignar).mockResolvedValue(["Belgrano 1429"]);
+    vi.mocked(api.asignaciones.add).mockRejectedValue(
+      new Error('El edificio "Belgrano 1429" ya está asignado a otro@x.com')
+    );
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[]}
+        directivas={[]}
+        readOnly={false}
+        currentEmail="admin@x.com"
+        isAdmin
+      />
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("option", { name: "Belgrano 1429" })).toBeInTheDocument()
+    );
+    await user.selectOptions(screen.getByRole("combobox"), "Belgrano 1429");
+    await user.click(screen.getByRole("button", { name: "Agregar edificio" }));
+    await waitFor(() => expect(screen.getByText(/ya está asignado/i)).toBeInTheDocument());
   });
 
   it("un supervisor NO ve el botón de eliminar directiva", () => {

@@ -144,15 +144,18 @@ export function UsuariosManager() {
                 <td className="px-4 py-2 text-slate-600">{formatFecha(u.creadoEn)}</td>
                 <td className="px-4 py-2">
                   <button
-                    disabled={toggleM.isPending}
+                    disabled={toggleM.isPending && toggleM.variables?.email === u.email}
                     onClick={() => toggleM.mutate({ email: u.email, activo: !u.activo })}
                     className={cn(
-                      "rounded-full border px-2 py-0.5 text-xs transition",
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition",
                       u.activo
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                         : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
                     )}
                   >
+                    {toggleM.isPending && toggleM.variables?.email === u.email && (
+                      <Loader2 size={12} className="animate-spin" />
+                    )}
                     {u.activo ? "Activo" : "Inactivo"}
                   </button>
                 </td>

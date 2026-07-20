@@ -44,6 +44,15 @@ function mockRanges(byRange: Record<string, string[][]>) {
 }
 
 const ROW_ID = "2026-07-16T10:00:00.000Z";
+// Header de Tareas con los nombres (snake_case) en las posiciones que usa tareaRow.
+// La lectura por header no necesita que las columnas sean contiguas.
+const HEADER_22 = (() => {
+  const h = new Array(22).fill("");
+  h[0] = "id"; h[1] = "objetivo"; h[2] = "fecha_inicio"; h[3] = "fecha_estimada";
+  h[4] = "edificio"; h[5] = "parte_comun"; h[6] = "dpto"; h[7] = "informe";
+  h[17] = "estado"; h[20] = "prioridad"; h[21] = "supervisor";
+  return h;
+})();
 // Fila de tarea valida (col A = rowId). Solo llenamos lo necesario para el mapping.
 const tareaRow = (rowId: string, edificio = "Edif A", estado = "Pendiente") => {
   const r = new Array(22).fill("");
@@ -65,7 +74,7 @@ describe("getTareas (real)", () => {
   it("parsea filas validas (ignorando header/basura) y aplica filtros", async () => {
     mockRanges({
       "Tareas!A:Z": [
-        ["rowId", "objetivo"], // header, no ISO -> ignorado
+        HEADER_22, // fila 1 = header
         tareaRow(ROW_ID, "Edif A"),
         tareaRow("2026-07-16T11:00:00.000Z", "Edif B"),
       ],
@@ -81,7 +90,7 @@ describe("getTareas (real)", () => {
 
 describe("appendTarea (real)", () => {
   it("escribe con update en la proxima fila libre (A:V), no con append", async () => {
-    mockRanges({ "Tareas!A:A": [["h"], ["x"], ["y"]] }); // 3 filas -> nextRow = 4
+    mockRanges({ "Tareas!A1:Z1": [HEADER_22], "Tareas!A:A": [["h"], ["x"], ["y"]] }); // 3 filas -> nextRow = 4
     const tarea = await appendTarea(
       {
         rowId: ROW_ID, objetivo: "obj", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
@@ -103,7 +112,10 @@ describe("appendTarea (real)", () => {
 
 describe("updateTarea (real)", () => {
   it("mergea sobre la tarea existente y escribe en su fila", async () => {
-    mockRanges({ "Tareas!A:Z": [["header"], tareaRow(ROW_ID, "Edif A", "Pendiente")] });
+    mockRanges({
+      "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID, "Edif A", "Pendiente")],
+      "Tareas!A1:Z1": [HEADER_22],
+    });
     const updated = await updateTarea({ rowId: ROW_ID, estado: "Realizado" });
     expect(updated.estado).toBe("Realizado");
     expect(updated.edificio).toBe("Edif A"); // preservado del current
@@ -120,7 +132,7 @@ describe("updateTarea (real)", () => {
 
 describe("deleteTarea (real)", () => {
   it("borra la fila con batchUpdate/deleteDimension usando el gid", async () => {
-    mockRanges({ "Tareas!A:Z": [["header"], tareaRow(ROW_ID)] });
+    mockRanges({ "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID)] });
     spreadsheetsGet.mockResolvedValue({
       data: { sheets: [{ properties: { sheetId: 999, title: "Tareas" } }] },
     });
@@ -136,9 +148,10 @@ describe("deleteTarea (real)", () => {
 describe("getUsuarios (real)", () => {
   it("normaliza rol y trata activo por defecto en true", async () => {
     mockRanges({
-      "Usuarios!A2:E": [
-        ["Admin@X.com", "Admin", "ADMIN", "", "2026-01-01"],
-        ["sup@x.com", "Sup", "supervisor", "false", "2026-01-01"],
+      "Usuarios!A:F": [
+        ["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"],
+        ["Admin@X.com", "Admin", "ADMIN", "", "2026-01-01", ""],
+        ["sup@x.com", "Sup", "supervisor", "false", "2026-01-01", ""],
       ],
     });
     const us = await getUsuarios();
@@ -152,19 +165,20 @@ describe("getUsuarios (real)", () => {
 describe("setUsuarioActivo (real)", () => {
   it("encuentra la fila por email y actualiza la columna D", async () => {
     mockRanges({
-      "Usuarios!A2:E": [
-        ["a@x.com", "A", "admin", "true", ""],
-        ["b@x.com", "B", "supervisor", "true", ""],
+      "Usuarios!A:F": [
+        ["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"],
+        ["a@x.com", "A", "admin", "true", "", ""],
+        ["b@x.com", "B", "supervisor", "true", "", ""],
       ],
     });
     await setUsuarioActivo("b@x.com", false);
     expect(valuesUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "Usuarios!D3" }) // idx 1 -> fila 3
+      expect.objectContaining({ range: "Usuarios!D3" }) // activo en col D, idx 1 -> fila 3
     );
   });
 
   it("lanza si el usuario no existe", async () => {
-    mockRanges({ "Usuarios!A2:E": [] });
+    mockRanges({ "Usuarios!A:F": [["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"]] });
     await expect(setUsuarioActivo("nope@x.com", true)).rejects.toThrow();
   });
 });
@@ -188,7 +202,8 @@ describe("getConfiguracion (real)", () => {
 describe("getDptos (real)", () => {
   it("filtra por edificio de forma tolerante a acentos/mayusculas", async () => {
     mockRanges({
-      "Dptos!A2:C": [
+      "Dptos!A:C": [
+        ["id_dpto", "dpto", "edificio_ref"],
         ["1", "1A", "Belgrano 1429"],
         ["2", "2B", "OTRO EDIFICIO"],
       ],

@@ -150,12 +150,15 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                   disabled={patchEstado.isPending || e === t.estado}
                   onClick={() => patchEstado.mutate(e)}
                   className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm transition",
+                    "flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm transition",
                     e === t.estado
                       ? "border-slate-900 bg-slate-900 text-white"
                       : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                   )}
                 >
+                  {patchEstado.isPending && patchEstado.variables === e && (
+                    <Loader2 size={14} className="animate-spin" />
+                  )}
                   {e}
                 </button>
               ))}

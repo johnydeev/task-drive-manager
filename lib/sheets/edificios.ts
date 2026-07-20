@@ -2,6 +2,7 @@ import type { Dpto, Edificio } from "@/types";
 import { isDemoMode } from "../demo-mode";
 import { getDemoDptos, getDemoEdificios } from "../demo-data";
 import { readRange, SHEETS } from "./core";
+import { buildHeaderMap } from "./headers";
 
 // =====================================================
 // Edificios
@@ -39,18 +40,24 @@ export function edificioMatches(a: string, b: string): boolean {
   return na !== "" && na === nb;
 }
 
-export async function getDptos(edificio?: string): Promise<Dpto[]> {
-  if (isDemoMode()) return getDemoDptos(edificio);
-  const rows = await readRange(`${SHEETS.dptos}!A2:C`);
-  const all = rows
-    .filter((r) => r.length >= 3)
+// Headers: id_dpto · dpto · edificio_ref · edificio_cuit (edificio_cuit se puebla en Fase 2).
+export function rowsToDptos(rows: string[][]): Dpto[] {
+  if (rows.length === 0) return [];
+  const h = buildHeaderMap(rows[0] ?? []);
+  return rows
+    .slice(1)
     .map<Dpto>((r) => ({
-      idDpto: (r[0] ?? "").trim(),
-      dpto: (r[1] ?? "").trim(),
-      edificioRef: (r[2] ?? "").trim(),
+      idDpto: h.get(r, "id_dpto").trim(),
+      dpto: h.get(r, "dpto").trim(),
+      edificioRef: h.get(r, "edificio_ref").trim(),
     }))
     .filter((d) => d.idDpto && d.dpto);
+}
 
+export async function getDptos(edificio?: string): Promise<Dpto[]> {
+  if (isDemoMode()) return getDemoDptos(edificio);
+  const rows = await readRange(`${SHEETS.dptos}!A:C`);
+  const all = rowsToDptos(rows);
   if (!edificio) return all;
   return all.filter((d) => edificioMatches(d.edificioRef, edificio));
 }

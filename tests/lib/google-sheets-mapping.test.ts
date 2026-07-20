@@ -1,54 +1,44 @@
 import { describe, expect, it } from "vitest";
 import { rowToTarea, tareaToRow } from "@/lib/google-sheets";
+import { buildHeaderMap } from "@/lib/sheets/headers";
 import type { Tarea } from "@/types";
 
-function emptyRow(): string[] {
-  return new Array(22).fill("");
-}
+// Header real (snake_case) tal como está en la planilla.
+const HEADER = [
+  "id", "objetivo", "fecha_inicio", "fecha_estimada", "edificio", "edificio_cuit",
+  "parte_comun", "dpto", "informe", "comentario_en_proceso", "comentario_realizado",
+  "reporte_url", "proveedor", "estado", "presupuesto", "fecha_realizado", "prioridad",
+  "supervisor", "creado_en", "actualizado_en",
+];
+const h = buildHeaderMap(HEADER);
+const idx = (n: string) => HEADER.indexOf(n);
 
-describe("rowToTarea", () => {
-  it("parsea documentos desde columna 12", () => {
-    const row = emptyRow();
-    row[0] = "2026-06-14T10:00:00.000Z";
-    row[1] = "Objetivo";
-    row[10] = "[]";
-    row[11] = "[]";
-    row[12] = '["https://drive.google.com/file/d/abc/view"]';
-    row[17] = "Pendiente";
-    row[20] = "Media";
+describe("rowToTarea (por header)", () => {
+  it("lee reporte_url por header y NO trae media (vive en TareaArchivos)", () => {
+    const row = new Array(HEADER.length).fill("");
+    row[idx("id")] = "2026-06-14T10:00:00.000Z";
+    row[idx("reporte_url")] = "https://drive.google.com/file/d/reporte/view";
+    row[idx("estado")] = "Pendiente";
+    row[idx("prioridad")] = "Media";
 
-    const t = rowToTarea(row, 2);
-    expect(t.documentos).toEqual(["https://drive.google.com/file/d/abc/view"]);
-  });
-
-  it("parsea reporteUrl desde columna 13", () => {
-    const row = emptyRow();
-    row[0] = "2026-06-14T10:00:00.000Z";
-    row[10] = "[]";
-    row[11] = "[]";
-    row[13] = "https://drive.google.com/file/d/reporte/view";
-    row[17] = "Pendiente";
-    row[20] = "Media";
-
-    const t = rowToTarea(row, 2);
+    const t = rowToTarea(h, row, 2);
     expect(t.reporteUrl).toBe("https://drive.google.com/file/d/reporte/view");
+    expect(t.imagenes).toEqual([]);
+    expect(t.videos).toEqual([]);
+    expect(t.documentos).toEqual([]);
   });
 
-  it("documentos vacío si columna 12 está vacía", () => {
-    const row = emptyRow();
-    row[0] = "2026-06-14T10:00:00.000Z";
-    row[10] = "[]";
-    row[11] = "[]";
-    row[17] = "Pendiente";
-    row[20] = "Media";
-
-    const t = rowToTarea(row, 2);
-    expect(t.documentos).toEqual([]);
+  it("reporte_url ausente -> undefined", () => {
+    const row = new Array(HEADER.length).fill("");
+    row[idx("id")] = "2026-06-14T10:00:00.000Z";
+    row[idx("estado")] = "Pendiente";
+    row[idx("prioridad")] = "Media";
+    const t = rowToTarea(h, row, 2);
     expect(t.reporteUrl).toBeUndefined();
   });
 });
 
-describe("tareaToRow", () => {
+describe("tareaToRow (por header)", () => {
   const baseTarea: Tarea = {
     rowId: "2026-06-14T10:00:00.000Z",
     objetivo: "x",
@@ -66,30 +56,26 @@ describe("tareaToRow", () => {
     supervisor: "a@b.com",
   };
 
-  it("escribe documentos como JSON en columna 12", () => {
-    const row = tareaToRow({
-      ...baseTarea,
-      documentos: ["https://drive.google.com/file/d/abc/view"],
-    });
-    expect(row[12]).toBe(JSON.stringify(["https://drive.google.com/file/d/abc/view"]));
-  });
-
-  it("escribe reporteUrl en columna 13", () => {
-    const row = tareaToRow({
+  it("escribe reporte_url en su columna", () => {
+    const row = tareaToRow(h, {
       ...baseTarea,
       estado: "Realizado",
       reporteUrl: "https://drive.google.com/file/d/reporte/view",
     });
-    expect(row[13]).toBe("https://drive.google.com/file/d/reporte/view");
+    expect(row[idx("reporte_url")]).toBe("https://drive.google.com/file/d/reporte/view");
   });
 
-  it("documentos vacío genera '[]' en columna 12", () => {
-    const row = tareaToRow(baseTarea);
-    expect(row[12]).toBe("[]");
+  it("NO escribe media en la fila de Tareas (no hay columnas de media)", () => {
+    const row = tareaToRow(h, {
+      ...baseTarea,
+      documentos: ["https://drive.google.com/file/d/doc/view"],
+    });
+    expect(row).not.toContain("https://drive.google.com/file/d/doc/view");
+    expect(row).not.toContain(JSON.stringify(["https://drive.google.com/file/d/doc/view"]));
   });
 
-  it("reporteUrl ausente genera '' en columna 13", () => {
-    const row = tareaToRow(baseTarea);
-    expect(row[13]).toBe("");
+  it("reporte_url ausente -> '' en su columna", () => {
+    const row = tareaToRow(h, baseTarea);
+    expect(row[idx("reporte_url")]).toBe("");
   });
 });
