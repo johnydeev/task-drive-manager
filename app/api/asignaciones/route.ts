@@ -23,8 +23,13 @@ export const POST = withAdmin(async (req) => {
   if (!consorcios.some((c) => c.nombre === edificio)) {
     return jsonError(400, `Edificio "${edificio}" no es válido o no está activo`);
   }
-  const a = await addAsignacion(email, edificio);
-  return NextResponse.json(a, { status: 201 });
+  try {
+    const a = await addAsignacion(email, edificio);
+    return NextResponse.json(a, { status: 201 });
+  } catch (err) {
+    // R2: el edificio ya está asignado a otro integrante.
+    return jsonError(409, err instanceof Error ? err.message : "El edificio ya está asignado");
+  }
 });
 
 export const DELETE = withAdmin(async (req) => {

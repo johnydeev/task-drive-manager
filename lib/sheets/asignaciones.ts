@@ -1,8 +1,10 @@
 import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
-import type { Asignacion } from "@/types";
+import type { Asignacion, Edificio } from "@/types";
+import { getConsorciosActivos } from "../consorcios";
 import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
 import { buildHeaderMap } from "./headers";
+import { edificioMatches } from "./edificios";
 
 // Headers: edificio · edificio_cuit · email · creado_en
 // (edificio_cuit se puebla en Fase 2; acá se deja vacío).
@@ -19,6 +21,21 @@ function parse(rows: string[][]): (Asignacion & { rowNumber: number })[] {
       rowNumber: i + 2, // fila 1 = header, datos desde la 2
     }))
     .filter((a) => a.email && a.edificio);
+}
+
+// Activos de _Consorcios que no aparecen en ninguna asignación (match normalizado).
+export function computeSinAsignar(activos: Edificio[], asignaciones: Asignacion[]): string[] {
+  return activos
+    .map((e) => e.nombre)
+    .filter((nombre) => !asignaciones.some((a) => edificioMatches(a.edificio, nombre)));
+}
+
+export async function getEdificiosSinAsignar(): Promise<string[]> {
+  const [activos, asignaciones] = await Promise.all([
+    getConsorciosActivos(),
+    getAsignaciones(),
+  ]);
+  return computeSinAsignar(activos, asignaciones);
 }
 
 export async function getAsignaciones(email?: string): Promise<Asignacion[]> {
@@ -61,7 +78,11 @@ export async function addAsignacion(email: string, edificio: string): Promise<As
   if (isDemoMode()) return asignacion;
   const rows = await readRange(RANGE);
   const existing = parse(rows);
-  if (existing.some((a) => a.email === e && a.edificio === ed)) return asignacion; // idempotente
+  // R2: un edificio se asigna a un solo integrante (único global).
+  const conflicto = existing.find((a) => edificioMatches(a.edificio, ed));
+  if (conflicto) {
+    throw new Error(`El edificio "${ed}" ya está asignado a ${conflicto.email}`);
+  }
   const row = buildRow(rows[0] ?? [], {
     edificio: ed,
     email: e,

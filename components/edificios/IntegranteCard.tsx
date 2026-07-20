@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { useEdificiosSinAsignar } from "@/hooks/edificios-queries";
 import { displayName } from "@/lib/user-display";
 import type { Asignacion, Directiva, Usuario } from "@/types";
 import { Trash2, Plus, ClipboardList, Loader2 } from "lucide-react";
@@ -31,24 +32,28 @@ export function IntegranteCard({
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [nuevoEdificio, setNuevoEdificio] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
 
-  const edificiosQ = useQuery({
-    queryKey: ["edificios"],
-    queryFn: api.edificios.list,
-    staleTime: 5 * 60_000,
-    enabled: !readOnly,
-  });
+  // El dropdown ofrece solo los edificios sin asignar (admin-only, de ahí !readOnly).
+  const sinAsignarQ = useEdificiosSinAsignar(!readOnly);
+
+  const invalidarEdificios = () => {
+    qc.invalidateQueries({ queryKey: ["asignaciones"] });
+    qc.invalidateQueries({ queryKey: ["edificios-sin-asignar"] });
+  };
 
   const addM = useMutation({
     mutationFn: (edificio: string) => api.asignaciones.add(usuario.email, edificio),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["asignaciones"] });
+      invalidarEdificios();
       setNuevoEdificio("");
+      setAddError(null);
     },
+    onError: (e: Error) => setAddError(e.message),
   });
   const removeM = useMutation({
     mutationFn: (edificio: string) => api.asignaciones.remove(usuario.email, edificio),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["asignaciones"] }),
+    onSuccess: invalidarEdificios,
   });
 
   return (
@@ -81,30 +86,31 @@ export function IntegranteCard({
           {asignaciones.length === 0 && <li className="text-sm text-slate-400">Sin edificios</li>}
         </ul>
         {!readOnly && (
-          <div className="mt-2 flex gap-2">
-            <select
-              value={nuevoEdificio}
-              onChange={(e) => setNuevoEdificio(e.target.value)}
-              className="input flex-1"
-            >
-              <option value="">Agregar edificio…</option>
-              {edificiosQ.data
-                ?.filter((e) => !asignaciones.some((a) => a.edificio === e.nombre))
-                .map((e) => (
-                  <option key={e.nombre} value={e.nombre}>
-                    {e.nombre}
+          <>
+            <div className="mt-2 flex gap-2">
+              <select
+                value={nuevoEdificio}
+                onChange={(e) => setNuevoEdificio(e.target.value)}
+                className="input flex-1"
+              >
+                <option value="">Agregar edificio…</option>
+                {(sinAsignarQ.data ?? []).map((nombre) => (
+                  <option key={nombre} value={nombre}>
+                    {nombre}
                   </option>
                 ))}
-            </select>
-            <button
-              disabled={!nuevoEdificio || addM.isPending}
-              onClick={() => addM.mutate(nuevoEdificio)}
-              aria-label="Agregar edificio"
-              className="rounded-lg bg-slate-900 px-3 text-sm text-white disabled:opacity-50"
-            >
-              {addM.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-            </button>
-          </div>
+              </select>
+              <button
+                disabled={!nuevoEdificio || addM.isPending}
+                onClick={() => addM.mutate(nuevoEdificio)}
+                aria-label="Agregar edificio"
+                className="rounded-lg bg-slate-900 px-3 text-sm text-white disabled:opacity-50"
+              >
+                {addM.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              </button>
+            </div>
+            {addError && <p className="mt-1 text-xs text-red-600">{addError}</p>}
+          </>
         )}
       </div>
 

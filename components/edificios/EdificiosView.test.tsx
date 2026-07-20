@@ -12,12 +12,18 @@ vi.mock("@/lib/api-client", () => ({
         { email: "op@x.com", nombre: "Operario Uno", rol: "supervisor", activo: true, creadoEn: "" },
       ]),
     },
-    asignaciones: { list: vi.fn().mockResolvedValue([{ email: "op@x.com", edificio: "Garay 350" }]), add: vi.fn(), remove: vi.fn() },
+    asignaciones: {
+      list: vi.fn().mockResolvedValue([{ email: "op@x.com", edificio: "Garay 350" }]),
+      add: vi.fn(),
+      remove: vi.fn(),
+      sinAsignar: vi.fn().mockResolvedValue([]),
+    },
     directivas: { list: vi.fn().mockResolvedValue([]), create: vi.fn(), remove: vi.fn() },
     edificios: { list: vi.fn().mockResolvedValue([{ nombre: "Garay 350" }]) },
   },
 }));
 import { useSession } from "next-auth/react";
+import { api } from "@/lib/api-client";
 
 function renderView() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -35,6 +41,23 @@ describe("EdificiosView", () => {
     renderView();
     await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
     expect(screen.getByText("Operario Uno")).toBeInTheDocument();
+  });
+
+  it("admin ve el cartel rojo con el conteo de edificios sin asignar", async () => {
+    vi.mocked(api.asignaciones.sinAsignar).mockResolvedValue(["Nazca 2538", "Garay 350"]);
+    vi.mocked(useSession).mockReturnValue({ data: { user: { email: "admin@x.com", rol: "admin" } } } as never);
+    renderView();
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("Quedan 2 edificios por asignar")
+    );
+  });
+
+  it("no muestra el cartel si no hay edificios sin asignar", async () => {
+    vi.mocked(api.asignaciones.sinAsignar).mockResolvedValue([]);
+    vi.mocked(useSession).mockReturnValue({ data: { user: { email: "admin@x.com", rol: "admin" } } } as never);
+    renderView();
+    await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("supervisor ve solo su propia tarjeta", async () => {

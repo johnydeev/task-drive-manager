@@ -122,6 +122,7 @@ export const api = {
   },
   asignaciones: {
     list: () => request<Asignacion[]>("/api/asignaciones"),
+    sinAsignar: () => request<string[]>("/api/asignaciones/sin-asignar"),
     add: (email: string, edificio: string) =>
       request<Asignacion>("/api/asignaciones", {
         method: "POST",

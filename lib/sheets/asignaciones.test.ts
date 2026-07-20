@@ -20,7 +20,8 @@ vi.mock("googleapis", () => ({
 vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getSheetId: () => "sheet-id" }));
 vi.mock("@/lib/demo-mode", () => ({ isDemoMode: () => false }));
 
-import { getAsignaciones, addAsignacion, removeAsignacion } from "./asignaciones";
+import { getAsignaciones, addAsignacion, removeAsignacion, computeSinAsignar } from "./asignaciones";
+import type { Asignacion, Edificio } from "@/types";
 
 beforeEach(() => {
   valuesGet.mockReset();
@@ -58,10 +59,27 @@ describe("addAsignacion", () => {
     expect(values[0]).toBe("Garay 350"); // col edificio
     expect(values[2]).toBe("a@x.com"); // col email
   });
-  it("es idempotente: no agrega si ya existe", async () => {
+  it("rechaza si el edificio ya está asignado a cualquier integrante (R2)", async () => {
     rows([HEADER, asigRow("Garay 350", "a@x.com")]);
-    await addAsignacion("A@X.com", "Garay 350");
+    await expect(addAsignacion("b@x.com", "Garay 350")).rejects.toThrow(/ya está asignado/i);
     expect(valuesAppend).not.toHaveBeenCalled();
+  });
+});
+
+describe("computeSinAsignar", () => {
+  it("devuelve activos que no están en ninguna asignación (match normalizado)", () => {
+    const activos: Edificio[] = [
+      { nombre: "BELGRANO 1429" },
+      { nombre: "GARAY 350" },
+      { nombre: "NAZCA 2538" },
+    ];
+    const asignaciones: Asignacion[] = [{ email: "a@x.com", edificio: "Belgrano 1429" }];
+    expect(computeSinAsignar(activos, asignaciones)).toEqual(["GARAY 350", "NAZCA 2538"]);
+  });
+
+  it("lista vacía si todos están asignados", () => {
+    const activos: Edificio[] = [{ nombre: "GARAY 350" }];
+    expect(computeSinAsignar(activos, [{ email: "a@x.com", edificio: "GARAY 350" }])).toEqual([]);
   });
 });
 
