@@ -32,6 +32,7 @@ describe("parseTareasRows — lectura por header", () => {
     expect(ts).toHaveLength(1);
     expect(ts[0].objetivo).toBe("Filtración");
     expect(ts[0].edificio).toBe("Belgrano 1429");
+    expect(ts[0].edificioCuit).toBe("30-54410451-5");
     expect(ts[0].parteComun).toBe(true);
     expect(ts[0].estado).toBe("Realizado");
     expect(ts[0].reporteUrl).toBe("https://drive/r.pdf");
@@ -83,5 +84,11 @@ describe("tareaToRow — escritura por header", () => {
     const h = buildHeaderMap(headerNuevo);
     const row = tareaToRow(h, { rowId: "x", fechaInicio: "2026-07-10T14:30:00.000Z" });
     expect(row[headerNuevo.indexOf("fecha_inicio")]).toBe("2026-07-10");
+  });
+
+  it("escribe edificio_cuit en su columna", () => {
+    const h = buildHeaderMap(headerNuevo);
+    const row = tareaToRow(h, { rowId: "x", edificioCuit: "30-54410451-5" });
+    expect(row[headerNuevo.indexOf("edificio_cuit")]).toBe("30-54410451-5");
   });
 });

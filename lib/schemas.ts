@@ -3,6 +3,8 @@ import { z } from "zod";
 export const estadoEnum = z.enum(["Pendiente", "En Proceso", "Realizado"]);
 export const prioridadEnum = z.enum(["Alta", "Media", "Baja"]);
 export const rolEnum = z.enum(["admin", "supervisor"]);
+// Estados que SE PERSISTEN de una directiva ("Cerrada" es derivado, nunca se escribe).
+export const directivaEstadoEnum = z.enum(["Asignada", "Aceptada", "Realizada"]);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Fecha en formato ISO requerida");
 

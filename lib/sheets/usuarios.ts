@@ -5,6 +5,7 @@ import { createDemoUsuario, getDemoUsuarios, setDemoUsuarioActivo } from "../dem
 import { getSheets, readRange, SHEETS } from "./core";
 import { buildHeaderMap, colLetter } from "./headers";
 import { toBool, boolToCell } from "./values";
+import { rolEnum } from "../schemas";
 
 // Headers: email · nombre · rol · activo · creado_en · actualizado_en
 const RANGE = `${SHEETS.usuarios}!A:F`;
@@ -44,6 +45,7 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | null> 
 
 export async function appendUsuario(u: Omit<Usuario, "creadoEn">): Promise<Usuario> {
   if (isDemoMode()) return createDemoUsuario(u);
+  rolEnum.parse(u.rol); // defensa en profundidad: nunca escribir un rol inválido
   const now = new Date().toISOString();
   const usuario: Usuario = { ...u, creadoEn: now, actualizadoEn: now };
   await getSheets().spreadsheets.values.append({

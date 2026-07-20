@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/http/withAuth";
 import { appendTarea, getTareas, type TareaFilters } from "@/lib/google-sheets";
 import { getConsorciosActivos } from "@/lib/consorcios";
+import { resolveCuit } from "@/lib/edificio-cuit";
 import { jsonError } from "@/lib/api-utils";
 import { tareaNuevaSchema } from "@/lib/schemas";
 import type { EstadoTarea, Prioridad } from "@/types";
@@ -43,6 +44,8 @@ export const POST = withAuth(async (req, session) => {
       // dpto es obligatorio (validado por tareaNuevaSchema): parte común específica
       // si parteComun=true, o el dpto elegido si es false.
       dpto: parsed.dpto?.trim() ?? "",
+      // CUIT estable resuelto por nombre contra _Consorcios (ya cargados arriba).
+      edificioCuit: resolveCuit(parsed.edificio, consorcios) ?? undefined,
     },
     session.user.email
   );

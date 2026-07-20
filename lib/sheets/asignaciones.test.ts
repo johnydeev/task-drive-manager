@@ -59,6 +59,13 @@ describe("addAsignacion", () => {
     expect(values[0]).toBe("Garay 350"); // col edificio
     expect(values[2]).toBe("a@x.com"); // col email
   });
+  it("escribe el edificio_cuit (col B) cuando se lo pasan", async () => {
+    rows([HEADER]);
+    await addAsignacion("a@x.com", "Garay 350", "30-11111111-1");
+    const values = valuesAppend.mock.calls[0][0].requestBody.values[0];
+    expect(values[1]).toBe("30-11111111-1"); // col edificio_cuit
+  });
+
   it("rechaza si el edificio ya está asignado a cualquier integrante (R2)", async () => {
     rows([HEADER, asigRow("Garay 350", "a@x.com")]);
     await expect(addAsignacion("b@x.com", "Garay 350")).rejects.toThrow(/ya está asignado/i);

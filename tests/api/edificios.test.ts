@@ -15,16 +15,16 @@ describe("GET /api/edificios", () => {
   it("retorna lista de edificios desde getConsorciosActivos", async () => {
     const { getConsorciosActivos } = await import("@/lib/consorcios");
     vi.mocked(getConsorciosActivos).mockResolvedValueOnce([
-      { nombre: "ACEVEDO 1079", cuit: "11-11111111-2" },
-      { nombre: "ARAOZ 192", cuit: "30-55007155-6" },
+      { nombre: "ACEVEDO 1079", cuit: "11-11111111-2", nombresAlternativos: [] },
+      { nombre: "ARAOZ 192", cuit: "30-55007155-6", nombresAlternativos: [] },
     ]);
     const { GET } = await import("@/app/api/edificios/route");
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual([
-      { nombre: "ACEVEDO 1079", cuit: "11-11111111-2" },
-      { nombre: "ARAOZ 192", cuit: "30-55007155-6" },
+      { nombre: "ACEVEDO 1079", cuit: "11-11111111-2", nombresAlternativos: [] },
+      { nombre: "ARAOZ 192", cuit: "30-55007155-6", nombresAlternativos: [] },
     ]);
   });
 

@@ -48,7 +48,7 @@ describe("GET /api/asignaciones", () => {
 describe("POST /api/asignaciones", () => {
   it("admin agrega si el edificio es válido (201)", async () => {
     requireAdmin.mockResolvedValue({ user: { email: "a@x.com", rol: "admin" } });
-    vi.mocked(getConsorciosActivos).mockResolvedValue([{ nombre: "Garay 350", cuit: null }]);
+    vi.mocked(getConsorciosActivos).mockResolvedValue([{ nombre: "Garay 350", cuit: null, nombresAlternativos: [] }]);
     vi.mocked(addAsignacion).mockResolvedValue({ email: "b@x.com", edificio: "Garay 350" });
     const res = await POST(postReq({ email: "b@x.com", edificio: "Garay 350" }), undefined);
     expect(res.status).toBe(201);

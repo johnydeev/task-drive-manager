@@ -18,6 +18,7 @@ import { filterTareas, type TareaFilters } from "../tareas-filter";
 import { getSheets, readRange, SHEETS, TAREAS_RANGE, getSheetGid } from "./core";
 import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
+import { estadoEnum, prioridadEnum } from "../schemas";
 import {
   getAllArchivos,
   mediaFromArchivos,
@@ -45,6 +46,7 @@ export function rowToTarea(h: HeaderMap, row: string[], rowNumber: number): Tare
     fechaInicio: toDateOnly(g("fecha_inicio")),
     fechaEstimada: toDateOnly(g("fecha_estimada")),
     edificio: g("edificio"),
+    edificioCuit: g("edificio_cuit") || undefined,
     parteComun: toBool(g("parte_comun")),
     dpto: g("dpto", DPTO_ALIASES),
     informe: g("informe"),
@@ -89,6 +91,7 @@ export function tareaToRow(
   set("fecha_inicio", toDateOnly(t.fechaInicio ?? ""));
   set("fecha_estimada", toDateOnly(t.fechaEstimada ?? ""));
   set("edificio", t.edificio ?? "");
+  set("edificio_cuit", t.edificioCuit ?? "");
   set("parte_comun", boolToCell(!!t.parteComun));
   set("dpto", t.dpto ?? "", DPTO_ALIASES);
   set("informe", t.informe ?? "");
@@ -192,6 +195,7 @@ export async function appendTarea(
     fechaInicio: input.fechaInicio,
     fechaEstimada: input.fechaEstimada,
     edificio: input.edificio,
+    edificioCuit: input.edificioCuit,
     parteComun: input.parteComun,
     dpto: input.dpto,
     informe: input.informe,
@@ -206,6 +210,10 @@ export async function appendTarea(
     creadoEn: now,
     actualizadoEn: now,
   };
+
+  // Defensa en profundidad: nunca escribir un enum inválido en la hoja.
+  estadoEnum.parse(tarea.estado);
+  prioridadEnum.parse(tarea.prioridad);
 
   // La columna A tiene los rowId (timestamps). Calculamos la fila libre por A
   // (evita el "table detection" de append, que se confunde con tablas auxiliares).
@@ -279,6 +287,10 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
   };
   // Parte común: solo cae al marcador genérico si no hay una parte común específica.
   if (merged.parteComun && !merged.dpto?.trim()) merged.dpto = "Parte Común";
+
+  // Defensa en profundidad: nunca escribir un enum inválido en la hoja.
+  estadoEnum.parse(merged.estado);
+  prioridadEnum.parse(merged.prioridad);
 
   const h = await getTareasHeaderMap();
   const values = tareaToRow(h, merged);

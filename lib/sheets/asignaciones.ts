@@ -50,7 +50,7 @@ export async function getAsignaciones(email?: string): Promise<Asignacion[]> {
 // Arma la fila colocando cada campo en la columna de su header.
 function buildRow(
   header: string[],
-  fields: { edificio: string; email: string; creadoEn: string }
+  fields: { edificio: string; edificioCuit: string; email: string; creadoEn: string }
 ): string[] {
   const h = buildHeaderMap(header);
   const width = Math.max(
@@ -66,12 +66,17 @@ function buildRow(
     if (i !== -1) row[i] = val;
   };
   set("edificio", fields.edificio);
+  set("edificio_cuit", fields.edificioCuit);
   set("email", fields.email);
   set("creado_en", fields.creadoEn);
   return row;
 }
 
-export async function addAsignacion(email: string, edificio: string): Promise<Asignacion> {
+export async function addAsignacion(
+  email: string,
+  edificio: string,
+  edificioCuit = ""
+): Promise<Asignacion> {
   const e = email.trim().toLowerCase();
   const ed = edificio.trim();
   const asignacion: Asignacion = { email: e, edificio: ed };
@@ -85,6 +90,7 @@ export async function addAsignacion(email: string, edificio: string): Promise<As
   }
   const row = buildRow(rows[0] ?? [], {
     edificio: ed,
+    edificioCuit: edificioCuit.trim(),
     email: e,
     creadoEn: new Date().toISOString(),
   });

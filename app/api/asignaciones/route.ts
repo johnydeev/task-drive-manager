@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/http/withAuth";
 import { withAdmin } from "@/lib/http/withAdmin";
 import { getAsignaciones, addAsignacion, removeAsignacion } from "@/lib/sheets/asignaciones";
 import { getConsorciosActivos } from "@/lib/consorcios";
+import { resolveCuit } from "@/lib/edificio-cuit";
 import { jsonError } from "@/lib/api-utils";
 import { asignacionSchema } from "@/lib/schemas";
 
@@ -24,7 +25,7 @@ export const POST = withAdmin(async (req) => {
     return jsonError(400, `Edificio "${edificio}" no es válido o no está activo`);
   }
   try {
-    const a = await addAsignacion(email, edificio);
+    const a = await addAsignacion(email, edificio, resolveCuit(edificio, consorcios) ?? "");
     return NextResponse.json(a, { status: 201 });
   } catch (err) {
     // R2: el edificio ya está asignado a otro integrante.

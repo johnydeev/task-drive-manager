@@ -51,7 +51,7 @@ describe("getConsorciosActivos", () => {
       ["ACEVEDO 1079", "11-11111111-2", "", "", "TRUE"],
     ]);
     const result = await getConsorciosActivos();
-    expect(result[0]).toEqual({ nombre: "ACEVEDO 1079", cuit: "11-11111111-2" });
+    expect(result[0]).toEqual({ nombre: "ACEVEDO 1079", cuit: "11-11111111-2", nombresAlternativos: [] });
   });
 
   it("cachea la respuesta por 5 minutos", async () => {

@@ -31,6 +31,7 @@ import {
   deleteTarea,
   getUsuarios,
   setUsuarioActivo,
+  appendUsuario,
   getConfiguracion,
   getDptos,
   getEdificios,
@@ -142,6 +143,31 @@ describe("deleteTarea (real)", () => {
     expect(range.sheetId).toBe(999);
     expect(range.startIndex).toBe(1); // rowNumber(2) - 1
     expect(range.endIndex).toBe(2);
+  });
+});
+
+describe("validación de enums al escribir (E)", () => {
+  it("appendTarea rechaza un estado inválido y no escribe", async () => {
+    mockRanges({ "Tareas!A1:Z1": [HEADER_22], "Tareas!A:A": [["h"]] });
+    await expect(
+      appendTarea(
+        {
+          rowId: ROW_ID, objetivo: "o", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
+          edificio: "E", parteComun: false, dpto: "1A", informe: "i",
+          estado: "Trucho" as never, prioridad: "Media",
+          imagenes: [], videos: [], documentos: [],
+        },
+        "sup@x.com"
+      )
+    ).rejects.toThrow();
+    expect(valuesUpdate).not.toHaveBeenCalled();
+  });
+
+  it("appendUsuario rechaza un rol inválido y no escribe", async () => {
+    await expect(
+      appendUsuario({ email: "x@x.com", nombre: "X", rol: "trucho" as never, activo: true })
+    ).rejects.toThrow();
+    expect(valuesAppend).not.toHaveBeenCalled();
   });
 });
 

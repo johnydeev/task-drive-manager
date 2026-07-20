@@ -5,6 +5,7 @@ import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
 import { buildHeaderMap, type HeaderMap } from "./headers";
 import { toDateOnly } from "./values";
 import { estadoEfectivo } from "../directivas-estado";
+import { directivaEstadoEnum } from "../schemas";
 
 // Headers: id · descripcion · fecha · asignado_a · creado_por · creado_en · estado
 //        · aceptada_en · realizada_en · nota_cierre · objetada_en · nota_objecion · actualizado_en
@@ -43,6 +44,10 @@ export function rowsToDirectivas(rows: string[][], now: number): Directiva[] {
 }
 
 function directivaToRow(d: Directiva): string[] {
+  // "Cerrada" es derivado: nunca se persiste, se baja al estado base "Realizada".
+  const estadoFinal = d.estado === "Cerrada" ? "Realizada" : d.estado;
+  // Defensa en profundidad: nunca escribir un estado inválido en la hoja.
+  directivaEstadoEnum.parse(estadoFinal);
   return [
     d.id,
     d.descripcion,
@@ -50,8 +55,7 @@ function directivaToRow(d: Directiva): string[] {
     d.asignadoA,
     d.creadoPor,
     d.creadoEn,
-    // "Cerrada" es derivado: nunca se persiste, se baja al estado base "Realizada".
-    d.estado === "Cerrada" ? "Realizada" : d.estado,
+    estadoFinal,
     d.aceptadaEn ?? "",
     d.realizadaEn ?? "",
     d.notaCierre ?? "",

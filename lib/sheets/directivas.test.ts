@@ -95,6 +95,13 @@ describe("updateDirectiva", () => {
     rows([]);
     expect(await updateDirectiva("nope", { estado: "Aceptada" })).toBeNull();
   });
+  it("rechaza un estado inválido al escribir (defensa enum)", async () => {
+    rows([row("2026-07-17T10:00:00.000Z")]);
+    await expect(
+      updateDirectiva("2026-07-17T10:00:00.000Z", { estado: "Trucho" as never })
+    ).rejects.toThrow();
+    expect(valuesUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("deleteDirectiva", () => {

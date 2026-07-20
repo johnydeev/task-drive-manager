@@ -35,6 +35,7 @@ export interface Tarea {
   fechaInicio: string; // ISO date
   fechaEstimada: string; // ISO date
   edificio: string;
+  edificioCuit?: string; // FK estable a _Consorcios (col edificio_cuit); se resuelve por nombre
   parteComun: boolean;
   dpto: string; // si parteComun=true, valor = "Parte Común"
   informe: string;
