@@ -1,0 +1,46 @@
+name: Backfill CUIT (diario)
+
+# Completa la columna edificio_cuit en Tareas/Dptos/Asignaciones resolviendo el
+# CUIT por nombre contra _Consorcios. Idempotente: solo escribe las filas que
+# faltan (no pisa las que ya tienen CUIT). Sirve para ir completando dptos de
+# edificios que se re-agregan a _Consorcios o dptos nuevos.
+#
+# Requiere UN GitHub Secret (Settings -> Secrets and variables -> Actions):
+#   PROD_ENV_FILE = el contenido completo del .env (mismas líneas que tu .env local).
+# El job lo escribe en .env.local y el script lo lee con dotenv, igual que en local.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC = 03:00 ART (madrugada). GitHub puede demorarlo unos min.
+  workflow_dispatch: {} # permite correrlo a mano desde la pestaña Actions
+
+# Evita que dos corridas se pisen si una se demora.
+concurrency:
+  group: backfill-cuit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    name: Backfill edificio_cuit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Escribir .env.local desde el secret
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: printf '%s' "$PROD_ENV_FILE" > .env.local
+
+      - name: Run backfill (--apply)
+        run: node scripts/backfill-cuit.mjs --apply
