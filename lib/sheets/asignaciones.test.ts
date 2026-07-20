@@ -30,9 +30,13 @@ beforeEach(() => {
 });
 const rows = (v: string[][]) => valuesGet.mockResolvedValue({ data: { values: v } });
 
+// Header real: edificio · edificio_cuit · email · creado_en
+const HEADER = ["edificio", "edificio_cuit", "email", "creado_en"];
+const asigRow = (edificio: string, email: string) => [edificio, "", email, ""];
+
 describe("getAsignaciones", () => {
-  it("lista todas y baja el email", async () => {
-    rows([["A@X.com", "Belgrano 1429"], ["b@x.com", "Garay 350"]]);
+  it("lista todas y baja el email (por header)", async () => {
+    rows([HEADER, asigRow("Belgrano 1429", "A@X.com"), asigRow("Garay 350", "b@x.com")]);
     const all = await getAsignaciones();
     expect(all).toEqual([
       { email: "a@x.com", edificio: "Belgrano 1429" },
@@ -40,19 +44,22 @@ describe("getAsignaciones", () => {
     ]);
   });
   it("filtra por email", async () => {
-    rows([["a@x.com", "Belgrano 1429"], ["b@x.com", "Garay 350"]]);
+    rows([HEADER, asigRow("Belgrano 1429", "a@x.com"), asigRow("Garay 350", "b@x.com")]);
     expect(await getAsignaciones("A@X.com")).toEqual([{ email: "a@x.com", edificio: "Belgrano 1429" }]);
   });
 });
 
 describe("addAsignacion", () => {
-  it("agrega con append si no existe", async () => {
-    rows([]);
+  it("agrega con append si no existe, colocando email/edificio por header", async () => {
+    rows([HEADER]);
     await addAsignacion("a@x.com", "Garay 350");
-    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Asignaciones!A:B" }));
+    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Asignaciones!A:D" }));
+    const values = valuesAppend.mock.calls[0][0].requestBody.values[0];
+    expect(values[0]).toBe("Garay 350"); // col edificio
+    expect(values[2]).toBe("a@x.com"); // col email
   });
   it("es idempotente: no agrega si ya existe", async () => {
-    rows([["a@x.com", "Garay 350"]]);
+    rows([HEADER, asigRow("Garay 350", "a@x.com")]);
     await addAsignacion("A@X.com", "Garay 350");
     expect(valuesAppend).not.toHaveBeenCalled();
   });
@@ -60,7 +67,7 @@ describe("addAsignacion", () => {
 
 describe("removeAsignacion", () => {
   it("borra la fila que matchea con deleteDimension", async () => {
-    rows([["a@x.com", "Belgrano 1429"], ["a@x.com", "Garay 350"]]);
+    rows([HEADER, asigRow("Belgrano 1429", "a@x.com"), asigRow("Garay 350", "a@x.com")]);
     spreadsheetsGet.mockResolvedValue({ data: { sheets: [{ properties: { sheetId: 55, title: "Asignaciones" } }] } });
     await removeAsignacion("a@x.com", "Garay 350");
     const range = batchUpdate.mock.calls[0][0].requestBody.requests[0].deleteDimension.range;

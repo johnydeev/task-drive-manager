@@ -3,25 +3,37 @@ import type { Rol, Usuario } from "@/types";
 import { isDemoMode } from "../demo-mode";
 import { createDemoUsuario, getDemoUsuarios, setDemoUsuarioActivo } from "../demo-data";
 import { getSheets, readRange, SHEETS } from "./core";
+import { buildHeaderMap, colLetter } from "./headers";
+import { toBool, boolToCell } from "./values";
 
-function rowToUsuario(row: string[]): Usuario {
-  // Normalizamos el rol a minúscula para tolerar "ADMIN", "Admin", "admin"
-  // (la hoja la editan humanos a mano y pueden variar mayúsculas).
-  const rolRaw = (row[2] ?? "").trim().toLowerCase();
-  const rol: Rol = rolRaw === "admin" ? "admin" : "supervisor";
-  return {
-    email: (row[0] ?? "").trim().toLowerCase(),
-    nombre: row[1] ?? "",
-    rol,
-    activo: (row[3] ?? "").toString().trim().toLowerCase() !== "false",
-    creadoEn: row[4] ?? "",
-  };
+// Headers: email · nombre · rol · activo · creado_en · actualizado_en
+const RANGE = `${SHEETS.usuarios}!A:F`;
+
+export function rowsToUsuarios(rows: string[][]): Usuario[] {
+  if (rows.length === 0) return [];
+  const h = buildHeaderMap(rows[0] ?? []);
+  return rows
+    .slice(1)
+    .filter((r) => h.get(r, "email"))
+    .map((r) => {
+      const rolRaw = h.get(r, "rol").trim().toLowerCase();
+      const activoRaw = h.get(r, "activo");
+      return {
+        email: h.get(r, "email").trim().toLowerCase(),
+        nombre: h.get(r, "nombre"),
+        rol: (rolRaw === "admin" ? "admin" : "supervisor") as Rol,
+        // Vacío -> activo (mantiene el comportamiento previo `!== "false"`).
+        activo: activoRaw === "" ? true : toBool(activoRaw),
+        creadoEn: h.get(r, "creado_en"),
+        actualizadoEn: h.get(r, "actualizado_en") || undefined,
+      };
+    });
 }
 
 export async function getUsuarios(): Promise<Usuario[]> {
   if (isDemoMode()) return getDemoUsuarios();
-  const rows = await readRange(`${SHEETS.usuarios}!A2:E`);
-  return rows.filter((r) => r[0]).map(rowToUsuario);
+  const rows = await readRange(RANGE);
+  return rowsToUsuarios(rows);
 }
 
 export async function getUsuarioByEmail(email: string): Promise<Usuario | null> {
@@ -32,14 +44,24 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | null> 
 
 export async function appendUsuario(u: Omit<Usuario, "creadoEn">): Promise<Usuario> {
   if (isDemoMode()) return createDemoUsuario(u);
-  const usuario: Usuario = { ...u, creadoEn: new Date().toISOString() };
+  const now = new Date().toISOString();
+  const usuario: Usuario = { ...u, creadoEn: now, actualizadoEn: now };
   await getSheets().spreadsheets.values.append({
     spreadsheetId: getSheetId(),
-    range: `${SHEETS.usuarios}!A:E`,
+    range: RANGE,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
-      values: [[usuario.email, usuario.nombre, usuario.rol, usuario.activo, usuario.creadoEn]],
+      values: [
+        [
+          usuario.email,
+          usuario.nombre,
+          usuario.rol,
+          boolToCell(usuario.activo),
+          usuario.creadoEn,
+          usuario.actualizadoEn ?? "",
+        ],
+      ],
     },
   });
   return usuario;
@@ -50,14 +72,29 @@ export async function setUsuarioActivo(email: string, activo: boolean): Promise<
     if (!setDemoUsuarioActivo(email, activo)) throw new Error(`Usuario ${email} no encontrado`);
     return;
   }
-  const rows = await readRange(`${SHEETS.usuarios}!A2:E`);
-  const idx = rows.findIndex((r) => (r[0] ?? "").trim().toLowerCase() === email.trim().toLowerCase());
+  const rows = await readRange(RANGE);
+  const h = buildHeaderMap(rows[0] ?? []);
+  const target = email.trim().toLowerCase();
+  const idx = rows.slice(1).findIndex((r) => h.get(r, "email").trim().toLowerCase() === target);
   if (idx === -1) throw new Error(`Usuario ${email} no encontrado`);
-  const rowNumber = idx + 2;
+  const rowNumber = idx + 2; // fila 1 = header
+
+  const activoCol = colLetter(h.index("activo") + 1);
   await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: `${SHEETS.usuarios}!D${rowNumber}`,
+    range: `${SHEETS.usuarios}!${activoCol}${rowNumber}`,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[activo]] },
+    requestBody: { values: [[boolToCell(activo)]] },
   });
+
+  // Registrar la última modificación si existe la columna.
+  const updIdx = h.index("actualizado_en");
+  if (updIdx !== -1) {
+    await getSheets().spreadsheets.values.update({
+      spreadsheetId: getSheetId(),
+      range: `${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[new Date().toISOString()]] },
+    });
+  }
 }

@@ -23,6 +23,7 @@ export interface Usuario {
   rol: Rol;
   activo: boolean;
   creadoEn: string; // ISO datetime
+  actualizadoEn?: string; // ISO datetime — última modificación (rol/activo)
 }
 
 // Estructura de una tarea según hoja "Ingreso de Pendiente".
@@ -49,6 +50,8 @@ export interface Tarea {
   fechaRealizado?: string; // ISO date
   prioridad: Prioridad;
   supervisor: string; // email del usuario que la creó/asignó
+  creadoEn?: string; // ISO datetime — auditoría (header creado_en). Backfill = rowId.
+  actualizadoEn?: string; // ISO datetime — auditoría (header actualizado_en).
 }
 
 // DTO para crear una tarea desde el cliente.
@@ -118,6 +121,7 @@ export interface Directiva {
   notaCierre?: string; // bitácora de cierre del operario
   objetadaEn?: string; // última objeción del admin
   notaObjecion?: string; // motivo de la última objeción
+  actualizadoEn?: string; // ISO datetime — última mutación de estado
 }
 
 export interface DirectivaNuevaInput {

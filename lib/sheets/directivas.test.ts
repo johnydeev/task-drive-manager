@@ -23,6 +23,11 @@ vi.mock("@/lib/demo-mode", () => ({ isDemoMode: () => false }));
 
 import { getDirectivas, appendDirectiva, deleteDirectiva, updateDirectiva } from "./directivas";
 
+// Header real (snake_case), la fila 1 SIEMPRE es el header.
+const HEADER = [
+  "id", "descripcion", "fecha", "asignado_a", "creado_por", "creado_en", "estado",
+  "aceptada_en", "realizada_en", "nota_cierre", "objetada_en", "nota_objecion", "actualizado_en",
+];
 const row = (id: string, asignadoA = "op@x.com") =>
   [id, "desc", "2026-07-17", asignadoA, "admin@x.com", id, "Asignada"];
 
@@ -33,10 +38,10 @@ beforeEach(() => {
   spreadsheetsGet.mockReset();
   batchUpdate.mockReset().mockResolvedValue({});
 });
-const rows = (v: string[][]) => valuesGet.mockResolvedValue({ data: { values: v } });
+const rows = (v: string[][]) => valuesGet.mockResolvedValue({ data: { values: [HEADER, ...v] } });
 
 describe("getDirectivas", () => {
-  it("mapea filas y filtra por asignadoA", async () => {
+  it("mapea filas por header y filtra por asignadoA", async () => {
     rows([row("2026-07-17T10:00:00.000Z", "op@x.com"), row("2026-07-17T11:00:00.000Z", "otro@x.com")]);
     const mias = await getDirectivas("OP@X.com");
     expect(mias).toHaveLength(1);
@@ -46,12 +51,13 @@ describe("getDirectivas", () => {
 });
 
 describe("appendDirectiva", () => {
-  it("crea con id/creadoEn y estado Asignada", async () => {
+  it("crea con id/creadoEn y estado Asignada, escribe A:M", async () => {
     const d = await appendDirectiva({ descripcion: "x", fecha: "2026-07-17", asignadoA: "OP@X.com" }, "ADMIN@X.com");
     expect(d.asignadoA).toBe("op@x.com");
     expect(d.creadoPor).toBe("admin@x.com");
     expect(d.estado).toBe("Asignada");
-    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A:L" }));
+    expect(d.actualizadoEn).toBeTruthy();
+    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A:M" }));
   });
 });
 
@@ -76,14 +82,14 @@ describe("getDirectivas — estado efectivo", () => {
 });
 
 describe("updateDirectiva", () => {
-  it("mergea el patch y escribe la fila A–L con update", async () => {
+  it("mergea el patch y escribe la fila A–M con update", async () => {
     rows([row("2026-07-17T10:00:00.000Z")]); // Asignada en fila 2
     const upd = await updateDirectiva("2026-07-17T10:00:00.000Z", {
       estado: "Aceptada",
       aceptadaEn: "2026-07-18T00:00:00.000Z",
     });
     expect(upd?.estado).toBe("Aceptada");
-    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A2:L2" }));
+    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A2:M2" }));
   });
   it("devuelve null si el id no existe", async () => {
     rows([]);
