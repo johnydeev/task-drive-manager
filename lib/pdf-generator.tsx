@@ -1,6 +1,6 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { TareaReportePdf } from "@/components/pdf/TareaReportePdf";
-import { uploadTareaFile } from "./google-drive";
+import { uploadTareaFile, trashReportesDeTarea } from "./google-drive";
 import { isDemoMode } from "./demo-mode";
 import type { Tarea } from "@/types";
 
@@ -22,8 +22,16 @@ export async function generateAndUploadReporte(tarea: Tarea): Promise<{ url: str
     <TareaReportePdf tarea={tarea} generatedAt={generatedAt} />
   );
 
+  // Reporte único (Opción B): mandar a papelera los reportes anteriores antes de subir
+  // el nuevo, así queda un solo PDF (el nuevo se numera reporte-01).
+  await trashReportesDeTarea({
+    edificio: tarea.edificio,
+    objetivo: tarea.objetivo,
+    ubicacion: tarea.dpto,
+    rowId: tarea.rowId,
+  });
+
   // Va a la subcarpeta "Reporte" de la misma carpeta de la tarea (derivada del rowId).
-  // Si ya hay reportes previos, uploadTareaFile lo nombra reporte-02, reporte-03, etc.
   const result = await uploadTareaFile({
     buffer,
     originalName: "reporte.pdf",

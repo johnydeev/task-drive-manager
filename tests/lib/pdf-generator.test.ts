@@ -8,6 +8,7 @@ vi.mock("@/lib/google-drive", () => ({
     name: "reporte-01.pdf",
     url: "https://drive.google.com/file/d/reporte-id/view",
   }),
+  trashReportesDeTarea: vi.fn().mockResolvedValue(undefined),
 }));
 
 const tareaBase: Tarea = {
@@ -46,6 +47,20 @@ describe("generateAndUploadReporte", () => {
     expect(uploadTareaFile).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "reporte",
+        edificio: tareaBase.edificio,
+        objetivo: tareaBase.objetivo,
+        ubicacion: tareaBase.dpto,
+        rowId: tareaBase.rowId,
+      })
+    );
+  }, 30000);
+
+  it("limpia los reportes anteriores (papelera) antes de subir el nuevo", async () => {
+    const { generateAndUploadReporte } = await import("@/lib/pdf-generator");
+    const { trashReportesDeTarea } = await import("@/lib/google-drive");
+    await generateAndUploadReporte(tareaBase);
+    expect(trashReportesDeTarea).toHaveBeenCalledWith(
+      expect.objectContaining({
         edificio: tareaBase.edificio,
         objetivo: tareaBase.objetivo,
         ubicacion: tareaBase.dpto,

@@ -138,6 +138,58 @@ export async function trashTareaFolder(opts: {
   folderCache.delete(`${mes}::${nombre}`);
 }
 
+// Manda a la papelera todos los archivos de una carpeta (recuperable ~30 días).
+export async function trashFilesInFolder(folderId: string): Promise<void> {
+  const res = await getDrive().files.list({
+    q: `'${folderId}' in parents and trashed=false`,
+    fields: "files(id)",
+    spaces: "drive",
+    pageSize: 1000,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  for (const f of res.data.files ?? []) {
+    if (!f.id) continue;
+    await getDrive().files.update({
+      fileId: f.id,
+      requestBody: { trashed: true },
+      supportsAllDrives: true,
+    });
+  }
+}
+
+// Manda a papelera los archivos de la subcarpeta Reporte/ de una tarea (no-op si no existe).
+// Recorre la ruta sin crear nada. Sirve para "reporte único": limpiar antes de subir el nuevo.
+export async function trashReportesDeTarea(opts: {
+  edificio: string;
+  objetivo: string;
+  ubicacion: string;
+  rowId: string;
+}): Promise<void> {
+  if (isDemoMode()) return;
+
+  const d = new Date(opts.rowId);
+  const fecha = isNaN(d.getTime()) ? new Date() : d;
+  const p = argParts(fecha);
+
+  const root = getDriveRootFolderId();
+  const tareas = await findFolder("Tareas", root);
+  if (!tareas) return;
+  const edificio = await findFolder(sanitizeSegment(opts.edificio) || "Sin edificio", tareas);
+  if (!edificio) return;
+  const anio = await findFolder(String(p.year), edificio);
+  if (!anio) return;
+  const mes = await findFolder(MESES[p.monthIndex], anio);
+  if (!mes) return;
+  const nombre = tareaFolderName({ rowId: opts.rowId, ubicacion: opts.ubicacion, objetivo: opts.objetivo });
+  const tareaFolder = await findFolder(nombre, mes);
+  if (!tareaFolder) return;
+  const reporteFolder = await findFolder(SUBCARPETA.reporte, tareaFolder);
+  if (!reporteFolder) return;
+
+  await trashFilesInFolder(reporteFolder);
+}
+
 // Cuenta los archivos existentes en una carpeta para calcular el próximo índice (NN).
 async function nextIndex(folderId: string): Promise<number> {
   const res = await getDrive().files.list({
