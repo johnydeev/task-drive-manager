@@ -40,9 +40,10 @@ function thumbFromDriveUrl(url: string): string {
 interface Props {
   tarea: Tarea;
   generatedAt: string;
+  supervisorNombre?: string;
 }
 
-export function TareaReportePdf({ tarea, generatedAt }: Props) {
+export function TareaReportePdf({ tarea, generatedAt, supervisorNombre }: Props) {
   const fmtCurrency = (n?: number) => (n != null ? `$${n.toLocaleString("es-AR")}` : "—");
   const fmtDate = (s?: string) => (s ? s.slice(0, 10) : "—");
   const ubicacion = tarea.dpto?.trim();
@@ -90,7 +91,7 @@ export function TareaReportePdf({ tarea, generatedAt }: Props) {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Supervisor:</Text>
-            <Text style={styles.value}>{tarea.supervisor}</Text>
+            <Text style={styles.value}>{supervisorNombre || tarea.supervisor}</Text>
           </View>
         </View>
 

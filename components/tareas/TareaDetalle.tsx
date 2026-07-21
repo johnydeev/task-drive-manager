@@ -7,6 +7,8 @@ import { TareaForm } from "./TareaForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
+import { useUsuarios } from "@/hooks/edificios-queries";
+import { displayName } from "@/lib/user-display";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
 
@@ -39,6 +41,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     onEditSuccess,
     onDeleteDoneClose,
   } = useTareaDetalle(rowId);
+  const usuariosQ = useUsuarios();
 
   if (tareaQ.isLoading) {
     return (
@@ -223,7 +226,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           {t.presupuesto != null && (
             <Row label="Presupuesto">${t.presupuesto.toLocaleString("es-AR")}</Row>
           )}
-          <Row label="Supervisor">{t.supervisor}</Row>
+          <Row label="Supervisor">{displayName(t.supervisor, usuariosQ.data)}</Row>
           <Row label="Creada">{formatDateTime(t.rowId)}</Row>
         </Section>
 

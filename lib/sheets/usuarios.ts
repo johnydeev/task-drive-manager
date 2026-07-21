@@ -6,6 +6,7 @@ import { getSheets, readRange, SHEETS } from "./core";
 import { buildHeaderMap, colLetter } from "./headers";
 import { toBool, boolToCell } from "./values";
 import { rolEnum } from "../schemas";
+import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Headers: email · nombre · rol · activo · creado_en · actualizado_en
 const RANGE = `${SHEETS.usuarios}!A:F`;
@@ -46,13 +47,16 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | null> 
 export async function appendUsuario(u: Omit<Usuario, "creadoEn">): Promise<Usuario> {
   if (isDemoMode()) return createDemoUsuario(u);
   rolEnum.parse(u.rol); // defensa en profundidad: nunca escribir un rol inválido
-  const now = new Date().toISOString();
+  const now = nowBuenosAiresISO();
   const usuario: Usuario = { ...u, creadoEn: now, actualizadoEn: now };
-  await getSheets().spreadsheets.values.append({
+  // NO usar values.append (mete la fila al fondo en grids grandes). Fila libre por
+  // la columna A + update, mismo patrón que appendTarea.
+  const colA = await readRange(`${SHEETS.usuarios}!A:A`);
+  const nextRow = colA.length + 1;
+  await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: RANGE,
+    range: `${SHEETS.usuarios}!A${nextRow}:F${nextRow}`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: {
       values: [
         [
@@ -96,7 +100,7 @@ export async function setUsuarioActivo(email: string, activo: boolean): Promise<
       spreadsheetId: getSheetId(),
       range: `${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[new Date().toISOString()]] },
+      requestBody: { values: [[nowBuenosAiresISO()]] },
     });
   }
 }

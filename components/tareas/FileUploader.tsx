@@ -55,6 +55,10 @@ export function FileUploader({
   const docInput = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // URLs subidas en ESTA sesión (no las que ya venían de una tarea en edición).
+  // Solo estas se mandan a papelera de Drive al eliminar la preview.
+  const uploadedThisSession = useRef<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const imgFull = imagenes.length >= config.maxImagenes;
   const vidFull = videos.length >= config.maxVideos;
@@ -124,6 +128,7 @@ export function FileUploader({
         if (result.kind === "imagen") newImgs.push(result.url);
         else if (result.kind === "video") newVids.push(result.url);
         else newDocs.push(result.url);
+        uploadedThisSession.current.add(result.url);
       }
 
       onChange({ imagenes: newImgs, videos: newVids, documentos: newDocs });
@@ -141,12 +146,37 @@ export function FileUploader({
     }
   };
 
-  const removeImagen = (url: string) =>
+  // Si la URL se subió en esta sesión, mandarla a papelera de Drive antes de sacarla
+  // del array (evita dejar el archivo huérfano al borrar la preview antes de crear).
+  // Las URLs iniciales (edición) no se tocan en Drive hasta guardar.
+  const trashIfSession = async (url: string): Promise<boolean> => {
+    if (!uploadedThisSession.current.has(url)) return true;
+    setDeleting(url);
+    setError(null);
+    try {
+      await api.upload.remove(url);
+      uploadedThisSession.current.delete(url);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo borrar el archivo de Drive");
+      return false;
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const removeImagen = async (url: string) => {
+    if (!(await trashIfSession(url))) return;
     onChange({ imagenes: imagenes.filter((u) => u !== url), videos, documentos });
-  const removeVideo = (url: string) =>
+  };
+  const removeVideo = async (url: string) => {
+    if (!(await trashIfSession(url))) return;
     onChange({ imagenes, videos: videos.filter((u) => u !== url), documentos });
-  const removeDocumento = (url: string) =>
+  };
+  const removeDocumento = async (url: string) => {
+    if (!(await trashIfSession(url))) return;
     onChange({ imagenes, videos, documentos: documentos.filter((u) => u !== url) });
+  };
 
   return (
     <div className="space-y-3">
@@ -283,10 +313,11 @@ export function FileUploader({
               <button
                 type="button"
                 onClick={() => removeImagen(url)}
-                className="absolute top-1 right-1 rounded-full bg-white/90 p-1 text-red-600 shadow"
+                disabled={busy || deleting === url}
+                className="absolute top-1 right-1 rounded-full bg-white/90 p-1 text-red-600 shadow disabled:opacity-50"
                 aria-label="Eliminar imagen"
               >
-                <Trash2 size={14} />
+                {deleting === url ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
             </div>
           ))}
@@ -306,10 +337,11 @@ export function FileUploader({
               <button
                 type="button"
                 onClick={() => removeVideo(url)}
-                className="text-red-600"
+                disabled={busy || deleting === url}
+                className="text-red-600 disabled:opacity-50"
                 aria-label="Eliminar video"
               >
-                <Trash2 size={14} />
+                {deleting === url ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
             </li>
           ))}
@@ -332,10 +364,11 @@ export function FileUploader({
               <button
                 type="button"
                 onClick={() => removeDocumento(url)}
-                className="text-red-600"
+                disabled={busy || deleting === url}
+                className="text-red-600 disabled:opacity-50"
                 aria-label="Eliminar documento"
               >
-                <Trash2 size={14} />
+                {deleting === url ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
             </li>
           ))}

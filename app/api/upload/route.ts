@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { uploadTareaFile } from "@/lib/google-drive";
+import { uploadTareaFile, trashFileByUrl } from "@/lib/google-drive";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 
@@ -62,6 +62,20 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: result.url, fileId: result.fileId, kind });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+// Borra (papelera) un archivo ya subido a Drive por su URL. Lo usa el FileUploader
+// cuando el usuario elimina una preview antes de crear la tarea (evita huérfanos).
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireSession();
+    const url = req.nextUrl.searchParams.get("url");
+    if (!url) return jsonError(400, "Falta url");
+    await trashFileByUrl(url);
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return handleApiError(err);
   }

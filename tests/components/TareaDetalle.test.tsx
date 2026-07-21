@@ -44,6 +44,7 @@ vi.mock("@/lib/api-client", () => {
         generarReporte: vi.fn(),
         remove: vi.fn(),
       },
+      usuarios: { list: vi.fn().mockResolvedValue([]) },
     },
   };
 });

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { valuesGet, valuesAppend, spreadsheetsGet, batchUpdate } = vi.hoisted(() => ({
+const { valuesGet, valuesAppend, valuesUpdate, spreadsheetsGet, batchUpdate } = vi.hoisted(() => ({
   valuesGet: vi.fn(),
   valuesAppend: vi.fn(),
+  valuesUpdate: vi.fn(),
   spreadsheetsGet: vi.fn(),
   batchUpdate: vi.fn(),
 }));
@@ -10,7 +11,7 @@ vi.mock("googleapis", () => ({
   google: {
     sheets: () => ({
       spreadsheets: {
-        values: { get: valuesGet, append: valuesAppend, update: vi.fn() },
+        values: { get: valuesGet, append: valuesAppend, update: valuesUpdate },
         get: spreadsheetsGet,
         batchUpdate,
       },
@@ -26,6 +27,7 @@ import type { Asignacion, Edificio } from "@/types";
 beforeEach(() => {
   valuesGet.mockReset();
   valuesAppend.mockReset().mockResolvedValue({});
+  valuesUpdate.mockReset().mockResolvedValue({});
   spreadsheetsGet.mockReset();
   batchUpdate.mockReset().mockResolvedValue({});
 });
@@ -51,18 +53,19 @@ describe("getAsignaciones", () => {
 });
 
 describe("addAsignacion", () => {
-  it("agrega con append si no existe, colocando email/edificio por header", async () => {
-    rows([HEADER]);
+  it("escribe con update en la próxima fila libre (A:D), por header", async () => {
+    rows([HEADER]); // solo header -> nextRow 2
     await addAsignacion("a@x.com", "Garay 350");
-    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Asignaciones!A:D" }));
-    const values = valuesAppend.mock.calls[0][0].requestBody.values[0];
+    expect(valuesAppend).not.toHaveBeenCalled();
+    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Asignaciones!A2:D2" }));
+    const values = valuesUpdate.mock.calls[0][0].requestBody.values[0];
     expect(values[0]).toBe("Garay 350"); // col edificio
     expect(values[2]).toBe("a@x.com"); // col email
   });
   it("escribe el edificio_cuit (col B) cuando se lo pasan", async () => {
     rows([HEADER]);
     await addAsignacion("a@x.com", "Garay 350", "30-11111111-1");
-    const values = valuesAppend.mock.calls[0][0].requestBody.values[0];
+    const values = valuesUpdate.mock.calls[0][0].requestBody.values[0];
     expect(values[1]).toBe("30-11111111-1"); // col edificio_cuit
   });
 

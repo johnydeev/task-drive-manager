@@ -6,6 +6,7 @@ import { buildHeaderMap, type HeaderMap } from "./headers";
 import { toDateOnly } from "./values";
 import { estadoEfectivo } from "../directivas-estado";
 import { directivaEstadoEnum } from "../schemas";
+import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Headers: id · descripcion · fecha · asignado_a · creado_por · creado_en · estado
 //        · aceptada_en · realizada_en · nota_cierre · objetada_en · nota_objecion · actualizado_en
@@ -82,7 +83,7 @@ export async function getDirectivaById(id: string): Promise<Directiva | null> {
 }
 
 export async function appendDirectiva(input: DirectivaNuevaInput, creadoPor: string): Promise<Directiva> {
-  const now = new Date().toISOString();
+  const now = nowBuenosAiresISO();
   const directiva: Directiva = {
     id: now,
     descripcion: input.descripcion,
@@ -94,11 +95,15 @@ export async function appendDirectiva(input: DirectivaNuevaInput, creadoPor: str
     actualizadoEn: now,
   };
   if (isDemoMode()) return directiva;
-  await getSheets().spreadsheets.values.append({
+  // NO usar values.append: en hojas con grid grande su "table detection" mete la
+  // fila al fondo (ej. fila 1002). Calculamos la fila libre por la columna A y
+  // escribimos con update en el rango exacto (mismo patrón que appendTarea).
+  const colA = await readRange(`${SHEETS.directivas}!A:A`);
+  const nextRow = colA.length + 1;
+  await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: RANGE,
+    range: `${SHEETS.directivas}!A${nextRow}:M${nextRow}`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: { values: [directivaToRow(directiva)] },
   });
   return directiva;
@@ -121,7 +126,7 @@ export async function updateDirectiva(id: string, patch: Partial<Directiva>): Pr
     ...found.d,
     ...patch,
     id: found.d.id,
-    actualizadoEn: new Date().toISOString(),
+    actualizadoEn: nowBuenosAiresISO(),
   };
   await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),

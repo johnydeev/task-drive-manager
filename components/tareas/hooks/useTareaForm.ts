@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { nanoid } from "nanoid";
 import { api } from "@/lib/api-client";
 import { tareaFormSchema } from "@/lib/schemas";
+import { nowBuenosAiresISO } from "@/lib/fecha-ar";
 import { CONFIGURACION_DEFAULT, type Configuracion, type Tarea } from "@/types";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { enqueueTarea } from "@/lib/offline-db";
@@ -43,7 +44,7 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
   const [successResult, setSuccessResult] = useState<Tarea | null>(null);
   // ID estable de la tarea (timestamp ISO): agrupa los archivos en una sola carpeta de Drive
   // y se usa como rowId al guardar. En edición se reutiliza el de la tarea existente.
-  const [taskRowId] = useState<string>(() => initial?.rowId ?? new Date().toISOString());
+  const [taskRowId] = useState<string>(() => initial?.rowId ?? nowBuenosAiresISO());
 
   const {
     register,
@@ -56,7 +57,7 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
     resolver: zodResolver(tareaFormSchema),
     defaultValues: {
       objetivo: initial?.objetivo ?? "",
-      fechaInicio: initial?.fechaInicio?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+      fechaInicio: initial?.fechaInicio?.slice(0, 10) ?? nowBuenosAiresISO().slice(0, 10),
       fechaEstimada: initial?.fechaEstimada?.slice(0, 10) ?? "",
       edificio: initial?.edificio ?? "",
       parteComun: initial?.parteComun ?? false,

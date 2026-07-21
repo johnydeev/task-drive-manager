@@ -11,6 +11,10 @@ vi.mock("@/lib/google-drive", () => ({
   trashReportesDeTarea: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/google-sheets", () => ({
+  getUsuarios: vi.fn().mockResolvedValue([]),
+}));
+
 const tareaBase: Tarea = {
   rowId: "2026-06-14T10:00:00.000Z",
   objetivo: "Pintura",

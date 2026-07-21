@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { nowBuenosAiresISO } from "@/lib/fecha-ar";
 import { Loader2 } from "lucide-react";
 
 // Form contextual para crear/asignar una directiva a un integrante (asignadoA ya fijado
 // por la tarjeta desde la que se abre).
 export function DirectivaForm({ asignadoA, onDone }: { asignadoA: string; onDone: () => void }) {
   const [descripcion, setDescripcion] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(nowBuenosAiresISO().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
 
   const createM = useMutation({

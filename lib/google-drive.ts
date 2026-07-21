@@ -374,3 +374,11 @@ export async function deleteFileByUrl(url: string): Promise<void> {
   if (!fileId) return;
   await getDrive().files.delete({ fileId, supportsAllDrives: true });
 }
+
+// Manda un archivo a la papelera de Drive por su URL (recuperable ~30 días).
+export async function trashFileByUrl(url: string): Promise<void> {
+  if (isDemoMode()) return;
+  const fileId = extractFileId(url);
+  if (!fileId) return;
+  await getDrive().files.update({ fileId, requestBody: { trashed: true }, supportsAllDrives: true });
+}

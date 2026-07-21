@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { getSheetId } from "../google-auth";
 import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
 import { buildHeaderMap } from "./headers";
+import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Hoja hija de media de una Tarea: 1 fila por archivo.
 // Headers: id · tarea_id · tipo · url · orden · creado_en
@@ -64,7 +65,7 @@ export function archivosToRows(
   tareaId: string,
   media: MediaTarea
 ): (string | number)[][] {
-  const now = new Date().toISOString();
+  const now = nowBuenosAiresISO();
   const rows: (string | number)[][] = [];
   const push = (tipo: TipoArchivo, urls: string[]) => {
     urls.forEach((url, i) => {
@@ -136,11 +137,16 @@ export async function setArchivosForTarea(
   await deleteArchivosByTarea(tareaId);
   const rows = archivosToRows(tareaId, media);
   if (rows.length === 0) return;
-  await getSheets().spreadsheets.values.append({
+  // NO usar values.append: en hojas con grid grande dispersa las filas al fondo.
+  // Calculamos la fila libre por la columna A y escribimos con update el bloque
+  // completo (dimensionando el rango a la cantidad de archivos).
+  const colA = await readRange(`${SHEETS.tareaArchivos}!A:A`);
+  const nextRow = colA.length + 1;
+  const lastRow = nextRow + rows.length - 1;
+  await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: RANGE,
+    range: `${SHEETS.tareaArchivos}!A${nextRow}:F${lastRow}`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: { values: rows },
   });
 }

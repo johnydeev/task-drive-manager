@@ -146,28 +146,35 @@ export const api = {
     patch: (input: DirectivaPatchInput) =>
       request<Directiva>("/api/directivas", { method: "PATCH", body: JSON.stringify(input) }),
   },
-  upload: async (
-    file: File,
-    edificio: string,
-    objetivo: string,
-    dpto: string,
-    rowId: string
-  ): Promise<{ url: string; kind: "imagen" | "video" | "documento" }> => {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("edificio", edificio);
-    form.append("objetivo", objetivo);
-    form.append("dpto", dpto);
-    form.append("rowId", rowId);
-    const res = await fetch("/api/upload", { method: "POST", body: form });
-    if (!res.ok) {
-      let message = `Error ${res.status}`;
-      try {
-        const body = await res.json();
-        if (body?.error) message = body.error;
-      } catch {}
-      throw new Error(message);
+  upload: Object.assign(
+    async (
+      file: File,
+      edificio: string,
+      objetivo: string,
+      dpto: string,
+      rowId: string
+    ): Promise<{ url: string; kind: "imagen" | "video" | "documento" }> => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("edificio", edificio);
+      form.append("objetivo", objetivo);
+      form.append("dpto", dpto);
+      form.append("rowId", rowId);
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        let message = `Error ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body?.error) message = body.error;
+        } catch {}
+        throw new Error(message);
+      }
+      return res.json();
+    },
+    {
+      // Manda a papelera de Drive un archivo ya subido (por su URL).
+      remove: (url: string) =>
+        request<{ ok: true }>(`/api/upload?url=${encodeURIComponent(url)}`, { method: "DELETE" }),
     }
-    return res.json();
-  },
+  ),
 };

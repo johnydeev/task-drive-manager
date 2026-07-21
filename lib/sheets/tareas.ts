@@ -19,6 +19,7 @@ import { getSheets, readRange, SHEETS, TAREAS_RANGE, getSheetGid } from "./core"
 import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
 import { estadoEnum, prioridadEnum } from "../schemas";
+import { nowBuenosAiresISO } from "../fecha-ar";
 import {
   getAllArchivos,
   mediaFromArchivos,
@@ -182,7 +183,7 @@ export async function appendTarea(
       supervisor
     );
   }
-  const now = new Date().toISOString();
+  const now = nowBuenosAiresISO();
   const rowId = input.rowId?.trim() || now;
   const media: MediaTarea = {
     imagenes: input.imagenes ?? [],
@@ -283,7 +284,7 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
     ...current,
     ...input,
     rowId: current.rowId,
-    actualizadoEn: new Date().toISOString(),
+    actualizadoEn: nowBuenosAiresISO(),
   };
   // Parte común: solo cae al marcador genérico si no hay una parte común específica.
   if (merged.parteComun && !merged.dpto?.trim()) merged.dpto = "Parte Común";

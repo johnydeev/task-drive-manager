@@ -51,13 +51,15 @@ describe("getDirectivas", () => {
 });
 
 describe("appendDirectiva", () => {
-  it("crea con id/creadoEn y estado Asignada, escribe A:M", async () => {
+  it("crea con id/creadoEn y escribe con update en la próxima fila libre (A:M)", async () => {
+    rows([]); // col A: solo header -> nextRow 2
     const d = await appendDirectiva({ descripcion: "x", fecha: "2026-07-17", asignadoA: "OP@X.com" }, "ADMIN@X.com");
     expect(d.asignadoA).toBe("op@x.com");
     expect(d.creadoPor).toBe("admin@x.com");
     expect(d.estado).toBe("Asignada");
     expect(d.actualizadoEn).toBeTruthy();
-    expect(valuesAppend).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A:M" }));
+    expect(valuesAppend).not.toHaveBeenCalled();
+    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Directivas!A2:M2" }));
   });
 });
 

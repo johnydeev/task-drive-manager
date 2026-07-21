@@ -5,6 +5,7 @@ import { getConsorciosActivos } from "../consorcios";
 import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
 import { buildHeaderMap } from "./headers";
 import { edificioMatches } from "./edificios";
+import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Headers: edificio · edificio_cuit · email · creado_en
 // (edificio_cuit se puebla en Fase 2; acá se deja vacío).
@@ -92,13 +93,15 @@ export async function addAsignacion(
     edificio: ed,
     edificioCuit: edificioCuit.trim(),
     email: e,
-    creadoEn: new Date().toISOString(),
+    creadoEn: nowBuenosAiresISO(),
   });
-  await getSheets().spreadsheets.values.append({
+  // NO usar values.append (mete la fila al fondo del grid grande). Fila libre por
+  // la cantidad de filas ya leídas + update en el rango exacto.
+  const nextRow = rows.length + 1;
+  await getSheets().spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: RANGE,
+    range: `${SHEETS.asignaciones}!A${nextRow}:D${nextRow}`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: { values: [row] },
   });
   return asignacion;

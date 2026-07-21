@@ -12,7 +12,7 @@ vi.mock("googleapis", () => ({
 vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getDriveRootFolderId: () => "root" }));
 vi.mock("@/lib/demo-mode", () => ({ isDemoMode: () => false }));
 
-import { trashFilesInFolder } from "./google-drive";
+import { trashFilesInFolder, trashFileByUrl } from "./google-drive";
 
 beforeEach(() => {
   filesList.mockReset();
@@ -35,6 +35,20 @@ describe("trashFilesInFolder", () => {
   it("no hace nada si la carpeta está vacía", async () => {
     filesList.mockResolvedValue({ data: { files: [] } });
     await trashFilesInFolder("folder-1");
+    expect(filesUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("trashFileByUrl", () => {
+  it("manda a papelera el archivo extrayendo el fileId de la URL", async () => {
+    await trashFileByUrl("https://drive.google.com/file/d/abc123/view");
+    expect(filesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ fileId: "abc123", requestBody: { trashed: true } })
+    );
+  });
+
+  it("no hace nada si la URL no tiene fileId", async () => {
+    await trashFileByUrl("https://example.com/no-drive");
     expect(filesUpdate).not.toHaveBeenCalled();
   });
 });

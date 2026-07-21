@@ -1,5 +1,41 @@
-import { describe, it, expect } from "vitest";
-import { rowsToArchivos, mediaFromArchivos, archivosToRows } from "./tarea-archivos";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { valuesGet, valuesUpdate, valuesAppend, batchUpdate, spreadsheetsGet } = vi.hoisted(() => ({
+  valuesGet: vi.fn(),
+  valuesUpdate: vi.fn(),
+  valuesAppend: vi.fn(),
+  batchUpdate: vi.fn(),
+  spreadsheetsGet: vi.fn(),
+}));
+vi.mock("googleapis", () => ({
+  google: {
+    sheets: () => ({
+      spreadsheets: {
+        values: { get: valuesGet, update: valuesUpdate, append: valuesAppend },
+        get: spreadsheetsGet,
+        batchUpdate,
+      },
+    }),
+  },
+}));
+vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getSheetId: () => "sheet-id" }));
+
+import {
+  rowsToArchivos,
+  mediaFromArchivos,
+  archivosToRows,
+  setArchivosForTarea,
+} from "./tarea-archivos";
+
+beforeEach(() => {
+  valuesGet.mockReset();
+  valuesUpdate.mockReset().mockResolvedValue({});
+  valuesAppend.mockReset().mockResolvedValue({});
+  batchUpdate.mockReset().mockResolvedValue({});
+  spreadsheetsGet.mockReset();
+});
+
+const HEADER_TA = ["id", "tarea_id", "tipo", "url", "orden", "creado_en"];
 
 const header = ["id", "tarea_id", "tipo", "url", "orden", "creado_en"];
 
@@ -60,5 +96,25 @@ describe("archivosToRows", () => {
     expect(rows[0][4]).toBe(1);
     expect(rows[2][2]).toBe("video");
     expect(rows[2][4]).toBe(1); // el orden reinicia por tipo
+  });
+});
+
+describe("setArchivosForTarea", () => {
+  it("escribe con update en la próxima fila libre, NO con append", async () => {
+    valuesGet.mockResolvedValue({ data: { values: [HEADER_TA] } }); // solo header
+    await setArchivosForTarea("T1", { imagenes: ["https://d/i1.jpg"], videos: [], documentos: [] });
+    expect(valuesAppend).not.toHaveBeenCalled();
+    expect(valuesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ range: "TareaArchivos!A2:F2" })
+    );
+  });
+
+  it("dimensiona el rango a la cantidad de archivos", async () => {
+    valuesGet.mockResolvedValue({ data: { values: [HEADER_TA] } });
+    await setArchivosForTarea("T1", { imagenes: ["i1", "i2"], videos: ["v1"], documentos: [] });
+    // 3 archivos -> A2:F4
+    expect(valuesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ range: "TareaArchivos!A2:F4" })
+    );
   });
 });
