@@ -7,12 +7,13 @@ vi.mock("@/lib/api-client", () => ({
     usuarios: { list: vi.fn().mockResolvedValue([{ email: "a@x.com", nombre: "Ana", rol: "admin", activo: true, creadoEn: "" }]) },
     asignaciones: { list: vi.fn().mockResolvedValue([{ email: "a@x.com", edificio: "Garay 350" }]) },
     directivas: { list: vi.fn().mockResolvedValue([]) },
+    tareas: { list: vi.fn().mockResolvedValue([]) },
   },
 }));
-import { useUsuarios, useAsignaciones, useDirectivas } from "./edificios-queries";
+import { useUsuarios, useAsignaciones, useDirectivas, useTareas } from "./edificios-queries";
+import { api } from "@/lib/api-client";
 
-function wrap() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function wrap(qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   };
@@ -34,5 +35,18 @@ describe("edificios-queries", () => {
     const { result } = renderHook(() => useDirectivas(), { wrapper: wrap() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([]);
+  });
+
+  // Regresión: la key de useTareas debe empezar con "tareas" para que la alcance
+  // el invalidateQueries({ queryKey: ["tareas"] }) que corre tras cada transición.
+  // Con "tareas-all" (key vieja) nunca se refrescaba la vista Edificios.
+  it("useTareas se invalida con invalidateQueries(['tareas'])", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useTareas(), { wrapper: wrap(qc) });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(api.tareas.list).toHaveBeenCalledTimes(1);
+
+    await qc.invalidateQueries({ queryKey: ["tareas"] });
+    await waitFor(() => expect(api.tareas.list).toHaveBeenCalledTimes(2));
   });
 });

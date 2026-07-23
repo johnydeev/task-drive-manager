@@ -57,8 +57,9 @@ export function Dashboard() {
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
 
+  // Key con prefijo "tareas" para que la alcance la invalidación tras cada transición.
   const tareasQ = useQuery({
-    queryKey: ["tareas-all"],
+    queryKey: ["tareas", "all"],
     queryFn: () => api.tareas.list({}),
   });
   const edificiosQ = useQuery({ queryKey: ["edificios"], queryFn: api.edificios.list });
@@ -241,11 +242,9 @@ function Card({
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-medium text-slate-900">{title}</h3>
-          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-        </div>
+      <div className="text-center">
+        <h3 className="text-sm font-medium text-slate-900">{title}</h3>
+        {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
       <div className="mt-3">{children}</div>
     </section>

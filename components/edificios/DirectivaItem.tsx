@@ -7,10 +7,12 @@ import type { Directiva } from "@/types";
 import { Trash2, Loader2, Check } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
+// Convención: todo lo hecho va en verde. `Realizada` usa el mismo verde que las
+// tareas; `Cerrada` (cierre definitivo tras las 72 h) va en un verde más oscuro.
 const badge: Record<string, string> = {
   Asignada: "bg-slate-100 text-slate-700",
   Aceptada: "bg-blue-100 text-blue-800",
-  Realizada: "bg-amber-100 text-amber-800",
+  Realizada: "bg-green-100 text-green-800",
   Cerrada: "bg-emerald-100 text-emerald-800",
 };
 

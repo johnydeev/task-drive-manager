@@ -19,5 +19,12 @@ export const useEdificiosSinAsignar = (enabled = true) =>
   });
 
 // Todas las tareas (para agrupar por integrante en la vista Edificios).
+// La key ARRANCA con "tareas" a propósito: así la alcanza el
+// `invalidateQueries({ queryKey: ["tareas"] })` que corre tras cada transición
+// (TanStack matchea por prefijo). Con "tareas-all" nunca se invalidaba.
 export const useTareas = () =>
-  useCachedQuery({ queryKey: ["tareas-all"], fetcher: () => api.tareas.list({}) });
+  useCachedQuery({
+    queryKey: ["tareas", "all"],
+    fetcher: () => api.tareas.list({}),
+    staleTime: 30_000,
+  });

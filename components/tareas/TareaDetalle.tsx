@@ -161,7 +161,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo admin. */}
         {(isAdmin || t.reporteUrl) && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-medium text-slate-700">Reporte PDF</p>
+            <p className="text-center text-sm font-medium text-slate-700">Reporte PDF</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {t.reporteUrl && (
                 <a
@@ -316,7 +316,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-medium text-slate-700">{title}</h3>
+      <h3 className="text-center text-sm font-medium text-slate-700">{title}</h3>
       <div className="mt-2">{children}</div>
     </section>
   );

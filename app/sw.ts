@@ -43,11 +43,14 @@ const customRuntimeCaching: RuntimeCaching[] = [
     handler: new NetworkOnly(),
   },
   // Tareas: NetworkFirst. Si hay red, traer fresco; si no, último cacheado.
+  // Timeout amplio (10s): GET /api/tareas lee toda la hoja Tareas + TareaArchivos
+  // (dos llamadas a Sheets) y con 3s caía al cache por lentitud normal, sirviendo
+  // datos viejos aun estando online.
   {
     matcher: ({ url }) => url.pathname.startsWith("/api/tareas"),
     handler: new NetworkFirst({
       cacheName: "api-tareas",
-      networkTimeoutSeconds: 3,
+      networkTimeoutSeconds: 10,
       plugins: [
         new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 }),
       ],

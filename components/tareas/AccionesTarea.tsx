@@ -72,7 +72,7 @@ export function AccionesTarea({
 
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-sm font-medium text-slate-700">Acciones</p>
+      <p className="text-center text-sm font-medium text-slate-700">Acciones</p>
 
       {puedeAsignar && (
         <div className="flex flex-wrap items-end gap-2">

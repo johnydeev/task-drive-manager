@@ -22,7 +22,7 @@ export function TareasAsignadasCard({ tareas }: { tareas: Tarea[] }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tareas asignadas</p>
+      <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Tareas asignadas</p>
       {enCurso.length > 0 && <Grupo titulo="En curso" tareas={enCurso} />}
       {realizadas.length > 0 && <Grupo titulo="Realizadas" tareas={realizadas} />}
     </div>
