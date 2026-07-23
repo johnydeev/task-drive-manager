@@ -45,7 +45,7 @@ export function DirectivaForm({ asignadoA, onDone }: { asignadoA: string; onDone
         <button
           type="submit"
           disabled={createM.isPending}
-          className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+          className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-60 disabled:hover:bg-slate-900"
         >
           {createM.isPending && <Loader2 size={14} className="animate-spin" />} Asignar
         </button>

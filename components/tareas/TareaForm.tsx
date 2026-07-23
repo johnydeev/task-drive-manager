@@ -102,7 +102,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
                 type="button"
                 onClick={() => f.setShowAddParte((s) => !s)}
                 aria-label="Agregar parte común"
-                className="rounded-lg border border-slate-300 bg-white px-3 text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 bg-white px-3 text-slate-700 transition-colors hover:bg-slate-100"
               >
                 <Plus size={16} />
               </button>
@@ -120,7 +120,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
                 type="button"
                 disabled={!f.nuevaParteComun.trim() || f.addParteComun.isPending}
                 onClick={() => f.addParteComun.mutate(f.nuevaParteComun)}
-                className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 text-sm text-white disabled:opacity-50"
+                className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-900"
               >
                 {f.addParteComun.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 Agregar

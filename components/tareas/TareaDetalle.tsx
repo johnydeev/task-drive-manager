@@ -178,10 +178,10 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                   onClick={() => generarReporte.mutate()}
                   disabled={generarReporte.isPending}
                   className={cn(
-                    "flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-60",
+                    "flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60",
                     t.reporteUrl
-                      ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                      : "bg-slate-900 text-white"
+                      ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                      : "bg-slate-900 text-white hover:bg-slate-700"
                   )}
                 >
                   {generarReporte.isPending ? (

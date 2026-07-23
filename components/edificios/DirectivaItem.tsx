@@ -78,7 +78,7 @@ export function DirectivaItem({
         <button
           onClick={() => m.mutate({ accion: "aceptar" })}
           disabled={m.isPending}
-          className="mt-2 flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
+          className="mt-2 flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-900"
         >
           {m.isPending && <Loader2 size={12} className="animate-spin" />}
           Aceptar
@@ -87,7 +87,7 @@ export function DirectivaItem({
       {puedeOperar && d.estado === "Aceptada" && modo !== "cerrar" && (
         <button
           onClick={() => setModo("cerrar")}
-          className="mt-2 rounded border border-slate-300 px-2 py-1 text-xs"
+          className="mt-2 rounded border border-slate-300 bg-white px-2 py-1 text-xs transition-colors hover:bg-slate-100"
         >
           Cerrar con nota
         </button>
@@ -95,7 +95,7 @@ export function DirectivaItem({
       {esAdmin && d.estado === "Realizada" && modo !== "objetar" && (
         <button
           onClick={() => setModo("objetar")}
-          className="mt-2 rounded border border-red-300 px-2 py-1 text-xs text-red-700"
+          className="mt-2 rounded border border-red-300 bg-white px-2 py-1 text-xs text-red-700 transition-colors hover:bg-red-50"
         >
           Objetar
         </button>
@@ -116,14 +116,14 @@ export function DirectivaItem({
                 setModo(null);
                 setNota("");
               }}
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs transition-colors hover:bg-slate-100"
             >
               Cancelar
             </button>
             <button
               disabled={!nota.trim() || m.isPending}
               onClick={() => m.mutate({ accion: modo, nota })}
-              className="flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-50"
+              className="flex items-center gap-1 rounded bg-slate-900 px-2 py-1 text-xs text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-900"
             >
               {m.isPending && <Loader2 size={12} className="animate-spin" />}
               {modo === "cerrar" ? "Cerrar" : "Objetar"}

@@ -171,6 +171,14 @@ describe("PATCH transiciones — cerrar (admin)", () => {
     );
   });
 
+  it("cerrar sin nota → 400 (la nota de cierre es obligatoria)", async () => {
+    asSession("admin@x.com", "admin");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "cerrar", nota: "  " });
+    expect(res.status).toBe(400);
+    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+  });
+
   it("el asignado no puede cerrar (403)", async () => {
     asSession("juan@x.com", "supervisor");
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));

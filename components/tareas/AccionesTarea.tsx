@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { formatDateTime, formatFecha } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Tarea, Usuario } from "@/types";
 import { Loader2 } from "lucide-react";
 
@@ -12,9 +13,19 @@ export type TransicionInput = {
   nota?: string;
 };
 
+// Estilos de botón compartidos (hover notorio + transición).
+const BTN_DARK =
+  "flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-900";
+const BTN_OUTLINE =
+  "flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50";
+const BTN_GREEN =
+  "flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-800 disabled:opacity-50 disabled:hover:bg-green-700";
+const BTN_RED =
+  "flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600";
+
 // Panel de acciones del ciclo de vida de la tarea, según rol y estado.
-// - admin: asignar/reasignar (Sin asignar/Asignada) y cerrar (En Revisión).
-// - asignado: aceptar → empezar → comentar / enviar a revisión.
+// Cada estado muestra SOLO su paso: pasar a revisión es un paso aparte (se
+// despliega al pedirlo), no un formulario más dentro de "En Proceso".
 export function AccionesTarea({
   t,
   isAdmin,
@@ -34,6 +45,10 @@ export function AccionesTarea({
   const [comProceso, setComProceso] = useState(t.comentarioEnProceso ?? "");
   const [comRevision, setComRevision] = useState("");
   const [notaCierre, setNotaCierre] = useState("");
+  // Paso explícito para mandar a revisión desde "En Proceso".
+  const [pasandoARevision, setPasandoARevision] = useState(false);
+  // Confirmación de las acciones destructivas/terminales del admin.
+  const [confirmAccion, setConfirmAccion] = useState<null | "cerrar" | "objetar">(null);
 
   if (!isAdmin && !esAsignado) return null;
 
@@ -75,7 +90,7 @@ export function AccionesTarea({
           <button
             disabled={!nuevoAsignado || asignar.isPending}
             onClick={() => asignar.mutate(nuevoAsignado)}
-            className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            className={BTN_DARK}
           >
             {asignar.isPending && <Loader2 size={14} className="animate-spin" />}
             {t.estado === "Sin asignar" ? "Asignar" : "Reasignar"}
@@ -84,11 +99,25 @@ export function AccionesTarea({
       )}
 
       {esAsignado && t.estado === "Asignada" && (
-        <AccionBtn label="Aceptar tarea" pending={trPend("aceptar")} onClick={() => transicionar.mutate({ accion: "aceptar" })} />
+        <button
+          disabled={trPend("aceptar")}
+          onClick={() => transicionar.mutate({ accion: "aceptar" })}
+          className={BTN_DARK}
+        >
+          {trPend("aceptar") && <Loader2 size={14} className="animate-spin" />}
+          Aceptar tarea
+        </button>
       )}
 
       {esAsignado && t.estado === "Aceptada" && (
-        <AccionBtn label="Empezar" pending={trPend("empezar")} onClick={() => transicionar.mutate({ accion: "empezar" })} />
+        <button
+          disabled={trPend("empezar")}
+          onClick={() => transicionar.mutate({ accion: "empezar" })}
+          className={BTN_DARK}
+        >
+          {trPend("empezar") && <Loader2 size={14} className="animate-spin" />}
+          Pasar a En Proceso
+        </button>
       )}
 
       {esAsignado && t.estado === "En Proceso" && (
@@ -99,24 +128,37 @@ export function AccionesTarea({
             <button
               disabled={transicionar.isPending}
               onClick={() => transicionar.mutate({ accion: "comentar", comentario: comProceso })}
-              className="mt-1 flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50"
+              className={`mt-1 ${BTN_OUTLINE}`}
             >
               {trPend("comentar") && <Loader2 size={14} className="animate-spin" />}
               Guardar comentario
             </button>
           </div>
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué hiciste)</label>
-            <textarea value={comRevision} onChange={(e) => setComRevision(e.target.value)} rows={2} className="input w-full" />
-            <button
-              disabled={transicionar.isPending}
-              onClick={() => transicionar.mutate({ accion: "revisar", comentario: comRevision })}
-              className="mt-1 flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
-              Enviar a revisión
+
+          {/* Paso siguiente: se inicia explícitamente y recién ahí pide su comentario. */}
+          {!pasandoARevision ? (
+            <button onClick={() => setPasandoARevision(true)} className={BTN_DARK}>
+              Pasar a En Revisión
             </button>
-          </div>
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué hiciste)</label>
+              <textarea value={comRevision} onChange={(e) => setComRevision(e.target.value)} rows={2} className="input w-full" />
+              <div className="mt-2 flex gap-2">
+                <button
+                  disabled={transicionar.isPending}
+                  onClick={() => transicionar.mutate({ accion: "revisar", comentario: comRevision })}
+                  className={BTN_DARK}
+                >
+                  {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
+                  Confirmar y pasar a En Revisión
+                </button>
+                <button onClick={() => setPasandoARevision(false)} className={BTN_OUTLINE}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -129,27 +171,32 @@ export function AccionesTarea({
           {puedeCerrar && (
             <div>
               <label className="mb-1 block text-sm text-slate-600">
-                Comentario (nota de cierre / motivo de objeción)
+                Comentario (nota de cierre / motivo de objeción) <span className="text-red-600">*</span>
               </label>
               <textarea value={notaCierre} onChange={(e) => setNotaCierre(e.target.value)} rows={2} className="input w-full" />
               <div className="mt-1 flex gap-2">
                 <button
-                  disabled={transicionar.isPending}
-                  onClick={() => transicionar.mutate({ accion: "cerrar", nota: notaCierre })}
-                  className="flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  disabled={!notaCierre.trim() || transicionar.isPending}
+                  onClick={() => setConfirmAccion("cerrar")}
+                  className={BTN_GREEN}
                 >
                   {trPend("cerrar") && <Loader2 size={14} className="animate-spin" />}
                   Cerrar (dar por realizada)
                 </button>
                 <button
                   disabled={!notaCierre.trim() || transicionar.isPending}
-                  onClick={() => transicionar.mutate({ accion: "objetar", nota: notaCierre })}
-                  className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  onClick={() => setConfirmAccion("objetar")}
+                  className={BTN_RED}
                 >
                   {trPend("objetar") && <Loader2 size={14} className="animate-spin" />}
                   Objetar
                 </button>
               </div>
+              {!notaCierre.trim() && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Escribí un comentario para poder cerrar u objetar.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -168,7 +215,7 @@ export function AccionesTarea({
           <button
             disabled={transicionar.isPending}
             onClick={() => transicionar.mutate({ accion: "revisar", comentario: comRevision })}
-            className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            className={BTN_DARK}
           >
             {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
             Reenviar a revisión
@@ -178,19 +225,22 @@ export function AccionesTarea({
 
       {transicionar.isError && <p className="text-xs text-red-600">{transicionar.error?.message}</p>}
       {asignar.isError && <p className="text-xs text-red-600">{asignar.error?.message}</p>}
-    </div>
-  );
-}
 
-function AccionBtn({ label, pending, onClick }: { label: string; pending: boolean; onClick: () => void }) {
-  return (
-    <button
-      disabled={pending}
-      onClick={onClick}
-      className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-    >
-      {pending && <Loader2 size={14} className="animate-spin" />}
-      {label}
-    </button>
+      <ConfirmDialog
+        open={confirmAccion !== null}
+        title={confirmAccion === "objetar" ? "Objetar tarea" : "Cerrar tarea"}
+        message={
+          confirmAccion === "objetar"
+            ? "La tarea vuelve al responsable como Objetada, con tu comentario como motivo. ¿Confirmás?"
+            : "Se va a dar por Realizada y se generará el reporte. Esta acción no se puede deshacer desde la app. ¿Confirmás?"
+        }
+        loading={transicionar.isPending}
+        onConfirm={() => {
+          if (confirmAccion) transicionar.mutate({ accion: confirmAccion, nota: notaCierre });
+          setConfirmAccion(null);
+        }}
+        onCancel={() => setConfirmAccion(null)}
+      />
+    </div>
   );
 }

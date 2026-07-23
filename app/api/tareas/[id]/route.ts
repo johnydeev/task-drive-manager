@@ -140,11 +140,12 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
   // cerrar (admin)
   if (!esAdmin) return jsonError(403, "Solo el admin puede cerrar la tarea");
   if (t.estado !== "En Revisión") return jsonError(409, "La tarea no está En Revisión");
+  if (!nota?.trim()) return jsonError(400, "La nota de cierre es requerida");
   const updated = await updateTarea({
     rowId: t.rowId,
     estado: "Realizada",
     realizadaEn: now,
-    comentarioRealizado: nota?.trim() || t.comentarioRealizado,
+    comentarioRealizado: nota.trim(),
     fechaRealizado: now.slice(0, 10),
   });
 
