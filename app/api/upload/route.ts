@@ -5,8 +5,27 @@ import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 
 export const runtime = "nodejs";
-// Subidas pueden ser grandes: aumentamos el límite del request body.
+// Subir un video de decenas de MB a Drive tarda: damos margen de ejecución.
+// (El tamaño del body NO se limita acá — ver la nota del matcher en proxy.ts.)
 export const maxDuration = 60;
+
+// Un multipart cortado a la mitad (proxy/CDN que trunca el body, conexión caída a mitad
+// de la subida) hace que req.formData() tire un TypeError críptico —
+// "Failed to parse body as FormData"— que terminaba llegando tal cual a la pantalla del
+// usuario. Lo traducimos a un 400 accionable.
+async function parseFormData(req: NextRequest): Promise<FormData> {
+  try {
+    return await req.formData();
+  } catch {
+    throw new Response(
+      JSON.stringify({
+        error:
+          "El archivo llegó incompleto al servidor. Suele pasar con videos muy pesados o con mala señal: probá de nuevo, con un video más corto o desde WiFi.",
+      }),
+      { status: 400, headers: { "content-type": "application/json" } }
+    );
+  }
+}
 
 const IMAGE_MIMES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 const VIDEO_MIMES = new Set(["video/mp4", "video/quicktime"]);
@@ -16,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     await requireSession();
 
-    const form = await req.formData();
+    const form = await parseFormData(req);
     const file = form.get("file");
     const edificio = (form.get("edificio") ?? "").toString();
     const objetivo = (form.get("objetivo") ?? "").toString();

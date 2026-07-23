@@ -51,6 +51,20 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   proveedores sin conexión
 
 ### Fixed
+- **Subir un video desde el celular fallaba con "Failed to parse body as FormData".**
+  Next 16 clona y bufferea en memoria el body de todo request no-GET que pase por el
+  proxy (ex middleware), con un tope de **10 MB** (`experimental.proxyClientMaxBodySize`).
+  Al pasarse **corta el stream sin devolver error**: `POST /api/upload` recibía un multipart
+  incompleto y `req.formData()` explotaba. Las imágenes zafaban porque se comprimen a
+  ~1 MB; los videos del celular nunca. Ahora `/api/upload` queda **fuera del matcher del
+  proxy** (la auth la sigue haciendo el handler con `requireSession`), así el body va
+  derecho al handler sin buffer ni tope. Además, si el multipart llega cortado por
+  cualquier otro motivo (mala señal, límite del CDN), la ruta responde **400 con un
+  mensaje entendible** en vez del error crudo de undici
+- **Editar una tarea sin fecha estimada tiraba "Datos inválidos".** El form manda siempre
+  todos los campos y un `<input type="date">` vacío manda `""`; `tareaUpdateSchema` aceptaba
+  solo fechas ISO (el schema de alta sí aceptaba el vacío). Las fechas opcionales ahora
+  comparten una única definición (`isoDateOpcional`) entre alta y edición
 - **Hoja de Configuración nunca se leía** (400 en los logs): el código apuntaba a la pestaña
   `Configuración` (con tilde) pero la real es `Configuracion` (sin tilde). Google devolvía
   `Unable to parse range` en cada lectura y la app caía a los límites por defecto; además el

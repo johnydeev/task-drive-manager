@@ -15,6 +15,11 @@ export const rolEnum = z.enum(["admin", "supervisor"]);
 export const directivaEstadoEnum = z.enum(["Asignada", "Aceptada", "Realizada"]);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Fecha en formato ISO requerida");
+// Fecha opcional. Un `<input type="date">` sin valor manda "", y el form de tareas manda
+// SIEMPRE todos los campos: si el schema no acepta el vacío, editar una tarea sin fecha
+// estimada revienta con "Datos inválidos". Vive UNA sola vez para que el schema de alta y
+// el de edición no puedan divergir. El "" se propaga tal cual (borra la celda en la hoja).
+const isoDateOpcional = isoDate.or(z.literal("")).optional();
 
 // Regla compartida: el Dpto/Parte común siempre es obligatorio. Si parteComun=false
 // hay que elegir un dpto; si parteComun=true, una parte común. Vive UNA sola vez y la
@@ -39,7 +44,7 @@ function dptoRequiredRefine(
 const tareaBaseFields = {
   objetivo: z.string().min(1, "Objetivo requerido"),
   fechaInicio: isoDate,
-  fechaEstimada: isoDate.or(z.literal("")).optional(), // opcional: acepta fecha ISO o vacío
+  fechaEstimada: isoDateOpcional,
   edificio: z.string().min(1, "Edificio requerido"),
   parteComun: z.boolean(),
   dpto: z.string().optional(),
@@ -77,7 +82,7 @@ export const tareaUpdateSchema = z
   .object({
     objetivo: z.string().min(1).optional(),
     fechaInicio: isoDate.optional(),
-    fechaEstimada: isoDate.optional(),
+    fechaEstimada: isoDateOpcional,
     edificio: z.string().min(1).optional(),
     parteComun: z.boolean().optional(),
     dpto: z.string().optional(),
@@ -90,7 +95,7 @@ export const tareaUpdateSchema = z
     proveedor: z.string().optional(),
     estado: estadoEnum.optional(),
     presupuesto: z.number().nonnegative().optional(),
-    fechaRealizado: isoDate.optional(),
+    fechaRealizado: isoDateOpcional,
     prioridad: prioridadEnum.optional(),
   })
   .superRefine((d, ctx) => {

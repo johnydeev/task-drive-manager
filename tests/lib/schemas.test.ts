@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   tareaNuevaSchema,
   tareaFormSchema,
+  tareaUpdateSchema,
   configuracionSchema,
   directivaNuevaSchema,
   directivaPatchSchema,
@@ -96,6 +97,50 @@ describe("tareaFormSchema", () => {
       ...base,
       comentarioEnProceso: "en curso",
       comentarioRealizado: "listo",
+    });
+    expect(r.success).toBe(true);
+  });
+});
+
+// El form de edición manda SIEMPRE todos los campos, incluidas las fechas opcionales
+// vacías (`<input type="date">` sin valor = ""). El schema de update tiene que aceptar
+// ese "" igual que el de alta, o editar una tarea sin fecha estimada tira "Datos inválidos".
+describe("tareaUpdateSchema", () => {
+  it("acepta fechaEstimada vacía (tarea sin fecha estimada en edición)", () => {
+    const r = tareaUpdateSchema.safeParse({ objetivo: "nuevo objetivo", fechaEstimada: "" });
+    expect(r.success).toBe(true);
+  });
+
+  it("preserva el vacío tal cual (permite borrar una fecha ya cargada)", () => {
+    const r = tareaUpdateSchema.parse({ objetivo: "x", fechaEstimada: "" });
+    expect(r.fechaEstimada).toBe("");
+  });
+
+  it("acepta fechaRealizado vacía", () => {
+    expect(tareaUpdateSchema.safeParse({ fechaRealizado: "" }).success).toBe(true);
+  });
+
+  it("sigue rechazando una fecha con formato inválido", () => {
+    expect(tareaUpdateSchema.safeParse({ fechaEstimada: "13/07/2026" }).success).toBe(false);
+  });
+
+  it("acepta el payload completo del form de edición", () => {
+    const r = tareaUpdateSchema.safeParse({
+      objetivo: "Cambiar luminaria",
+      fechaInicio: "2026-07-23",
+      fechaEstimada: "",
+      edificio: "BOEDO 414",
+      parteComun: false,
+      dpto: "1H",
+      informe: "detalle",
+      proveedor: "ACOSTA ROMERO DANIEL",
+      presupuesto: undefined,
+      prioridad: "Media",
+      comentarioEnProceso: "",
+      comentarioRealizado: "",
+      imagenes: [],
+      videos: [],
+      documentos: [],
     });
     expect(r.success).toBe(true);
   });
