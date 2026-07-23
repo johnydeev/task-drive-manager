@@ -171,6 +171,17 @@ export async function getTareaByRowId(rowId: string): Promise<Tarea | null> {
   return tareas.find((t) => t.rowId === rowId) ?? null;
 }
 
+// Igual que getTareaByRowId pero SIN derivar el estado (72h). Se usa para validar
+// transiciones contra el estado PERSISTIDO en la hoja.
+export async function getTareaPersistida(rowId: string): Promise<Tarea | null> {
+  if (isDemoMode()) return getDemoTareaById(rowId);
+  const rows = await readRange(TAREAS_RANGE);
+  const tarea = parseTareasRows(rows).find((t) => t.rowId === rowId) ?? null;
+  if (!tarea) return null;
+  const archivos = await getAllArchivos();
+  return { ...tarea, ...mediaFromArchivos(archivos, tarea.rowId) };
+}
+
 // Lee el header row de Tareas y devuelve el HeaderMap.
 async function getTareasHeaderMap(): Promise<HeaderMap> {
   const headerRow = (await readRange(`${SHEETS.tareas}!A1:Z1`))[0] ?? [];

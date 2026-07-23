@@ -107,12 +107,6 @@ export const tareaUpdateSchema = z
     }
   });
 
-export const tareaPatchEstadoSchema = z.object({
-  estado: estadoEnum,
-  comentarioEnProceso: z.string().optional(),
-  comentarioRealizado: z.string().optional(),
-});
-
 export const usuarioNuevoSchema = z.object({
   email: z.string().email().transform((e) => e.toLowerCase()),
   nombre: z.string().min(1),

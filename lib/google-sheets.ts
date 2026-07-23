@@ -9,6 +9,7 @@ export {
   parseTareasRows,
   getTareas,
   getTareaByRowId,
+  getTareaPersistida,
   appendTarea,
   deleteTarea,
   updateTarea,
