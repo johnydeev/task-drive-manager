@@ -48,6 +48,46 @@ describe("IntegranteCard", () => {
     expect(screen.getByRole("button", { name: /asignar directiva/i })).toBeInTheDocument();
   });
 
+  it("el edificio asignado es un link al listado de tareas de ese edificio", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[{ email: "op@x.com", edificio: "Garay 350" }]}
+        directivas={[]}
+        readOnly={false}
+        currentEmail="admin@x.com"
+        isAdmin
+      />
+    );
+    expect(screen.getByRole("link", { name: "Garay 350" })).toHaveAttribute(
+      "href",
+      "/tareas?edificio=Garay%20350"
+    );
+  });
+
+  it("una directiva Realizada muestra el ✓ verde; una Asignada no", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario} usuarios={[usuario]} asignaciones={[]}
+        directivas={[dir({ estado: "Realizada", realizadaEn: "2026-07-17T00:00:00.000Z" })]}
+        readOnly currentEmail="op@x.com" isAdmin={false}
+      />
+    );
+    expect(screen.getByLabelText("realizada")).toBeInTheDocument();
+  });
+
+  it("una directiva Asignada NO muestra el ✓ verde", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario} usuarios={[usuario]} asignaciones={[]}
+        directivas={[dir({ estado: "Asignada" })]}
+        readOnly currentEmail="op@x.com" isAdmin={false}
+      />
+    );
+    expect(screen.queryByLabelText("realizada")).not.toBeInTheDocument();
+  });
+
   it("supervisor (readOnly): no muestra acciones de edición de edificios", () => {
     wrap(
       <IntegranteCard

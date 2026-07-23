@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { nanoid } from "nanoid";
 import { api } from "@/lib/api-client";
@@ -66,7 +68,6 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
       comentarioEnProceso: initial?.comentarioEnProceso ?? "",
       comentarioRealizado: initial?.comentarioRealizado ?? "",
       proveedor: initial?.proveedor ?? "",
-      estado: initial?.estado ?? "Sin asignar",
       presupuesto: initial?.presupuesto,
       prioridad: initial?.prioridad ?? "Media",
     },
@@ -99,6 +100,23 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
   const dptoOptions = useMemo(() => dptosQ.data ?? [], [dptosQ.data]);
   const partesComunesOptions = useMemo(() => partesComunesQ.data ?? [], [partesComunesQ.data]);
 
+  // Alta de una parte común (solo admin). Al crearla, se refresca la lista y se selecciona.
+  const qc = useQueryClient();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.rol === "admin";
+  const [nuevaParteComun, setNuevaParteComun] = useState("");
+  const [showAddParte, setShowAddParte] = useState(false);
+
+  const addParteComun = useMutation({
+    mutationFn: (nombre: string) => api.partesComunes.add(nombre),
+    onSuccess: ({ nombre }) => {
+      qc.invalidateQueries({ queryKey: ["partes-comunes"] });
+      setValue("dpto", nombre);
+      setNuevaParteComun("");
+      setShowAddParte(false);
+    },
+  });
+
   const setFiles = (next: { imagenes: string[]; videos: string[]; documentos: string[] }) => {
     setImagenes(next.imagenes);
     setVideos(next.videos);
@@ -120,7 +138,8 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
         dpto: values.dpto?.trim() ?? "",
         informe: values.informe,
         proveedor: values.proveedor,
-        estado: values.estado,
+        // estado NO se setea desde el form: al crear nace "Sin asignar" (default del server) y
+        // avanza por el ciclo de vida (asignación / panel de acciones). Al editar, no se toca.
         presupuesto: values.presupuesto,
         prioridad: values.prioridad,
         imagenes,
@@ -202,6 +221,13 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
     config,
     dptoOptions,
     partesComunesOptions,
+    // partes comunes (alta admin)
+    isAdmin,
+    nuevaParteComun,
+    setNuevaParteComun,
+    showAddParte,
+    setShowAddParte,
+    addParteComun,
     // archivos
     imagenes,
     videos,

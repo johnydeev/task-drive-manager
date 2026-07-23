@@ -66,7 +66,7 @@ export const tareaNuevaSchema = z
 export const tareaFormSchema = z
   .object({
     ...tareaBaseFields,
-    estado: estadoEnum,
+    // `estado` NO va en el form: la tarea nace "Sin asignar" y avanza por el ciclo de vida.
     comentarioEnProceso: z.string().optional(),
     comentarioRealizado: z.string().optional(),
   })
@@ -156,4 +156,9 @@ export const tareaTransicionSchema = z.object({
   accion: z.enum(["aceptar", "empezar", "revisar", "cerrar", "comentar"]),
   comentario: z.string().optional(), // revisar → comentarioRevision · comentar → comentarioEnProceso
   nota: z.string().optional(),       // cerrar → nota de cierre (comentarioRealizado)
+});
+
+// Alta de una parte común (admin). El nombre se normaliza en el data-layer.
+export const parteComunNuevaSchema = z.object({
+  nombre: z.string().min(1, "El nombre es requerido"),
 });

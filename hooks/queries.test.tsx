@@ -7,6 +7,7 @@ vi.mock("@/lib/api-client", () => ({
     edificios: { list: vi.fn() },
     dptos: { list: vi.fn() },
     proveedores: { list: vi.fn() },
+    partesComunes: { list: vi.fn(), add: vi.fn() },
     configuracion: { get: vi.fn() },
   },
 }));
@@ -19,6 +20,8 @@ vi.mock("@/lib/offline-db", () => ({
   readCachedConfig: vi.fn(),
   cacheProveedores: vi.fn(),
   readCachedProveedores: vi.fn(),
+  cachePartesComunes: vi.fn(),
+  readCachedPartesComunes: vi.fn(),
 }));
 
 import { api } from "@/lib/api-client";
@@ -29,7 +32,6 @@ import {
   usePartesComunes,
   useConfig,
   useProveedores,
-  PARTE_COMUN_EDIFICIO,
 } from "./queries";
 
 function createWrapper() {
@@ -75,11 +77,12 @@ describe("hooks de datos por entidad", () => {
     expect(result.current.fetchStatus).toBe("idle");
   });
 
-  it("usePartesComunes consulta el edificio virtual Parte Común", async () => {
-    vi.mocked(api.dptos.list).mockResolvedValue([{ idDpto: "9", dpto: "Terraza", edificioRef: PARTE_COMUN_EDIFICIO }]);
+  it("usePartesComunes consulta la hoja Partes Comunes", async () => {
+    vi.mocked(api.partesComunes.list).mockResolvedValue(["HALL", "TERRAZA"]);
     const { result } = renderHook(() => usePartesComunes(true), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(api.dptos.list).toHaveBeenCalledWith(PARTE_COMUN_EDIFICIO);
+    expect(api.partesComunes.list).toHaveBeenCalled();
+    expect(result.current.data).toEqual(["HALL", "TERRAZA"]);
   });
 
   it("useConfig trae la configuración", async () => {

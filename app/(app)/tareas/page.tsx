@@ -3,13 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { api } from "@/lib/api-client";
 import { cn, formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
-import { Plus, Filter, Trash2 } from "lucide-react";
+import { Plus, Filter, Trash2, Check } from "lucide-react";
 
 const ESTADOS: (EstadoTarea | "Todos")[] = [
   "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
@@ -48,7 +49,8 @@ export default function TareasPage() {
   const myEmail = session?.user?.email?.toLowerCase() ?? "";
   const isAdmin = !session?.user || session.user.rol === "admin";
 
-  const [edificio, setEdificio] = useState<string>("");
+  const searchParams = useSearchParams();
+  const [edificio, setEdificio] = useState<string>(searchParams.get("edificio") ?? "");
   const [estado, setEstado] = useState<EstadoTarea | "Todos">("Todos");
   const [prioridad, setPrioridad] = useState<Prioridad | "Todas">("Todas");
   const [soloMias, setSoloMias] = useState(false);
@@ -208,9 +210,14 @@ export default function TareasPage() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={cn("rounded-full border px-2 py-0.5 text-xs", estadoBadge[t.estado])}>
-                    {t.estado}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {t.estado === "Realizada" && (
+                      <Check size={14} className="text-green-600" aria-label="realizada" />
+                    )}
+                    <span className={cn("rounded-full border px-2 py-0.5 text-xs", estadoBadge[t.estado])}>
+                      {t.estado}
+                    </span>
+                  </div>
                   <span className={cn("rounded-full border px-2 py-0.5 text-xs", prioridadBadge[t.prioridad])}>
                     {t.prioridad}
                   </span>

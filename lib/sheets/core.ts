@@ -13,6 +13,7 @@ export const SHEETS = {
   asignaciones: "Asignaciones",
   directivas: "Directivas",
   tareaArchivos: "TareaArchivos",
+  partesComunes: "Partes Comunes",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;

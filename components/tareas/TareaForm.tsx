@@ -5,7 +5,7 @@ import type { Tarea } from "@/types";
 import { FileUploader } from "./FileUploader";
 import { Combobox } from "@/components/ui/Combobox";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
-import { Loader2, CloudOff } from "lucide-react";
+import { Loader2, CloudOff, Plus } from "lucide-react";
 import { useTareaForm } from "./hooks/useTareaForm";
 
 interface Props {
@@ -86,16 +86,50 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         </Field>
       ) : (
         <Field label="Parte común" error={f.errors.dpto?.message}>
-          <select {...f.register("dpto")} className="input" disabled={f.partesComunesQ.isLoading}>
-            <option value="">
-              {f.partesComunesQ.isLoading ? "Cargando…" : "Seleccionar parte común"}
-            </option>
-            {f.partesComunesOptions.map((d) => (
-              <option key={d.idDpto} value={d.dpto}>
-                {d.dpto}
+          <div className="flex gap-2">
+            <select {...f.register("dpto")} className="input flex-1" disabled={f.partesComunesQ.isLoading}>
+              <option value="">
+                {f.partesComunesQ.isLoading ? "Cargando…" : "Seleccionar parte común"}
               </option>
-            ))}
-          </select>
+              {f.partesComunesOptions.map((nombre) => (
+                <option key={nombre} value={nombre}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+            {f.isAdmin && (
+              <button
+                type="button"
+                onClick={() => f.setShowAddParte((s) => !s)}
+                aria-label="Agregar parte común"
+                className="rounded-lg border border-slate-300 bg-white px-3 text-slate-700 hover:bg-slate-50"
+              >
+                <Plus size={16} />
+              </button>
+            )}
+          </div>
+          {f.isAdmin && f.showAddParte && (
+            <div className="mt-2 flex gap-2">
+              <input
+                value={f.nuevaParteComun}
+                onChange={(e) => f.setNuevaParteComun(e.target.value)}
+                placeholder="Ej: TERRAZA"
+                className="input flex-1"
+              />
+              <button
+                type="button"
+                disabled={!f.nuevaParteComun.trim() || f.addParteComun.isPending}
+                onClick={() => f.addParteComun.mutate(f.nuevaParteComun)}
+                className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 text-sm text-white disabled:opacity-50"
+              >
+                {f.addParteComun.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                Agregar
+              </button>
+            </div>
+          )}
+          {f.addParteComun.isError && (
+            <p className="mt-1 text-xs text-red-600">{f.addParteComun.error?.message}</p>
+          )}
         </Field>
       )}
 
@@ -112,19 +146,12 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         <textarea {...f.register("informe")} rows={3} className="input" />
       </Field>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Field label="Prioridad">
           <select {...f.register("prioridad")} className="input">
             <option>Alta</option>
             <option>Media</option>
             <option>Baja</option>
-          </select>
-        </Field>
-        <Field label="Estado">
-          <select {...f.register("estado")} className="input">
-            <option>Pendiente</option>
-            <option>En Proceso</option>
-            <option>Realizado</option>
           </select>
         </Field>
         <Field label="Presupuesto (ARS)">

@@ -72,9 +72,12 @@ export interface Tarea {
 // desde la primera subida de archivos; el server lo respeta si viene, o lo genera si no.
 export type TareaNuevaInput = Omit<
   Tarea,
-  "rowId" | "rowNumber" | "comentarioEnProceso" | "comentarioRealizado" | "fechaRealizado" | "supervisor" | "reporteUrl"
+  "rowId" | "rowNumber" | "comentarioEnProceso" | "comentarioRealizado" | "fechaRealizado" | "supervisor" | "reporteUrl" | "estado"
 > & {
   rowId?: string;
+  // El estado no se elige al crear: nace "Sin asignar" (default del server) y avanza
+  // por el ciclo de vida. Opcional para no obligar al form a proveerlo.
+  estado?: EstadoTarea;
   imagenes?: string[];
   videos?: string[];
   documentos?: string[];

@@ -10,6 +10,7 @@ vi.mock("@/lib/api-client", () => ({
     edificios: { list: vi.fn().mockResolvedValue([{ nombre: "Edif A" }]) },
     dptos: { list: vi.fn().mockResolvedValue([{ idDpto: "1", dpto: "1A", edificioRef: "Edif A" }]) },
     proveedores: { list: vi.fn().mockResolvedValue([]) },
+    partesComunes: { list: vi.fn().mockResolvedValue([]), add: vi.fn() },
     configuracion: { get: vi.fn().mockResolvedValue(null) },
   },
 }));
@@ -19,8 +20,10 @@ vi.mock("@/lib/offline-db", () => ({
   cacheDptos: vi.fn(), readCachedDptos: vi.fn(),
   cacheConfig: vi.fn(), readCachedConfig: vi.fn(),
   cacheProveedores: vi.fn(), readCachedProveedores: vi.fn(),
+  cachePartesComunes: vi.fn(), readCachedPartesComunes: vi.fn(),
 }));
 vi.mock("@/lib/background-sync", () => ({ registerBackgroundSync: vi.fn() }));
+vi.mock("next-auth/react", () => ({ useSession: () => ({ data: null }) }));
 
 import { api } from "@/lib/api-client";
 

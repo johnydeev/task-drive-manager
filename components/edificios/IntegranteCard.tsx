@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useEdificiosSinAsignar } from "@/hooks/edificios-queries";
@@ -71,7 +72,12 @@ export function IntegranteCard({
               key={a.edificio}
               className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
             >
-              {a.edificio}
+              <Link
+                href={`/tareas?edificio=${encodeURIComponent(a.edificio)}`}
+                className="rounded px-0.5 transition-colors hover:bg-slate-200 hover:text-slate-900"
+              >
+                {a.edificio}
+              </Link>
               {!readOnly && (
                 <button
                   onClick={() => removeM.mutate(a.edificio)}

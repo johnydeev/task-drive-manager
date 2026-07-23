@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { Directiva } from "@/types";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Check } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const badge: Record<string, string> = {
@@ -50,6 +50,9 @@ export function DirectivaItem({
     <li className="rounded-lg border border-slate-200 p-2 text-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-slate-700">
+          {(d.estado === "Realizada" || d.estado === "Cerrada") && (
+            <Check size={14} className="mr-1 inline text-green-600" aria-label="realizada" />
+          )}
           {d.descripcion} <span className="text-slate-400">({d.fecha})</span>
         </span>
         <div className="flex shrink-0 items-center gap-2">

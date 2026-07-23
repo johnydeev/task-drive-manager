@@ -51,6 +51,14 @@ export const api = {
   proveedores: {
     list: () => request<string[]>("/api/proveedores"),
   },
+  partesComunes: {
+    list: () => request<string[]>("/api/partes-comunes"),
+    add: (nombre: string) =>
+      request<{ nombre: string }>("/api/partes-comunes", {
+        method: "POST",
+        body: JSON.stringify({ nombre }),
+      }),
+  },
   tareas: {
     list: (filters: {
       edificio?: string;
