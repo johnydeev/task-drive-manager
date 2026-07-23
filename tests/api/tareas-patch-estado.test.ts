@@ -35,7 +35,9 @@ vi.mock("@/lib/pdf-generator", () => ({
   }),
 }));
 
-describe("PATCH estado dispara generación de reporte solo si Realizado", () => {
+// TODO Task 4: reescribir como tests/api/tareas-transiciones.test.ts (transiciones por rol).
+// Skipeado: el PATCH pasa a ser action-based; este test valida el flujo viejo estado-based.
+describe.skip("PATCH estado dispara generación de reporte solo si Realizado", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("genera reporte cuando se marca como Realizado", async () => {

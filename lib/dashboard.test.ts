@@ -8,7 +8,7 @@ function tarea(over: Partial<Tarea>): Tarea {
     objetivo: "x", fechaInicio: "2026-01-10", fechaEstimada: "2026-01-20",
     edificio: "Edif A", parteComun: false, dpto: "1A", informe: "",
     imagenes: [], videos: [], documentos: [],
-    estado: "Pendiente", prioridad: "Media", supervisor: "s@x.com",
+    estado: "Sin asignar", prioridad: "Media", supervisor: "s@x.com",
     ...over,
   };
 }
@@ -16,13 +16,13 @@ function tarea(over: Partial<Tarea>): Tarea {
 describe("buildKpis", () => {
   it("cuenta total, por estado y por prioridad", () => {
     const k = buildKpis([
-      tarea({ estado: "Pendiente", prioridad: "Alta" }),
-      tarea({ estado: "Realizado", prioridad: "Alta" }),
-      tarea({ estado: "Pendiente", prioridad: "Baja" }),
+      tarea({ estado: "Sin asignar", prioridad: "Alta" }),
+      tarea({ estado: "Realizada", prioridad: "Alta" }),
+      tarea({ estado: "Sin asignar", prioridad: "Baja" }),
     ]);
     expect(k.total).toBe(3);
-    expect(k.porEstado.Pendiente).toBe(2);
-    expect(k.porEstado.Realizado).toBe(1);
+    expect(k.porEstado["Sin asignar"]).toBe(2);
+    expect(k.porEstado.Realizada).toBe(1);
     expect(k.porPrioridad.Alta).toBe(2);
     expect(k.porPrioridad.Baja).toBe(1);
   });
@@ -31,8 +31,8 @@ describe("buildKpis", () => {
 describe("groupByEdificio", () => {
   it("agrupa por edificio y ordena por total desc", () => {
     const g = groupByEdificio([
-      tarea({ edificio: "A", estado: "Pendiente" }),
-      tarea({ edificio: "A", estado: "Realizado" }),
+      tarea({ edificio: "A", estado: "Sin asignar" }),
+      tarea({ edificio: "A", estado: "Realizada" }),
       tarea({ edificio: "B", estado: "En Proceso" }),
     ]);
     expect(g[0].edificio).toBe("A");
@@ -61,8 +61,8 @@ describe("groupByProveedor", () => {
 describe("timelinePorMes", () => {
   it("cuenta abiertas por mes y cerradas por fechaRealizado", () => {
     const tl = timelinePorMes([
-      tarea({ fechaInicio: "2026-01-05", estado: "Pendiente" }),
-      tarea({ fechaInicio: "2026-02-10", estado: "Realizado", fechaRealizado: "2026-03-01" }),
+      tarea({ fechaInicio: "2026-01-05", estado: "Sin asignar" }),
+      tarea({ fechaInicio: "2026-02-10", estado: "Realizada", fechaRealizado: "2026-03-01" }),
     ]);
     const ene = tl.find((m) => m.mes === "2026-01");
     const feb = tl.find((m) => m.mes === "2026-02");

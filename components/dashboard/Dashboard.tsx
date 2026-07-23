@@ -30,9 +30,12 @@ import { cn, formatFecha } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
 
 const ESTADO_COLORS: Record<EstadoTarea, string> = {
-  Pendiente: "#f59e0b",
+  "Sin asignar": "#94a3b8",
+  Asignada: "#f59e0b",
+  Aceptada: "#6366f1",
   "En Proceso": "#3b82f6",
-  Realizado: "#10b981",
+  "En Revisión": "#a855f7",
+  Realizada: "#10b981",
 };
 
 const PRIORIDAD_COLORS: Record<Prioridad, string> = {
@@ -41,7 +44,9 @@ const PRIORIDAD_COLORS: Record<Prioridad, string> = {
   Baja: "#94a3b8",
 };
 
-const ESTADOS: (EstadoTarea | "Todos")[] = ["Todos", "Pendiente", "En Proceso", "Realizado"];
+const ESTADOS: (EstadoTarea | "Todos")[] = [
+  "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+];
 const PRIORIDADES: (Prioridad | "Todas")[] = ["Todas", "Alta", "Media", "Baja"];
 
 export function Dashboard() {
@@ -70,6 +75,11 @@ export function Dashboard() {
   );
 
   const kpis = useMemo(() => buildKpis(tareasFiltradas), [tareasFiltradas]);
+  const enCurso =
+    kpis.porEstado.Asignada +
+    kpis.porEstado.Aceptada +
+    kpis.porEstado["En Proceso"] +
+    kpis.porEstado["En Revisión"];
   const porEdificio = useMemo(() => groupByEdificio(tareasFiltradas), [tareasFiltradas]);
   const porProveedor = useMemo(() => groupByProveedor(tareasFiltradas).slice(0, 8), [tareasFiltradas]);
   const timeline = useMemo(() => timelinePorMes(tareasFiltradas), [tareasFiltradas]);
@@ -120,9 +130,9 @@ export function Dashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi label="Total" value={kpis.total} accent="bg-slate-900" />
-        <Kpi label="Pendientes" value={kpis.porEstado.Pendiente} accent="bg-amber-500" />
-        <Kpi label="En proceso" value={kpis.porEstado["En Proceso"]} accent="bg-blue-500" />
-        <Kpi label="Realizadas" value={kpis.porEstado.Realizado} accent="bg-emerald-500" />
+        <Kpi label="Sin asignar" value={kpis.porEstado["Sin asignar"]} accent="bg-slate-500" />
+        <Kpi label="En curso" value={enCurso} accent="bg-blue-500" />
+        <Kpi label="Realizadas" value={kpis.porEstado.Realizada} accent="bg-emerald-500" />
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -144,9 +154,9 @@ export function Dashboard() {
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="pendiente" stackId="a" fill={ESTADO_COLORS.Pendiente} name="Pendiente" />
-                <Bar dataKey="enProceso" stackId="a" fill={ESTADO_COLORS["En Proceso"]} name="En proceso" />
-                <Bar dataKey="realizado" stackId="a" fill={ESTADO_COLORS.Realizado} name="Realizado" />
+                <Bar dataKey="pendiente" stackId="a" fill={ESTADO_COLORS["Sin asignar"]} name="Sin asignar" />
+                <Bar dataKey="enProceso" stackId="a" fill={ESTADO_COLORS["En Proceso"]} name="En curso" />
+                <Bar dataKey="realizado" stackId="a" fill={ESTADO_COLORS.Realizada} name="Realizadas" />
               </BarChart>
             </ResponsiveContainer>
           </div>

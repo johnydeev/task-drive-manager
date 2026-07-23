@@ -32,7 +32,7 @@ vi.mock("@/lib/api-client", () => {
     imagenes: [],
     videos: [],
     documentos: ["https://drive.google.com/file/d/doc1/view"],
-    estado: "Pendiente",
+    estado: "Sin asignar",
     prioridad: "Media",
     supervisor: "a@b.com",
   };

@@ -37,7 +37,7 @@ const tarea: Tarea = {
   imagenes: [],
   videos: [],
   documentos: [],
-  estado: "Pendiente",
+  estado: "Sin asignar",
   prioridad: "Media",
   supervisor: "owner@x.com",
   rowNumber: 3,

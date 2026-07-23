@@ -40,7 +40,7 @@ const validInitial: Tarea = {
   imagenes: [],
   videos: [],
   documentos: [],
-  estado: "Pendiente",
+  estado: "Sin asignar",
   prioridad: "Media",
   supervisor: "x@y.com",
 };

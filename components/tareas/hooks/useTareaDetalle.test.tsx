@@ -9,7 +9,7 @@ const { tarea } = vi.hoisted(() => ({
     objetivo: "x", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
     edificio: "Edif A", parteComun: false, dpto: "1A", informe: "y",
     imagenes: [], videos: [], documentos: [],
-    estado: "Pendiente", prioridad: "Media", supervisor: "owner@x.com",
+    estado: "Sin asignar", prioridad: "Media", supervisor: "owner@x.com",
   },
 }));
 
@@ -67,7 +67,7 @@ describe("useTareaDetalle", () => {
   it("patchEstado llama a la API con el estado", async () => {
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    await act(async () => { await result.current.patchEstado.mutateAsync("Realizado"); });
-    expect(api.tareas.patchEstado).toHaveBeenCalledWith("r1", { estado: "Realizado" });
+    await act(async () => { await result.current.patchEstado.mutateAsync("Realizada"); });
+    expect(api.tareas.patchEstado).toHaveBeenCalledWith("r1", { estado: "Realizada" });
   });
 });

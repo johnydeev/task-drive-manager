@@ -6,11 +6,15 @@ export interface KpiSummary {
   porPrioridad: Record<Prioridad, number>;
 }
 
-const ESTADOS: EstadoTarea[] = ["Pendiente", "En Proceso", "Realizado"];
+const ESTADOS: EstadoTarea[] = [
+  "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+];
 const PRIORIDADES: Prioridad[] = ["Alta", "Media", "Baja"];
 
 export function buildKpis(tareas: Tarea[]): KpiSummary {
-  const porEstado: Record<EstadoTarea, number> = { Pendiente: 0, "En Proceso": 0, Realizado: 0 };
+  const porEstado: Record<EstadoTarea, number> = {
+    "Sin asignar": 0, Asignada: 0, Aceptada: 0, "En Proceso": 0, "En Revisión": 0, Realizada: 0,
+  };
   const porPrioridad: Record<Prioridad, number> = { Alta: 0, Media: 0, Baja: 0 };
   for (const t of tareas) {
     if (ESTADOS.includes(t.estado)) porEstado[t.estado]++;
@@ -39,9 +43,9 @@ export function groupByEdificio(tareas: Tarea[]): EdificioStat[] {
       realizado: 0,
     };
     entry.total++;
-    if (t.estado === "Pendiente") entry.pendiente++;
-    else if (t.estado === "En Proceso") entry.enProceso++;
-    else if (t.estado === "Realizado") entry.realizado++;
+    if (t.estado === "Realizada") entry.realizado++;
+    else if (t.estado === "En Proceso" || t.estado === "En Revisión") entry.enProceso++;
+    else entry.pendiente++; // Sin asignar / Asignada / Aceptada
     map.set(e, entry);
   }
   return [...map.values()].sort((a, b) => b.total - a.total);
@@ -87,7 +91,7 @@ export function timelinePorMes(tareas: Tarea[]): MesStat[] {
   for (const t of tareas) {
     const abiertasMes = toMonth(t.fechaInicio) ?? toMonth(t.rowId);
     if (abiertasMes) ensure(abiertasMes).abiertas++;
-    const cerradasMes = t.estado === "Realizado" ? toMonth(t.fechaRealizado) : null;
+    const cerradasMes = t.estado === "Realizada" ? toMonth(t.fechaRealizado) : null;
     if (cerradasMes) ensure(cerradasMes).cerradas++;
   }
   return [...map.values()].sort((a, b) => a.mes.localeCompare(b.mes));

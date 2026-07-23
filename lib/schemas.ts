@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const estadoEnum = z.enum(["Pendiente", "En Proceso", "Realizado"]);
+export const estadoEnum = z.enum([
+  "Sin asignar",
+  "Asignada",
+  "Aceptada",
+  "En Proceso",
+  "En Revisión",
+  "Realizada",
+]);
 export const prioridadEnum = z.enum(["Alta", "Media", "Baja"]);
 export const rolEnum = z.enum(["admin", "supervisor"]);
 // Estados que SE PERSISTEN de una directiva ("Cerrada" es derivado, nunca se escribe).
@@ -47,7 +54,7 @@ export const tareaNuevaSchema = z
     // Generado por el cliente (timestamp ISO) para alinear la tarea con su carpeta de Drive.
     rowId: z.string().optional(),
     ...tareaBaseFields,
-    estado: estadoEnum.optional().default("Pendiente"),
+    estado: estadoEnum.optional().default("Sin asignar"),
     imagenes: z.array(z.string().url()).optional().default([]),
     videos: z.array(z.string().url()).optional().default([]),
     documentos: z.array(z.string().url()).optional().default([]),
@@ -143,4 +150,16 @@ export const directivaPatchSchema = z.object({
   id: z.string().min(1),
   accion: z.enum(["aceptar", "cerrar", "objetar"]),
   nota: z.string().optional(),
+});
+
+// Asignar/reasignar (admin): a quién se le asigna la tarea.
+export const tareaAsignarSchema = z.object({
+  asignadoA: z.string().email().transform((e) => e.toLowerCase()),
+});
+
+// Transiciones del ciclo de vida. El permiso depende de la acción (validado en el handler).
+export const tareaTransicionSchema = z.object({
+  accion: z.enum(["aceptar", "empezar", "revisar", "cerrar", "comentar"]),
+  comentario: z.string().optional(), // revisar → comentarioRevision · comentar → comentarioEnProceso
+  nota: z.string().optional(),       // cerrar → nota de cierre (comentarioRealizado)
 });

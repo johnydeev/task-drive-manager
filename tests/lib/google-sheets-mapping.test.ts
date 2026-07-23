@@ -18,7 +18,7 @@ describe("rowToTarea (por header)", () => {
     const row = new Array(HEADER.length).fill("");
     row[idx("id")] = "2026-06-14T10:00:00.000Z";
     row[idx("reporte_url")] = "https://drive.google.com/file/d/reporte/view";
-    row[idx("estado")] = "Pendiente";
+    row[idx("estado")] = "Sin asignar";
     row[idx("prioridad")] = "Media";
 
     const t = rowToTarea(h, row, 2);
@@ -31,7 +31,7 @@ describe("rowToTarea (por header)", () => {
   it("reporte_url ausente -> undefined", () => {
     const row = new Array(HEADER.length).fill("");
     row[idx("id")] = "2026-06-14T10:00:00.000Z";
-    row[idx("estado")] = "Pendiente";
+    row[idx("estado")] = "Sin asignar";
     row[idx("prioridad")] = "Media";
     const t = rowToTarea(h, row, 2);
     expect(t.reporteUrl).toBeUndefined();
@@ -51,7 +51,7 @@ describe("tareaToRow (por header)", () => {
     imagenes: [],
     videos: [],
     documentos: [],
-    estado: "Pendiente",
+    estado: "Sin asignar",
     prioridad: "Media",
     supervisor: "a@b.com",
   };
@@ -59,7 +59,7 @@ describe("tareaToRow (por header)", () => {
   it("escribe reporte_url en su columna", () => {
     const row = tareaToRow(h, {
       ...baseTarea,
-      estado: "Realizado",
+      estado: "Realizada",
       reporteUrl: "https://drive.google.com/file/d/reporte/view",
     });
     expect(row[idx("reporte_url")]).toBe("https://drive.google.com/file/d/reporte/view");

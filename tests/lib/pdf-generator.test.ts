@@ -27,7 +27,7 @@ const tareaBase: Tarea = {
   imagenes: [],
   videos: [],
   documentos: [],
-  estado: "Realizado",
+  estado: "Realizada",
   prioridad: "Media",
   supervisor: "test@x.com",
 };

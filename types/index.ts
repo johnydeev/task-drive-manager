@@ -2,7 +2,13 @@
 
 export type Rol = "admin" | "supervisor";
 
-export type EstadoTarea = "Pendiente" | "En Proceso" | "Realizado";
+export type EstadoTarea =
+  | "Sin asignar"
+  | "Asignada"
+  | "Aceptada"
+  | "En Proceso"
+  | "En Revisión"
+  | "Realizada";
 
 export type Prioridad = "Alta" | "Media" | "Baja";
 
@@ -53,6 +59,12 @@ export interface Tarea {
   supervisor: string; // email del usuario que la creó/asignó
   creadoEn?: string; // ISO datetime — auditoría (header creado_en). Backfill = rowId.
   actualizadoEn?: string; // ISO datetime — auditoría (header actualizado_en).
+  asignadoA?: string;      // email del responsable de ejecución (FK Usuarios). Vacío = Sin asignar
+  asignadaEn?: string;     // ISO datetime — cuándo asignó el admin
+  aceptadaEn?: string;     // ISO datetime — cuándo aceptó el asignado
+  revisionEn?: string;     // ISO datetime — arranca el reloj de 72 h
+  realizadaEn?: string;    // ISO datetime — cierre a mano (distinto de fechaRealizado)
+  comentarioRevision?: string; // lo escribe el asignado al mandar a revisar
 }
 
 // DTO para crear una tarea desde el cliente.

@@ -12,12 +12,17 @@ import { displayName } from "@/lib/user-display";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
 
-const ESTADOS: EstadoTarea[] = ["Pendiente", "En Proceso", "Realizado"];
+const ESTADOS: EstadoTarea[] = [
+  "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+];
 
 const estadoBadge: Record<EstadoTarea, string> = {
-  Pendiente: "bg-amber-100 text-amber-800 border-amber-200",
+  "Sin asignar": "bg-slate-100 text-slate-700 border-slate-200",
+  Asignada: "bg-amber-100 text-amber-800 border-amber-200",
+  Aceptada: "bg-indigo-100 text-indigo-800 border-indigo-200",
   "En Proceso": "bg-blue-100 text-blue-800 border-blue-200",
-  Realizado: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "En Revisión": "bg-purple-100 text-purple-800 border-purple-200",
+  Realizada: "bg-green-100 text-green-800 border-green-200",
 };
 
 const prioridadBadge: Record<Prioridad, string> = {
@@ -210,7 +215,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
             {canModify && generarReporte.isError && (
               <p className="mt-1 text-xs text-red-600">No se pudo generar el reporte.</p>
             )}
-            {canModify && t.estado === "Realizado" && !t.reporteUrl && (
+            {canModify && t.estado === "Realizada" && !t.reporteUrl && (
               <p className="mt-2 text-xs text-slate-500">
                 El reporte se genera automáticamente al cerrar la tarea. Si no apareció todavía, puede tardar unos segundos.
               </p>

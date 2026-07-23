@@ -66,7 +66,7 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
       comentarioEnProceso: initial?.comentarioEnProceso ?? "",
       comentarioRealizado: initial?.comentarioRealizado ?? "",
       proveedor: initial?.proveedor ?? "",
-      estado: initial?.estado ?? "Pendiente",
+      estado: initial?.estado ?? "Sin asignar",
       presupuesto: initial?.presupuesto,
       prioridad: initial?.prioridad ?? "Media",
     },

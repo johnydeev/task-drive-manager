@@ -24,7 +24,7 @@ const req = () => new NextRequest("http://localhost/api/tareas");
 const tarea = (over: Partial<Tarea> = {}): Tarea => ({
   rowId: "2026-07-16T10:00:00.000Z", objetivo: "x", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
   edificio: "Edif A", parteComun: false, dpto: "1A", informe: "", imagenes: [], videos: [], documentos: [],
-  estado: "Pendiente", prioridad: "Media", supervisor: "creador@x.com", ...over,
+  estado: "Sin asignar", prioridad: "Media", supervisor: "creador@x.com", ...over,
 });
 
 beforeEach(() => {

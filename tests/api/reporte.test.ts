@@ -18,7 +18,7 @@ vi.mock("@/lib/google-sheets", () => {
     imagenes: [],
     videos: [],
     documentos: [],
-    estado: "Realizado",
+    estado: "Realizada",
     prioridad: "Media",
     supervisor: "test@x.com",
   };

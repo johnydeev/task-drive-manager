@@ -58,13 +58,19 @@ export function rowToTarea(h: HeaderMap, row: string[], rowNumber: number): Tare
     documentos: [],
     reporteUrl: g("reporte_url") || undefined,
     proveedor: g("proveedor") || undefined,
-    estado: (g("estado") as EstadoTarea) || "Pendiente",
+    estado: (g("estado") as EstadoTarea) || "Sin asignar",
     presupuesto: presupuestoRaw ? Number(presupuestoRaw) || undefined : undefined,
     fechaRealizado: toDateOnly(g("fecha_realizado")) || undefined,
     prioridad: (g("prioridad") as Prioridad) || "Media",
     supervisor: g("supervisor"),
     creadoEn: g("creado_en") || undefined,
     actualizadoEn: g("actualizado_en") || undefined,
+    asignadoA: g("asignado_a") || undefined,
+    asignadaEn: g("asignada_en") || undefined,
+    aceptadaEn: g("aceptada_en") || undefined,
+    revisionEn: g("revision_en") || undefined,
+    realizadaEn: g("realizada_en") || undefined,
+    comentarioRevision: g("comentario_revision") || undefined,
   };
 }
 
@@ -80,6 +86,8 @@ export function tareaToRow(
     "parte_comun", "dpto", "informe", "comentario_en_proceso", "comentario_realizado",
     "reporte_url", "proveedor", "estado", "presupuesto", "fecha_realizado", "prioridad",
     "supervisor", "creado_en", "actualizado_en",
+    "asignado_a", "asignada_en", "aceptada_en", "revision_en", "realizada_en",
+    "comentario_revision",
   ];
   const width = Math.max(1, ...CAMPOS.map((n) => h.index(n) + 1));
   const row: (string | number)[] = new Array(width).fill("");
@@ -100,13 +108,19 @@ export function tareaToRow(
   set("comentario_realizado", t.comentarioRealizado ?? "");
   set("reporte_url", t.reporteUrl ?? "");
   set("proveedor", t.proveedor ?? "");
-  set("estado", t.estado ?? "Pendiente");
+  set("estado", t.estado ?? "Sin asignar");
   set("presupuesto", t.presupuesto ?? "");
   set("fecha_realizado", toDateOnly(t.fechaRealizado ?? ""));
   set("prioridad", t.prioridad ?? "Media");
   set("supervisor", t.supervisor ?? "");
   set("creado_en", t.creadoEn ?? "");
   set("actualizado_en", t.actualizadoEn ?? "");
+  set("asignado_a", t.asignadoA ?? "");
+  set("asignada_en", t.asignadaEn ?? "");
+  set("aceptada_en", t.aceptadaEn ?? "");
+  set("revision_en", t.revisionEn ?? "");
+  set("realizada_en", t.realizadaEn ?? "");
+  set("comentario_revision", t.comentarioRevision ?? "");
   return row;
 }
 
@@ -176,7 +190,7 @@ export async function appendTarea(
         videos: input.videos ?? [],
         documentos: input.documentos ?? [],
         proveedor: input.proveedor,
-        estado: input.estado ?? "Pendiente",
+        estado: input.estado ?? "Sin asignar",
         presupuesto: input.presupuesto,
         prioridad: input.prioridad,
       },
@@ -204,7 +218,7 @@ export async function appendTarea(
     videos: media.videos,
     documentos: media.documentos,
     proveedor: input.proveedor,
-    estado: input.estado ?? "Pendiente",
+    estado: input.estado ?? "Sin asignar",
     presupuesto: input.presupuesto,
     prioridad: input.prioridad,
     supervisor,

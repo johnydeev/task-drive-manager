@@ -16,7 +16,7 @@ function rowFor(rowId: string, objetivo = "x"): string[] {
   const r = new Array(22).fill("");
   r[0] = rowId;
   r[1] = objetivo;
-  r[17] = "Pendiente";
+  r[17] = "Sin asignar";
   r[20] = "Media";
   return r;
 }

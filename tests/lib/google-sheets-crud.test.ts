@@ -55,7 +55,7 @@ const HEADER_22 = (() => {
   return h;
 })();
 // Fila de tarea valida (col A = rowId). Solo llenamos lo necesario para el mapping.
-const tareaRow = (rowId: string, edificio = "Edif A", estado = "Pendiente") => {
+const tareaRow = (rowId: string, edificio = "Edif A", estado = "Sin asignar") => {
   const r = new Array(22).fill("");
   r[0] = rowId; r[1] = "obj"; r[2] = "2026-07-16"; r[3] = "2026-07-20";
   r[4] = edificio; r[5] = "FALSE"; r[6] = "1A"; r[7] = "informe";
@@ -96,7 +96,7 @@ describe("appendTarea (real)", () => {
       {
         rowId: ROW_ID, objetivo: "obj", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
         edificio: "Edif A", parteComun: false, dpto: "1A", informe: "x",
-        estado: "Pendiente", prioridad: "Media",
+        estado: "Sin asignar", prioridad: "Media",
         imagenes: [], videos: [], documentos: [],
       },
       "sup@x.com"
@@ -114,11 +114,11 @@ describe("appendTarea (real)", () => {
 describe("updateTarea (real)", () => {
   it("mergea sobre la tarea existente y escribe en su fila", async () => {
     mockRanges({
-      "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID, "Edif A", "Pendiente")],
+      "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID, "Edif A", "Sin asignar")],
       "Tareas!A1:Z1": [HEADER_22],
     });
-    const updated = await updateTarea({ rowId: ROW_ID, estado: "Realizado" });
-    expect(updated.estado).toBe("Realizado");
+    const updated = await updateTarea({ rowId: ROW_ID, estado: "Realizada" });
+    expect(updated.estado).toBe("Realizada");
     expect(updated.edificio).toBe("Edif A"); // preservado del current
     expect(valuesUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ range: "Tareas!A2:V2" })
@@ -127,7 +127,7 @@ describe("updateTarea (real)", () => {
 
   it("lanza si la tarea no existe", async () => {
     mockRanges({ "Tareas!A:Z": [] });
-    await expect(updateTarea({ rowId: "no-existe", estado: "Realizado" })).rejects.toThrow();
+    await expect(updateTarea({ rowId: "no-existe", estado: "Realizada" })).rejects.toThrow();
   });
 });
 

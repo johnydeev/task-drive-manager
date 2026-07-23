@@ -77,13 +77,13 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     estado: parsed.estado,
     comentarioEnProceso: parsed.comentarioEnProceso,
     comentarioRealizado: parsed.comentarioRealizado,
-    fechaRealizado: parsed.estado === "Realizado" ? new Date().toISOString().slice(0, 10) : undefined,
+    fechaRealizado: parsed.estado === "Realizada" ? new Date().toISOString().slice(0, 10) : undefined,
   });
 
   // Auto-generación del reporte al cerrar la tarea. Fire-and-forget para no bloquear
   // la respuesta. Si falla, queda el estado actualizado pero sin reporte; el usuario
   // puede regenerarlo manualmente desde la UI.
-  if (parsed.estado === "Realizado") {
+  if (parsed.estado === "Realizada") {
     generateAndUploadReporte(updated)
       .then((r) => updateTarea({ rowId: updated.rowId, reporteUrl: r.url }))
       .catch((err) => console.error("[reporte-auto] error:", err));

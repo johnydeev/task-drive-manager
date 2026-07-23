@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTareasRows, tareaToRow } from "./tareas";
+import { parseTareasRows, rowToTarea, tareaToRow } from "./tareas";
 import { buildHeaderMap } from "./headers";
 
 // Header NUEVO (snake_case, como está hoy en la planilla).
@@ -12,7 +12,7 @@ const headerNuevo = [
 const filaNueva = [
   "2026-07-10T14:30:00.000Z", "Filtración", "2026-07-10", "2026-07-20", "Belgrano 1429",
   "30-54410451-5", "TRUE", "3A", "informe", "", "", "https://drive/r.pdf", "Prov",
-  "Realizado", "1000", "2026-07-15", "Alta", "sup@x.com", "2026-07-10T14:30:00.000Z", "",
+  "Realizada", "1000", "2026-07-15", "Alta", "sup@x.com", "2026-07-10T14:30:00.000Z", "",
 ];
 
 // Header VIEJO (por si quedara alguna hoja sin renombrar).
@@ -34,7 +34,7 @@ describe("parseTareasRows — lectura por header", () => {
     expect(ts[0].edificio).toBe("Belgrano 1429");
     expect(ts[0].edificioCuit).toBe("30-54410451-5");
     expect(ts[0].parteComun).toBe(true);
-    expect(ts[0].estado).toBe("Realizado");
+    expect(ts[0].estado).toBe("Realizada");
     expect(ts[0].reporteUrl).toBe("https://drive/r.pdf");
     expect(ts[0].supervisor).toBe("sup@x.com");
     expect(ts[0].creadoEn).toBe("2026-07-10T14:30:00.000Z");
@@ -66,7 +66,7 @@ describe("tareaToRow — escritura por header", () => {
       objetivo: "Obj",
       edificio: "Belgrano 1429",
       parteComun: true,
-      estado: "Pendiente",
+      estado: "Sin asignar",
       prioridad: "Alta",
       supervisor: "sup@x.com",
       creadoEn: "2026-07-10T14:30:00.000Z",
@@ -90,5 +90,33 @@ describe("tareaToRow — escritura por header", () => {
     const h = buildHeaderMap(headerNuevo);
     const row = tareaToRow(h, { rowId: "x", edificioCuit: "30-54410451-5" });
     expect(row[headerNuevo.indexOf("edificio_cuit")]).toBe("30-54410451-5");
+  });
+});
+
+describe("mapping de asignación / ciclo de vida", () => {
+  const header = [
+    ...headerNuevo,
+    "asignado_a", "asignada_en", "aceptada_en", "revision_en", "realizada_en",
+    "comentario_revision",
+  ];
+
+  it("hace ida y vuelta de los campos nuevos (rowToTarea ↔ tareaToRow)", () => {
+    const h = buildHeaderMap(header);
+    const row = tareaToRow(h, {
+      rowId: "2026-07-23T10:00:00.000Z",
+      estado: "En Revisión",
+      asignadoA: "juan@x.com",
+      asignadaEn: "2026-07-23T10:00:00.000Z",
+      aceptadaEn: "2026-07-23T11:00:00.000Z",
+      revisionEn: "2026-07-23T12:00:00.000Z",
+      comentarioRevision: "listo para revisar",
+    }).map(String);
+    const tarea = rowToTarea(h, row, 2);
+    expect(tarea.asignadoA).toBe("juan@x.com");
+    expect(tarea.asignadaEn).toBe("2026-07-23T10:00:00.000Z");
+    expect(tarea.aceptadaEn).toBe("2026-07-23T11:00:00.000Z");
+    expect(tarea.revisionEn).toBe("2026-07-23T12:00:00.000Z");
+    expect(tarea.comentarioRevision).toBe("listo para revisar");
+    expect(tarea.estado).toBe("En Revisión");
   });
 });

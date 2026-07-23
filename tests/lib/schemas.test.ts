@@ -67,7 +67,7 @@ describe("tareaFormSchema", () => {
     parteComun: false,
     dpto: "1A",
     informe: "test",
-    estado: "Pendiente" as const,
+    estado: "Sin asignar" as const,
     prioridad: "Media" as const,
   };
 

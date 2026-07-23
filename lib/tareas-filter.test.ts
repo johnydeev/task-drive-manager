@@ -15,7 +15,7 @@ function tarea(over: Partial<Tarea>): Tarea {
     imagenes: [],
     videos: [],
     documentos: [],
-    estado: "Pendiente",
+    estado: "Sin asignar",
     prioridad: "Media",
     supervisor: "sup@x.com",
     ...over,
@@ -23,8 +23,8 @@ function tarea(over: Partial<Tarea>): Tarea {
 }
 
 const data: Tarea[] = [
-  tarea({ edificio: "Edif A", estado: "Pendiente", prioridad: "Alta", supervisor: "a@x.com", fechaInicio: "2026-01-05" }),
-  tarea({ edificio: "Edif B", estado: "Realizado", prioridad: "Baja", supervisor: "b@x.com", fechaInicio: "2026-02-15" }),
+  tarea({ edificio: "Edif A", estado: "Sin asignar", prioridad: "Alta", supervisor: "a@x.com", fechaInicio: "2026-01-05" }),
+  tarea({ edificio: "Edif B", estado: "Realizada", prioridad: "Baja", supervisor: "b@x.com", fechaInicio: "2026-02-15" }),
   tarea({ edificio: "Edif A", estado: "En Proceso", prioridad: "Media", supervisor: "a@x.com", fechaInicio: "2026-03-01" }),
 ];
 
@@ -38,7 +38,7 @@ describe("filterTareas", () => {
   });
 
   it("filtra por estado", () => {
-    expect(filterTareas(data, { estado: "Realizado" })).toHaveLength(1);
+    expect(filterTareas(data, { estado: "Realizada" })).toHaveLength(1);
   });
 
   it("filtra por prioridad", () => {
@@ -54,6 +54,6 @@ describe("filterTareas", () => {
   });
 
   it("combina filtros", () => {
-    expect(filterTareas(data, { edificio: "Edif A", estado: "Pendiente" })).toHaveLength(1);
+    expect(filterTareas(data, { edificio: "Edif A", estado: "Sin asignar" })).toHaveLength(1);
   });
 });
