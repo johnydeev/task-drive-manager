@@ -20,6 +20,8 @@ export const GET = withAuth(async (req) => {
     estado: (sp.get("estado") as EstadoTarea) || undefined,
     prioridad: (sp.get("prioridad") as Prioridad) || undefined,
     supervisor: sp.get("supervisor") || undefined,
+    asignado: sp.get("asignado") || undefined,
+    sinAsignar: sp.get("sinAsignar") === "1" || undefined,
     desde: sp.get("desde") || undefined,
     hasta: sp.get("hasta") || undefined,
   };

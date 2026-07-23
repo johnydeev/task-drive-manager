@@ -57,11 +57,16 @@ export const api = {
       estado?: EstadoTarea;
       prioridad?: Prioridad;
       supervisor?: string;
+      asignado?: string;
+      sinAsignar?: boolean;
       desde?: string;
       hasta?: string;
     } = {}) => {
       const p = new URLSearchParams();
-      for (const [k, v] of Object.entries(filters)) if (v) p.set(k, v);
+      for (const [k, v] of Object.entries(filters)) {
+        if (v === undefined || v === false || v === "") continue;
+        p.set(k, v === true ? "1" : String(v));
+      }
       const q = p.toString();
       return request<Tarea[]>(q ? `/api/tareas?${q}` : "/api/tareas");
     },
@@ -81,9 +86,18 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
-    patchEstado: (
+    asignar: (rowId: string, asignadoA: string) =>
+      request<Tarea>(`/api/tareas/${encodeURIComponent(rowId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ asignadoA }),
+      }),
+    transicionar: (
       rowId: string,
-      input: { estado: EstadoTarea; comentarioEnProceso?: string; comentarioRealizado?: string }
+      input: {
+        accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar";
+        comentario?: string;
+        nota?: string;
+      }
     ) =>
       request<Tarea>(`/api/tareas/${encodeURIComponent(rowId)}`, {
         method: "PATCH",

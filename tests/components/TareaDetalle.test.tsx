@@ -40,7 +40,8 @@ vi.mock("@/lib/api-client", () => {
     api: {
       tareas: {
         get: vi.fn().mockResolvedValue(fakeTarea),
-        patchEstado: vi.fn(),
+        asignar: vi.fn(),
+        transicionar: vi.fn(),
         generarReporte: vi.fn(),
         remove: vi.fn(),
       },
@@ -61,14 +62,20 @@ describe("TareaDetalle", () => {
     expect(link).toHaveAttribute("href", DOC_URL);
   });
 
+  it("el admin ve el panel de acciones y puede asignar una tarea Sin asignar", async () => {
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByText(/^acciones$/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^asignar$/i })).toBeInTheDocument();
+  });
+
   it("un supervisor que no la creó la ve pero sin acciones de escritura", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } }, status: "authenticated" });
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     // Ve la tarea…
     expect(await screen.findByRole("heading", { name: /test/i })).toBeInTheDocument();
-    // …pero no las acciones de escritura.
+    // …pero no las acciones de escritura (no es admin ni el asignado).
     expect(screen.queryByRole("button", { name: /^editar$/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/cambiar estado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^acciones$/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /eliminar/i })).not.toBeInTheDocument();
   });
 });

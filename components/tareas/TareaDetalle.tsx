@@ -4,6 +4,7 @@ import Link from "next/link";
 import { cn, formatFecha, formatDateTime } from "@/lib/utils";
 import { thumbUrl } from "@/lib/drive-url";
 import { TareaForm } from "./TareaForm";
+import { AccionesTarea } from "./AccionesTarea";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
@@ -11,10 +12,6 @@ import { useUsuarios } from "@/hooks/edificios-queries";
 import { displayName } from "@/lib/user-display";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
-
-const ESTADOS: EstadoTarea[] = [
-  "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
-];
 
 const estadoBadge: Record<EstadoTarea, string> = {
   "Sin asignar": "bg-slate-100 text-slate-700 border-slate-200",
@@ -35,9 +32,12 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
   const {
     tareaQ,
     eliminar,
-    patchEstado,
+    asignar,
+    transicionar,
     generarReporte,
-    canModify,
+    isAdmin,
+    esAsignado,
+    canEditFields,
     editing,
     setEditing,
     confirmDelete,
@@ -94,7 +94,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           <ArrowLeft size={14} /> Tareas
         </Link>
         <div className="flex items-center gap-2">
-          {canModify && (
+          {canEditFields && (
             <>
               <button
                 onClick={() => setEditing(true)}
@@ -147,38 +147,18 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           </div>
         </header>
 
-        {/* Cambio rápido de estado — solo el creador o el admin. */}
-        {canModify && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-medium text-slate-700">Cambiar estado</p>
-            <div className="mt-2 flex gap-2">
-              {ESTADOS.map((e) => (
-                <button
-                  key={e}
-                  disabled={patchEstado.isPending || e === t.estado}
-                  onClick={() => patchEstado.mutate(e)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm transition",
-                    e === t.estado
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                  )}
-                >
-                  {patchEstado.isPending && patchEstado.variables === e && (
-                    <Loader2 size={14} className="animate-spin" />
-                  )}
-                  {e}
-                </button>
-              ))}
-            </div>
-            {patchEstado.isError && (
-              <p className="mt-2 text-xs text-red-600">No se pudo actualizar el estado.</p>
-            )}
-          </div>
-        )}
+        {/* Acciones del ciclo de vida — según rol y estado. */}
+        <AccionesTarea
+          t={t}
+          isAdmin={isAdmin}
+          esAsignado={esAsignado}
+          asignar={asignar}
+          transicionar={transicionar}
+          usuarios={usuariosQ.data}
+        />
 
-        {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo creador/admin. */}
-        {(canModify || t.reporteUrl) && (
+        {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo admin. */}
+        {(isAdmin || t.reporteUrl) && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-sm font-medium text-slate-700">Reporte PDF</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -192,7 +172,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                   <FileDown size={14} /> Descargar reporte
                 </a>
               )}
-              {canModify && (
+              {isAdmin && (
                 <button
                   onClick={() => generarReporte.mutate()}
                   disabled={generarReporte.isPending}
@@ -212,10 +192,10 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                 </button>
               )}
             </div>
-            {canModify && generarReporte.isError && (
+            {isAdmin && generarReporte.isError && (
               <p className="mt-1 text-xs text-red-600">No se pudo generar el reporte.</p>
             )}
-            {canModify && t.estado === "Realizada" && !t.reporteUrl && (
+            {isAdmin && t.estado === "Realizada" && !t.reporteUrl && (
               <p className="mt-2 text-xs text-slate-500">
                 El reporte se genera automáticamente al cerrar la tarea. Si no apareció todavía, puede tardar unos segundos.
               </p>
@@ -224,6 +204,9 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         )}
 
         <Section title="Datos">
+          <Row label="Responsable">
+            {t.asignadoA ? displayName(t.asignadoA, usuariosQ.data) : "Sin asignar"}
+          </Row>
           <Row label="Fecha inicio">{formatFecha(t.fechaInicio)}</Row>
           <Row label="Fecha estimada">{formatFecha(t.fechaEstimada)}</Row>
           {t.fechaRealizado && <Row label="Fecha realizado">{formatFecha(t.fechaRealizado)}</Row>}
@@ -241,7 +224,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           </Section>
         )}
 
-        {(t.comentarioEnProceso || t.comentarioRealizado) && (
+        {(t.comentarioEnProceso || t.comentarioRevision || t.comentarioRealizado) && (
           <Section title="Comentarios">
             {t.comentarioEnProceso && (
               <div>
@@ -249,9 +232,15 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioEnProceso}</p>
               </div>
             )}
+            {t.comentarioRevision && (
+              <div className="mt-2">
+                <p className="text-xs font-medium text-slate-500">Revisión</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioRevision}</p>
+              </div>
+            )}
             {t.comentarioRealizado && (
               <div className="mt-2">
-                <p className="text-xs font-medium text-slate-500">Realizado</p>
+                <p className="text-xs font-medium text-slate-500">Cierre</p>
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioRealizado}</p>
               </div>
             )}

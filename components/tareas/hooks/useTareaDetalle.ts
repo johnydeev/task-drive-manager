@@ -5,10 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
-import type { EstadoTarea, Tarea } from "@/types";
+import type { Tarea } from "@/types";
 
-// Lógica del detalle de tarea: query + mutations (eliminar/patchEstado/generarReporte),
-// permiso de borrado y estado de UI. El componente TareaDetalle consume esto y arma el JSX.
+// Lógica del detalle de tarea: query + mutations (eliminar / asignar / transicionar /
+// generar reporte), permisos por rol y estado de UI. El componente arma el JSX.
 export function useTareaDetalle(rowId: string) {
   const qc = useQueryClient();
   const router = useRouter();
@@ -31,12 +31,24 @@ export function useTareaDetalle(rowId: string) {
     },
   });
 
-  const patchEstado = useMutation({
-    mutationFn: (estado: EstadoTarea) => api.tareas.patchEstado(rowId, { estado }),
-    onSuccess: (updated) => {
-      qc.setQueryData(["tarea", rowId], updated);
-      qc.invalidateQueries({ queryKey: ["tareas"] });
-    },
+  // Refresca las caches tras una asignación/transición.
+  const refresh = (updated: Tarea) => {
+    qc.setQueryData(["tarea", rowId], updated);
+    qc.invalidateQueries({ queryKey: ["tareas"] });
+  };
+
+  const asignar = useMutation({
+    mutationFn: (asignadoA: string) => api.tareas.asignar(rowId, asignadoA),
+    onSuccess: refresh,
+  });
+
+  const transicionar = useMutation({
+    mutationFn: (input: {
+      accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar";
+      comentario?: string;
+      nota?: string;
+    }) => api.tareas.transicionar(rowId, input),
+    onSuccess: refresh,
   });
 
   const generarReporte = useMutation({
@@ -45,29 +57,24 @@ export function useTareaDetalle(rowId: string) {
       qc.setQueryData(["tarea", rowId], (prev: Tarea | undefined) =>
         prev ? { ...prev, reporteUrl } : prev
       );
-      // Abrir el reporte recién generado en una pestaña nueva.
       if (typeof window !== "undefined") window.open(reporteUrl, "_blank");
     },
   });
 
   const t = tareaQ.data;
+  const email = session?.user?.email?.toLowerCase();
+  // Sin sesión (demo/carga) es permisivo; el server valida igual en cada endpoint.
+  const isAdmin = !session?.user || session.user.rol === "admin";
+  const esAsignado = !!email && email === t?.asignadoA?.toLowerCase();
+  // Editar campos / borrar / regenerar reporte: SOLO admin.
+  const canEditFields = isAdmin;
 
-  // Puede MODIFICAR (editar / cambiar estado / borrar / generar reporte) el admin o quien
-  // creó la tarea. El resto solo la ve. Sin sesión (demo/carga) es permisivo; el servidor
-  // igual valida el permiso en cada endpoint de escritura.
-  const canModify =
-    !session?.user ||
-    session.user.rol === "admin" ||
-    session.user.email?.toLowerCase() === t?.supervisor?.toLowerCase();
-
-  // Al guardar una edición: refrescar caches y salir del modo edición.
   const onEditSuccess = (updated: Tarea) => {
     qc.setQueryData(["tarea", rowId], updated);
     qc.invalidateQueries({ queryKey: ["tareas"] });
     setEditing(false);
   };
 
-  // Al cerrar el modal de "eliminada": limpiar cache y volver al listado.
   const onDeleteDoneClose = () => {
     qc.removeQueries({ queryKey: ["tarea", rowId] });
     router.push("/tareas");
@@ -78,9 +85,12 @@ export function useTareaDetalle(rowId: string) {
     tareaQ,
     t,
     eliminar,
-    patchEstado,
+    asignar,
+    transicionar,
     generarReporte,
-    canModify,
+    isAdmin,
+    esAsignado,
+    canEditFields,
     editing,
     setEditing,
     confirmDelete,

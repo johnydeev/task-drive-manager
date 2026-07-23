@@ -18,7 +18,8 @@ vi.mock("@/lib/api-client", () => ({
     tareas: {
       get: vi.fn().mockResolvedValue(tarea),
       remove: vi.fn().mockResolvedValue({ ok: true }),
-      patchEstado: vi.fn().mockResolvedValue(tarea),
+      asignar: vi.fn().mockResolvedValue(tarea),
+      transicionar: vi.fn().mockResolvedValue(tarea),
       generarReporte: vi.fn().mockResolvedValue({ reporteUrl: "http://x/r.pdf" }),
     },
   },
@@ -42,18 +43,18 @@ beforeEach(() => {
 });
 
 describe("useTareaDetalle", () => {
-  it("canModify es true para admin aunque no sea el dueño", async () => {
+  it("canEditFields es true para admin", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "admin" } } });
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    expect(result.current.canModify).toBe(true);
+    expect(result.current.canEditFields).toBe(true);
   });
 
-  it("canModify es false para un supervisor que no es el dueño", async () => {
+  it("canEditFields es false para un supervisor (editar campos es solo del admin)", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } } });
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    expect(result.current.canModify).toBe(false);
+    expect(result.current.canEditFields).toBe(false);
   });
 
   it("eliminar llama a la API y marca deleteDone", async () => {
@@ -64,10 +65,10 @@ describe("useTareaDetalle", () => {
     await waitFor(() => expect(result.current.deleteDone).toBe(true));
   });
 
-  it("patchEstado llama a la API con el estado", async () => {
+  it("transicionar llama a la API con la acción", async () => {
     const { result } = renderHook(() => useTareaDetalle("r1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
-    await act(async () => { await result.current.patchEstado.mutateAsync("Realizada"); });
-    expect(api.tareas.patchEstado).toHaveBeenCalledWith("r1", { estado: "Realizada" });
+    await act(async () => { await result.current.transicionar.mutateAsync({ accion: "cerrar" }); });
+    expect(api.tareas.transicionar).toHaveBeenCalledWith("r1", { accion: "cerrar" });
   });
 });

@@ -56,4 +56,14 @@ describe("filterTareas", () => {
   it("combina filtros", () => {
     expect(filterTareas(data, { edificio: "Edif A", estado: "Sin asignar" })).toHaveLength(1);
   });
+
+  it("filtra por asignado", () => {
+    const ts = [tarea({ asignadoA: "juan@x.com" }), tarea({ asignadoA: "otro@x.com" }), tarea({})];
+    expect(filterTareas(ts, { asignado: "JUAN@x.com" })).toHaveLength(1);
+  });
+
+  it("filtra las sin asignar", () => {
+    const ts = [tarea({ asignadoA: "juan@x.com" }), tarea({ asignadoA: "" }), tarea({})];
+    expect(filterTareas(ts, { sinAsignar: true })).toHaveLength(2);
+  });
 });

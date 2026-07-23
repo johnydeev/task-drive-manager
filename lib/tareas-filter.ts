@@ -6,6 +6,8 @@ export interface TareaFilters {
   estado?: EstadoTarea;
   prioridad?: Prioridad;
   supervisor?: string;
+  asignado?: string; // email del responsable de ejecución
+  sinAsignar?: boolean; // solo tareas sin responsable
   desde?: string; // ISO date, compara contra fechaInicio
   hasta?: string; // ISO date, compara contra fechaInicio
 }
@@ -18,6 +20,8 @@ export function filterTareas(tareas: Tarea[], filters: TareaFilters): Tarea[] {
     if (filters.estado && t.estado !== filters.estado) return false;
     if (filters.prioridad && t.prioridad !== filters.prioridad) return false;
     if (filters.supervisor && t.supervisor !== filters.supervisor) return false;
+    if (filters.asignado && (t.asignadoA ?? "").toLowerCase() !== filters.asignado.toLowerCase()) return false;
+    if (filters.sinAsignar && (t.asignadoA ?? "").trim() !== "") return false;
     if (filters.desde && t.fechaInicio < filters.desde) return false;
     if (filters.hasta && t.fechaInicio > filters.hasta) return false;
     return true;

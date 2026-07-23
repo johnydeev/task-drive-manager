@@ -44,9 +44,15 @@ async function fetchEdificios(): Promise<Edificio[]> {
 }
 
 export default function TareasPage() {
+  const { data: session } = useSession();
+  const myEmail = session?.user?.email?.toLowerCase() ?? "";
+  const isAdmin = !session?.user || session.user.rol === "admin";
+
   const [edificio, setEdificio] = useState<string>("");
   const [estado, setEstado] = useState<EstadoTarea | "Todos">("Todos");
   const [prioridad, setPrioridad] = useState<Prioridad | "Todas">("Todas");
+  const [soloMias, setSoloMias] = useState(false);
+  const [soloSinAsignar, setSoloSinAsignar] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const params = useMemo(() => {
@@ -54,11 +60,12 @@ export default function TareasPage() {
     if (edificio) p.set("edificio", edificio);
     if (estado !== "Todos") p.set("estado", estado);
     if (prioridad !== "Todas") p.set("prioridad", prioridad);
+    if (soloMias && myEmail) p.set("asignado", myEmail);
+    if (soloSinAsignar) p.set("sinAsignar", "1");
     return p;
-  }, [edificio, estado, prioridad]);
+  }, [edificio, estado, prioridad, soloMias, soloSinAsignar, myEmail]);
 
   const qc = useQueryClient();
-  const { data: session } = useSession();
   const [toDelete, setToDelete] = useState<Tarea | null>(null);
   const [deleteDone, setDeleteDone] = useState(false);
 
@@ -82,12 +89,7 @@ export default function TareasPage() {
     },
   });
 
-  // Puede eliminar el admin o quien creó la tarea. Sin sesión (demo/carga) es permisivo;
-  // el servidor igual valida el permiso.
-  const canDelete = (t: Tarea) =>
-    !session?.user ||
-    session.user.rol === "admin" ||
-    session.user.email?.toLowerCase() === t.supervisor?.toLowerCase();
+  // Borrar es solo del admin (el server lo valida igual). Sin sesión (demo) es permisivo.
 
   return (
     <div className="px-4 py-4 md:px-8 md:py-6 max-w-5xl mx-auto w-full">
@@ -112,6 +114,33 @@ export default function TareasPage() {
             <Plus size={16} /> Nueva
           </Link>
         </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={() => { setSoloMias((v) => !v); setSoloSinAsignar(false); }}
+          className={cn(
+            "rounded-full border px-3 py-1 text-xs font-medium transition",
+            soloMias
+              ? "border-slate-900 bg-slate-900 text-white"
+              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+          )}
+        >
+          Mis tareas asignadas
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => { setSoloSinAsignar((v) => !v); setSoloMias(false); }}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition",
+              soloSinAsignar
+                ? "border-red-500 bg-red-500 text-white"
+                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            Sin asignar
+          </button>
+        )}
       </div>
 
       {showFilters && (
@@ -188,7 +217,7 @@ export default function TareasPage() {
                 </div>
               </div>
             </Link>
-            {canDelete(t) && (
+            {isAdmin && (
               <button
                 onClick={() => setToDelete(t)}
                 aria-label="Eliminar tarea"
