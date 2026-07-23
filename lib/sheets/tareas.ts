@@ -20,6 +20,7 @@ import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
 import { estadoEnum, prioridadEnum } from "../schemas";
 import { nowBuenosAiresISO } from "../fecha-ar";
+import { estadoEfectivoTarea } from "../tareas-estado";
 import {
   getAllArchivos,
   mediaFromArchivos,
@@ -156,7 +157,11 @@ export async function getTareas(filters: TareaFilters = {}): Promise<Tarea[]> {
   const rows = await readRange(TAREAS_RANGE);
   const tareas = parseTareasRows(rows);
   const archivos = await getAllArchivos();
-  const conMedia = tareas.map((t) => ({ ...t, ...mediaFromArchivos(archivos, t.rowId) }));
+  const conMedia = tareas.map((t) => ({
+    ...t,
+    ...mediaFromArchivos(archivos, t.rowId),
+    estado: estadoEfectivoTarea(t), // cierre derivado a 72h (nunca persistido)
+  }));
   return filterTareas(conMedia, filters);
 }
 

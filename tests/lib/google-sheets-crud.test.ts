@@ -71,6 +71,26 @@ beforeEach(() => {
   batchUpdate.mockReset().mockResolvedValue({});
 });
 
+describe("getTareas — estado derivado a 72h", () => {
+  it("una tarea En Revisión con revision_en de hace >72h se lee como Realizada", async () => {
+    const header = new Array(24).fill("");
+    header[0] = "id"; header[1] = "objetivo"; header[2] = "fecha_inicio"; header[3] = "fecha_estimada";
+    header[4] = "edificio"; header[5] = "parte_comun"; header[6] = "dpto"; header[7] = "informe";
+    header[17] = "estado"; header[20] = "prioridad"; header[21] = "supervisor";
+    header[22] = "asignado_a"; header[23] = "revision_en";
+    const viejo = new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(); // hace 4 días
+    const row = new Array(24).fill("");
+    row[0] = ROW_ID; row[1] = "obj"; row[2] = "2026-07-16"; row[3] = "2026-07-20";
+    row[4] = "Edif A"; row[5] = "FALSE"; row[6] = "1A"; row[7] = "informe";
+    row[17] = "En Revisión"; row[20] = "Media"; row[21] = "sup@x.com";
+    row[22] = "juan@x.com"; row[23] = viejo;
+    mockRanges({ "Tareas!A:Z": [header, row], "TareaArchivos!A:F": [] });
+    const ts = await getTareas();
+    expect(ts).toHaveLength(1);
+    expect(ts[0].estado).toBe("Realizada");
+  });
+});
+
 describe("getTareas (real)", () => {
   it("parsea filas validas (ignorando header/basura) y aplica filtros", async () => {
     mockRanges({
