@@ -19,6 +19,7 @@ const estadoBadge: Record<EstadoTarea, string> = {
   Aceptada: "bg-indigo-100 text-indigo-800 border-indigo-200",
   "En Proceso": "bg-blue-100 text-blue-800 border-blue-200",
   "En Revisión": "bg-purple-100 text-purple-800 border-purple-200",
+  Objetada: "bg-red-100 text-red-800 border-red-200",
   Realizada: "bg-green-100 text-green-800 border-green-200",
 };
 
@@ -224,7 +225,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           </Section>
         )}
 
-        {(t.comentarioEnProceso || t.comentarioRevision || t.comentarioRealizado) && (
+        {(t.comentarioEnProceso || t.comentarioRevision || t.notaObjecion || t.comentarioRealizado) && (
           <Section title="Comentarios">
             {t.comentarioEnProceso && (
               <div>
@@ -234,8 +235,18 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
             )}
             {t.comentarioRevision && (
               <div className="mt-2">
-                <p className="text-xs font-medium text-slate-500">Revisión</p>
+                <p className="text-xs font-medium text-slate-500">
+                  Revisión{t.revisionEn ? ` - ${formatFecha(t.revisionEn)}` : ""}
+                </p>
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioRevision}</p>
+              </div>
+            )}
+            {t.notaObjecion && (
+              <div className="mt-2">
+                <p className="text-xs font-medium text-red-600">
+                  Objeción{t.objetadaEn ? ` - ${formatFecha(t.objetadaEn)}` : ""}
+                </p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.notaObjecion}</p>
               </div>
             )}
             {t.comentarioRealizado && (

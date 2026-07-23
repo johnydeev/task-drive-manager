@@ -97,7 +97,7 @@ describe("mapping de asignación / ciclo de vida", () => {
   const header = [
     ...headerNuevo,
     "asignado_a", "asignada_en", "aceptada_en", "revision_en", "realizada_en",
-    "comentario_revision",
+    "comentario_revision", "nota_objecion", "objetada_en",
   ];
 
   it("hace ida y vuelta de los campos nuevos (rowToTarea ↔ tareaToRow)", () => {
@@ -118,5 +118,19 @@ describe("mapping de asignación / ciclo de vida", () => {
     expect(tarea.revisionEn).toBe("2026-07-23T12:00:00.000Z");
     expect(tarea.comentarioRevision).toBe("listo para revisar");
     expect(tarea.estado).toBe("En Revisión");
+  });
+
+  it("hace ida y vuelta de nota_objecion / objetada_en", () => {
+    const h = buildHeaderMap(header);
+    const row = tareaToRow(h, {
+      rowId: "2026-07-23T10:00:00.000Z",
+      estado: "Objetada",
+      notaObjecion: "falta el informe",
+      objetadaEn: "2026-07-23T15:00:00.000Z",
+    }).map(String);
+    const tarea = rowToTarea(h, row, 2);
+    expect(tarea.estado).toBe("Objetada");
+    expect(tarea.notaObjecion).toBe("falta el informe");
+    expect(tarea.objetadaEn).toBe("2026-07-23T15:00:00.000Z");
   });
 });

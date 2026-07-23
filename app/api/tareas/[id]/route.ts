@@ -110,13 +110,29 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
 
   if (accion === "revisar") {
     if (!esAsignado) return jsonError(403, "Solo el asignado puede mandar a revisión");
-    if (t.estado !== "En Proceso") return jsonError(409, "La tarea no está En Proceso");
+    if (t.estado !== "En Proceso" && t.estado !== "Objetada") {
+      return jsonError(409, "La tarea no está En Proceso ni Objetada");
+    }
     return NextResponse.json(
       await updateTarea({
         rowId: t.rowId,
         estado: "En Revisión",
         revisionEn: now,
         comentarioRevision: comentario ?? "",
+      })
+    );
+  }
+
+  if (accion === "objetar") {
+    if (!esAdmin) return jsonError(403, "Solo el admin puede objetar");
+    if (t.estado !== "En Revisión") return jsonError(409, "Solo se puede objetar una tarea En Revisión");
+    if (!nota?.trim()) return jsonError(400, "El motivo de la objeción es requerido");
+    return NextResponse.json(
+      await updateTarea({
+        rowId: t.rowId,
+        estado: "Objetada",
+        notaObjecion: nota.trim(),
+        objetadaEn: now,
       })
     );
   }

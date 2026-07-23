@@ -72,6 +72,8 @@ export function rowToTarea(h: HeaderMap, row: string[], rowNumber: number): Tare
     revisionEn: g("revision_en") || undefined,
     realizadaEn: g("realizada_en") || undefined,
     comentarioRevision: g("comentario_revision") || undefined,
+    notaObjecion: g("nota_objecion") || undefined,
+    objetadaEn: g("objetada_en") || undefined,
   };
 }
 
@@ -88,7 +90,7 @@ export function tareaToRow(
     "reporte_url", "proveedor", "estado", "presupuesto", "fecha_realizado", "prioridad",
     "supervisor", "creado_en", "actualizado_en",
     "asignado_a", "asignada_en", "aceptada_en", "revision_en", "realizada_en",
-    "comentario_revision",
+    "comentario_revision", "nota_objecion", "objetada_en",
   ];
   const width = Math.max(1, ...CAMPOS.map((n) => h.index(n) + 1));
   const row: (string | number)[] = new Array(width).fill("");
@@ -122,6 +124,8 @@ export function tareaToRow(
   set("revision_en", t.revisionEn ?? "");
   set("realizada_en", t.realizadaEn ?? "");
   set("comentario_revision", t.comentarioRevision ?? "");
+  set("nota_objecion", t.notaObjecion ?? "");
+  set("objetada_en", t.objetadaEn ?? "");
   return row;
 }
 
@@ -184,7 +188,7 @@ export async function getTareaPersistida(rowId: string): Promise<Tarea | null> {
 
 // Lee el header row de Tareas y devuelve el HeaderMap.
 async function getTareasHeaderMap(): Promise<HeaderMap> {
-  const headerRow = (await readRange(`${SHEETS.tareas}!A1:Z1`))[0] ?? [];
+  const headerRow = (await readRange(`${SHEETS.tareas}!A1:AD1`))[0] ?? [];
   return buildHeaderMap(headerRow);
 }
 

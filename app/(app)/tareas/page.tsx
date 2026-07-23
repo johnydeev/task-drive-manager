@@ -13,7 +13,7 @@ import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
 import { Plus, Filter, Trash2, Check } from "lucide-react";
 
 const ESTADOS: (EstadoTarea | "Todos")[] = [
-  "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+  "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Objetada", "Realizada",
 ];
 const PRIORIDADES: (Prioridad | "Todas")[] = ["Todas", "Alta", "Media", "Baja"];
 
@@ -23,6 +23,7 @@ const estadoBadge: Record<EstadoTarea, string> = {
   Aceptada: "bg-indigo-100 text-indigo-800 border-indigo-200",
   "En Proceso": "bg-blue-100 text-blue-800 border-blue-200",
   "En Revisión": "bg-purple-100 text-purple-800 border-purple-200",
+  Objetada: "bg-red-100 text-red-800 border-red-200",
   Realizada: "bg-green-100 text-green-800 border-green-200",
 };
 

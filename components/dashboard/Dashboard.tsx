@@ -35,6 +35,7 @@ const ESTADO_COLORS: Record<EstadoTarea, string> = {
   Aceptada: "#6366f1",
   "En Proceso": "#3b82f6",
   "En Revisión": "#a855f7",
+  Objetada: "#ef4444",
   Realizada: "#10b981",
 };
 
@@ -45,7 +46,7 @@ const PRIORIDAD_COLORS: Record<Prioridad, string> = {
 };
 
 const ESTADOS: (EstadoTarea | "Todos")[] = [
-  "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+  "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Objetada", "Realizada",
 ];
 const PRIORIDADES: (Prioridad | "Todas")[] = ["Todas", "Alta", "Media", "Baja"];
 
@@ -79,7 +80,8 @@ export function Dashboard() {
     kpis.porEstado.Asignada +
     kpis.porEstado.Aceptada +
     kpis.porEstado["En Proceso"] +
-    kpis.porEstado["En Revisión"];
+    kpis.porEstado["En Revisión"] +
+    kpis.porEstado.Objetada;
   const porEdificio = useMemo(() => groupByEdificio(tareasFiltradas), [tareasFiltradas]);
   const porProveedor = useMemo(() => groupByProveedor(tareasFiltradas).slice(0, 8), [tareasFiltradas]);
   const timeline = useMemo(() => timelinePorMes(tareasFiltradas), [tareasFiltradas]);

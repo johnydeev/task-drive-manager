@@ -16,7 +16,7 @@ export const SHEETS = {
   partesComunes: "Partes Comunes",
 } as const;
 
-export const TAREAS_RANGE = `${SHEETS.tareas}!A:Z`;
+export const TAREAS_RANGE = `${SHEETS.tareas}!A:AD`;
 
 let sheetsClient: sheets_v4.Sheets | null = null;
 

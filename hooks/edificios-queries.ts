@@ -17,3 +17,7 @@ export const useEdificiosSinAsignar = (enabled = true) =>
     fetcher: api.asignaciones.sinAsignar,
     enabled,
   });
+
+// Todas las tareas (para agrupar por integrante en la vista Edificios).
+export const useTareas = () =>
+  useCachedQuery({ queryKey: ["tareas-all"], fetcher: () => api.tareas.list({}) });

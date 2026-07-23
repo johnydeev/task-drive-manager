@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatFecha } from "@/lib/utils";
 import type { Tarea, Usuario } from "@/types";
 import { Loader2 } from "lucide-react";
 
 export type TransicionInput = {
-  accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar";
+  accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar" | "objetar";
   comentario?: string;
   nota?: string;
 };
@@ -41,6 +41,14 @@ export function AccionesTarea({
   const puedeAsignar = isAdmin && (t.estado === "Sin asignar" || t.estado === "Asignada");
   const puedeCerrar = isAdmin && t.estado === "En Revisión";
   const trPend = (accion: string) => transicionar.isPending && transicionar.variables?.accion === accion;
+
+  // Evita la tarjeta "Acciones" vacía en estados sin acción para el rol actual.
+  const mostrarPanel =
+    puedeAsignar ||
+    puedeCerrar ||
+    t.estado === "En Revisión" ||
+    (esAsignado && ["Asignada", "Aceptada", "En Proceso", "Objetada"].includes(t.estado));
+  if (!mostrarPanel) return null;
 
   // Fecha de cierre automático (revisionEn + 72h). Pura: no lee el reloj actual.
   const venceISO = t.revisionEn
@@ -120,18 +128,51 @@ export function AccionesTarea({
           )}
           {puedeCerrar && (
             <div>
-              <label className="mb-1 block text-sm text-slate-600">Nota de cierre (opcional)</label>
+              <label className="mb-1 block text-sm text-slate-600">
+                Comentario (nota de cierre / motivo de objeción)
+              </label>
               <textarea value={notaCierre} onChange={(e) => setNotaCierre(e.target.value)} rows={2} className="input w-full" />
-              <button
-                disabled={transicionar.isPending}
-                onClick={() => transicionar.mutate({ accion: "cerrar", nota: notaCierre })}
-                className="mt-1 flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {trPend("cerrar") && <Loader2 size={14} className="animate-spin" />}
-                Cerrar (dar por realizada)
-              </button>
+              <div className="mt-1 flex gap-2">
+                <button
+                  disabled={transicionar.isPending}
+                  onClick={() => transicionar.mutate({ accion: "cerrar", nota: notaCierre })}
+                  className="flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {trPend("cerrar") && <Loader2 size={14} className="animate-spin" />}
+                  Cerrar (dar por realizada)
+                </button>
+                <button
+                  disabled={!notaCierre.trim() || transicionar.isPending}
+                  onClick={() => transicionar.mutate({ accion: "objetar", nota: notaCierre })}
+                  className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {trPend("objetar") && <Loader2 size={14} className="animate-spin" />}
+                  Objetar
+                </button>
+              </div>
             </div>
           )}
+        </div>
+      )}
+
+      {esAsignado && t.estado === "Objetada" && (
+        <div className="space-y-2">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+            <p className="text-xs font-medium text-red-700">
+              Objeción del admin{t.objetadaEn ? ` - ${formatFecha(t.objetadaEn)}` : ""}
+            </p>
+            <p className="text-sm whitespace-pre-wrap text-red-800">{t.notaObjecion}</p>
+          </div>
+          <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué corregiste)</label>
+          <textarea value={comRevision} onChange={(e) => setComRevision(e.target.value)} rows={2} className="input w-full" />
+          <button
+            disabled={transicionar.isPending}
+            onClick={() => transicionar.mutate({ accion: "revisar", comentario: comRevision })}
+            className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
+            Reenviar a revisión
+          </button>
         </div>
       )}
 

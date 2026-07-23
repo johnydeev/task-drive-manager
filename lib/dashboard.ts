@@ -7,13 +7,13 @@ export interface KpiSummary {
 }
 
 const ESTADOS: EstadoTarea[] = [
-  "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Realizada",
+  "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Objetada", "Realizada",
 ];
 const PRIORIDADES: Prioridad[] = ["Alta", "Media", "Baja"];
 
 export function buildKpis(tareas: Tarea[]): KpiSummary {
   const porEstado: Record<EstadoTarea, number> = {
-    "Sin asignar": 0, Asignada: 0, Aceptada: 0, "En Proceso": 0, "En Revisión": 0, Realizada: 0,
+    "Sin asignar": 0, Asignada: 0, Aceptada: 0, "En Proceso": 0, "En Revisión": 0, Objetada: 0, Realizada: 0,
   };
   const porPrioridad: Record<Prioridad, number> = { Alta: 0, Media: 0, Baja: 0 };
   for (const t of tareas) {

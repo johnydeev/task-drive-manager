@@ -124,6 +124,42 @@ describe("PATCH transiciones — asignado", () => {
   });
 });
 
+describe("PATCH transiciones — objetar", () => {
+  it("admin objeta una tarea En Revisión → Objetada con nota", async () => {
+    asSession("admin@x.com", "admin");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "objetar", nota: "falta el informe" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "Objetada", notaObjecion: "falta el informe" })
+    );
+  });
+
+  it("objetar sin motivo → 400", async () => {
+    asSession("admin@x.com", "admin");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "objetar", nota: "  " });
+    expect(res.status).toBe(400);
+  });
+
+  it("un no-admin no puede objetar → 403", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "objetar", nota: "x" });
+    expect(res.status).toBe(403);
+  });
+
+  it("el asignado reenvía una Objetada → En Revisión (pisa el comentario)", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Objetada", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "revisar", comentario: "corregido" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "En Revisión", comentarioRevision: "corregido" })
+    );
+  });
+});
+
 describe("PATCH transiciones — cerrar (admin)", () => {
   it("admin cierra: En Revisión → Realizada", async () => {
     asSession("admin@x.com", "admin");

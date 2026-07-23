@@ -50,6 +50,8 @@ vi.mock("@/lib/api-client", () => {
   };
 });
 
+import { api } from "@/lib/api-client";
+
 function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
@@ -66,6 +68,23 @@ describe("TareaDetalle", () => {
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     expect(await screen.findByText(/^acciones$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^asignar$/i })).toBeInTheDocument();
+  });
+
+  it("muestra la fecha de Revisión y la objeción en Comentarios", async () => {
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "Objetada", prioridad: "Media", supervisor: "a@b.com",
+      comentarioRevision: "listo",
+      revisionEn: "2026-07-23T12:00:00.000Z",
+      notaObjecion: "falta el informe",
+      objetadaEn: "2026-07-23T15:00:00.000Z",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByText(/Revisión - /)).toBeInTheDocument();
+    expect(screen.getByText(/Objeción - /)).toBeInTheDocument();
+    expect(screen.getByText("falta el informe")).toBeInTheDocument();
   });
 
   it("un supervisor que no la creó la ve pero sin acciones de escritura", async () => {

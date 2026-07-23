@@ -43,6 +43,8 @@ export const POST = withAuth(async (req, session) => {
   const tarea = await appendTarea(
     {
       ...parsed,
+      // fechaEstimada es opcional: se guarda "" si no se cargó.
+      fechaEstimada: parsed.fechaEstimada ?? "",
       // dpto es obligatorio (validado por tareaNuevaSchema): parte común específica
       // si parteComun=true, o el dpto elegido si es false.
       dpto: parsed.dpto?.trim() ?? "",

@@ -6,6 +6,7 @@ export const estadoEnum = z.enum([
   "Aceptada",
   "En Proceso",
   "En Revisión",
+  "Objetada",
   "Realizada",
 ]);
 export const prioridadEnum = z.enum(["Alta", "Media", "Baja"]);
@@ -38,7 +39,7 @@ function dptoRequiredRefine(
 const tareaBaseFields = {
   objetivo: z.string().min(1, "Objetivo requerido"),
   fechaInicio: isoDate,
-  fechaEstimada: isoDate,
+  fechaEstimada: isoDate.or(z.literal("")).optional(), // opcional: acepta fecha ISO o vacío
   edificio: z.string().min(1, "Edificio requerido"),
   parteComun: z.boolean(),
   dpto: z.string().optional(),
@@ -153,7 +154,7 @@ export const tareaAsignarSchema = z.object({
 
 // Transiciones del ciclo de vida. El permiso depende de la acción (validado en el handler).
 export const tareaTransicionSchema = z.object({
-  accion: z.enum(["aceptar", "empezar", "revisar", "cerrar", "comentar"]),
+  accion: z.enum(["aceptar", "empezar", "revisar", "cerrar", "comentar", "objetar"]),
   comentario: z.string().optional(), // revisar → comentarioRevision · comentar → comentarioEnProceso
   nota: z.string().optional(),       // cerrar → nota de cierre (comentarioRealizado)
 });

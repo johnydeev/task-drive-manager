@@ -130,7 +130,7 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
         rowId: taskRowId,
         objetivo: values.objetivo,
         fechaInicio: values.fechaInicio,
-        fechaEstimada: values.fechaEstimada,
+        fechaEstimada: values.fechaEstimada ?? "",
         edificio: values.edificio,
         parteComun: values.parteComun,
         // dpto es obligatorio (validado por el schema): la parte común específica

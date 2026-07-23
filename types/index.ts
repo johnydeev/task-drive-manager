@@ -8,6 +8,7 @@ export type EstadoTarea =
   | "Aceptada"
   | "En Proceso"
   | "En Revisión"
+  | "Objetada"
   | "Realizada";
 
 export type Prioridad = "Alta" | "Media" | "Baja";
@@ -65,6 +66,8 @@ export interface Tarea {
   revisionEn?: string;     // ISO datetime — arranca el reloj de 72 h
   realizadaEn?: string;    // ISO datetime — cierre a mano (distinto de fechaRealizado)
   comentarioRevision?: string; // lo escribe el asignado al mandar a revisar
+  notaObjecion?: string;   // motivo de la objeción del admin
+  objetadaEn?: string;     // ISO datetime — cuándo se objetó
 }
 
 // DTO para crear una tarea desde el cliente.

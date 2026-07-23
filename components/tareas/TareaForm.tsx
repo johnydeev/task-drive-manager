@@ -113,7 +113,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
               <input
                 value={f.nuevaParteComun}
                 onChange={(e) => f.setNuevaParteComun(e.target.value)}
-                placeholder="Ej: TERRAZA"
+                placeholder="Ej: TERRAZA (TODO EN MAYÚSCULA)"
                 className="input flex-1"
               />
               <button
@@ -137,7 +137,7 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
         <Field label="Fecha de inicio" error={f.errors.fechaInicio?.message}>
           <input type="date" {...f.register("fechaInicio")} className="input" />
         </Field>
-        <Field label="Fecha estimada" error={f.errors.fechaEstimada?.message}>
+        <Field label="Fecha estimada (opcional)" error={f.errors.fechaEstimada?.message}>
           <input type="date" {...f.register("fechaEstimada")} className="input" />
         </Field>
       </div>

@@ -37,6 +37,10 @@ describe("tareaNuevaSchema", () => {
     expect(result.dpto).toBe("Hall de entrada");
   });
 
+  it("acepta fechaEstimada vacía (opcional)", () => {
+    expect(tareaNuevaSchema.safeParse({ ...base, fechaEstimada: "" }).success).toBe(true);
+  });
+
   it("acepta documentos como array de URLs", () => {
     const result = tareaNuevaSchema.parse({
       ...base,

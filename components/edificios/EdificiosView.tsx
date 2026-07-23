@@ -7,8 +7,10 @@ import {
   useAsignaciones,
   useDirectivas,
   useEdificiosSinAsignar,
+  useTareas,
 } from "@/hooks/edificios-queries";
 import { IntegranteCard } from "./IntegranteCard";
+import { TareasAsignadasCard } from "./TareasAsignadasCard";
 
 export function EdificiosView() {
   const { data: session } = useSession();
@@ -20,6 +22,7 @@ export function EdificiosView() {
   const directivasQ = useDirectivas();
   const sinAsignarQ = useEdificiosSinAsignar(isAdmin);
   const sinAsignar = sinAsignarQ.data ?? [];
+  const tareasQ = useTareas();
 
   const integrantes = useMemo(() => {
     const all = (usuariosQ.data ?? []).filter((u) => u.activo);
@@ -43,20 +46,26 @@ export function EdificiosView() {
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         {integrantes.map((u) => (
-          <IntegranteCard
-            key={u.email}
-            usuario={u}
-            usuarios={usuariosQ.data}
-            asignaciones={(asignacionesQ.data ?? []).filter(
-              (a) => a.email.toLowerCase() === u.email.toLowerCase()
-            )}
-            directivas={(directivasQ.data ?? []).filter(
-              (d) => d.asignadoA.toLowerCase() === u.email.toLowerCase()
-            )}
-            readOnly={!isAdmin}
-            currentEmail={myEmail}
-            isAdmin={isAdmin}
-          />
+          <div key={u.email} className="space-y-4">
+            <IntegranteCard
+              usuario={u}
+              usuarios={usuariosQ.data}
+              asignaciones={(asignacionesQ.data ?? []).filter(
+                (a) => a.email.toLowerCase() === u.email.toLowerCase()
+              )}
+              directivas={(directivasQ.data ?? []).filter(
+                (d) => d.asignadoA.toLowerCase() === u.email.toLowerCase()
+              )}
+              readOnly={!isAdmin}
+              currentEmail={myEmail}
+              isAdmin={isAdmin}
+            />
+            <TareasAsignadasCard
+              tareas={(tareasQ.data ?? []).filter(
+                (t) => (t.asignadoA ?? "").toLowerCase() === u.email.toLowerCase()
+              )}
+            />
+          </div>
         ))}
       </div>
     </div>

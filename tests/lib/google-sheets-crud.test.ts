@@ -84,7 +84,7 @@ describe("getTareas — estado derivado a 72h", () => {
     row[4] = "Edif A"; row[5] = "FALSE"; row[6] = "1A"; row[7] = "informe";
     row[17] = "En Revisión"; row[20] = "Media"; row[21] = "sup@x.com";
     row[22] = "juan@x.com"; row[23] = viejo;
-    mockRanges({ "Tareas!A:Z": [header, row], "TareaArchivos!A:F": [] });
+    mockRanges({ "Tareas!A:AD": [header, row], "TareaArchivos!A:F": [] });
     const ts = await getTareas();
     expect(ts).toHaveLength(1);
     expect(ts[0].estado).toBe("Realizada");
@@ -94,7 +94,7 @@ describe("getTareas — estado derivado a 72h", () => {
 describe("getTareas (real)", () => {
   it("parsea filas validas (ignorando header/basura) y aplica filtros", async () => {
     mockRanges({
-      "Tareas!A:Z": [
+      "Tareas!A:AD": [
         HEADER_22, // fila 1 = header
         tareaRow(ROW_ID, "Edif A"),
         tareaRow("2026-07-16T11:00:00.000Z", "Edif B"),
@@ -111,7 +111,7 @@ describe("getTareas (real)", () => {
 
 describe("appendTarea (real)", () => {
   it("escribe con update en la proxima fila libre (A:V), no con append", async () => {
-    mockRanges({ "Tareas!A1:Z1": [HEADER_22], "Tareas!A:A": [["h"], ["x"], ["y"]] }); // 3 filas -> nextRow = 4
+    mockRanges({ "Tareas!A1:AD1": [HEADER_22], "Tareas!A:A": [["h"], ["x"], ["y"]] }); // 3 filas -> nextRow = 4
     const tarea = await appendTarea(
       {
         rowId: ROW_ID, objetivo: "obj", fechaInicio: "2026-07-16", fechaEstimada: "2026-07-20",
@@ -134,8 +134,8 @@ describe("appendTarea (real)", () => {
 describe("updateTarea (real)", () => {
   it("mergea sobre la tarea existente y escribe en su fila", async () => {
     mockRanges({
-      "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID, "Edif A", "Sin asignar")],
-      "Tareas!A1:Z1": [HEADER_22],
+      "Tareas!A:AD": [HEADER_22, tareaRow(ROW_ID, "Edif A", "Sin asignar")],
+      "Tareas!A1:AD1": [HEADER_22],
     });
     const updated = await updateTarea({ rowId: ROW_ID, estado: "Realizada" });
     expect(updated.estado).toBe("Realizada");
@@ -146,14 +146,14 @@ describe("updateTarea (real)", () => {
   });
 
   it("lanza si la tarea no existe", async () => {
-    mockRanges({ "Tareas!A:Z": [] });
+    mockRanges({ "Tareas!A:AD": [] });
     await expect(updateTarea({ rowId: "no-existe", estado: "Realizada" })).rejects.toThrow();
   });
 });
 
 describe("deleteTarea (real)", () => {
   it("borra la fila con batchUpdate/deleteDimension usando el gid", async () => {
-    mockRanges({ "Tareas!A:Z": [HEADER_22, tareaRow(ROW_ID)] });
+    mockRanges({ "Tareas!A:AD": [HEADER_22, tareaRow(ROW_ID)] });
     spreadsheetsGet.mockResolvedValue({
       data: { sheets: [{ properties: { sheetId: 999, title: "Tareas" } }] },
     });
@@ -168,7 +168,7 @@ describe("deleteTarea (real)", () => {
 
 describe("validación de enums al escribir (E)", () => {
   it("appendTarea rechaza un estado inválido y no escribe", async () => {
-    mockRanges({ "Tareas!A1:Z1": [HEADER_22], "Tareas!A:A": [["h"]] });
+    mockRanges({ "Tareas!A1:AD1": [HEADER_22], "Tareas!A:A": [["h"]] });
     await expect(
       appendTarea(
         {

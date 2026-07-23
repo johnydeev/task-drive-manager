@@ -6,7 +6,7 @@ describe("constantes de Sheet names", () => {
     expect(SHEETS.tareas).toBe("Tareas");
   });
 
-  it("TAREAS_RANGE apunta a Tareas!A:Z", () => {
-    expect(TAREAS_RANGE).toBe("Tareas!A:Z");
+  it("TAREAS_RANGE apunta a Tareas!A:AD", () => {
+    expect(TAREAS_RANGE).toBe("Tareas!A:AD");
   });
 });
