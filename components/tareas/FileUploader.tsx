@@ -4,6 +4,13 @@ import { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { api } from "@/lib/api-client";
 import { thumbUrl } from "@/lib/drive-url";
+import {
+  formatMB,
+  limiteMB,
+  mensajeArchivoPesado,
+  mensajeErrorSubida,
+  pesoMB,
+} from "@/lib/upload-limits";
 import type { Configuracion } from "@/types";
 import {
   Camera,
@@ -74,6 +81,10 @@ export function FileUploader({
     setError(null);
     setBusy(true);
 
+    // Archivo que está viajando ahora mismo: si el fetch se cae sin respuesta, el catch
+    // necesita saber qué era y cuánto pesaba para dar un mensaje útil.
+    let enVuelo: { kind: typeof kind; size: number } | null = null;
+
     try {
       const newImgs = [...imagenes];
       const newVids = [...videos];
@@ -110,21 +121,20 @@ export function FileUploader({
             useWebWorker: true,
             maxSizeMB: config.maxSizeImagenMB,
           });
-        } else if (isVideo) {
-          const sizeMB = raw.size / (1024 * 1024);
-          if (sizeMB > config.maxSizeVideoMB) {
-            setError(`Video ${raw.name} excede ${config.maxSizeVideoMB}MB`);
-            continue;
-          }
-        } else if (isPdf) {
-          const sizeMB = raw.size / (1024 * 1024);
-          if (sizeMB > config.maxSizePdfMB) {
-            setError(`PDF ${raw.name} excede ${config.maxSizePdfMB}MB`);
-            continue;
-          }
         }
 
+        // Cortamos acá, antes de gastar datos del celular: el límite es el de la hoja
+        // Configuracion, topeado por lo que la infra puede transportar (ver upload-limits).
+        // Para las imágenes se mide el archivo YA comprimido, que es el que viaja.
+        const limite = limiteMB(kind, config);
+        if (pesoMB(file.size) > limite) {
+          setError(mensajeArchivoPesado(kind, file.size, limite));
+          continue;
+        }
+
+        enVuelo = { kind, size: file.size };
         const result = await api.upload(file, edificio, objetivo, dpto, rowId);
+        enVuelo = null;
         if (result.kind === "imagen") newImgs.push(result.url);
         else if (result.kind === "video") newVids.push(result.url);
         else newDocs.push(result.url);
@@ -133,8 +143,13 @@ export function FileUploader({
 
       onChange({ imagenes: newImgs, videos: newVids, documentos: newDocs });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error al subir archivo";
-      setError(msg);
+      setError(
+        enVuelo
+          ? mensajeErrorSubida(e, enVuelo.kind, enVuelo.size)
+          : e instanceof Error
+            ? e.message
+            : "Error al subir archivo"
+      );
     } finally {
       setBusy(false);
       // Limpiar inputs para permitir reselección del mismo archivo.
@@ -227,6 +242,7 @@ export function FileUploader({
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-slate-600">
             Imágenes ({imagenes.length}/{config.maxImagenes})
+            <span className="font-normal text-slate-500"> · máx {formatMB(limiteMB("imagen", config))} c/u</span>
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -254,6 +270,7 @@ export function FileUploader({
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-slate-600">
             Videos ({videos.length}/{config.maxVideos})
+            <span className="font-normal text-slate-500"> · máx {formatMB(limiteMB("video", config))} c/u</span>
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -281,6 +298,7 @@ export function FileUploader({
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-slate-600">
             Documentos ({documentos.length}/{config.maxDocumentos})
+            <span className="font-normal text-slate-500"> · máx {formatMB(limiteMB("documento", config))} c/u</span>
           </p>
           <button
             type="button"

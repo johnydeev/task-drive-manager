@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { uploadTareaFile, trashFileByUrl } from "@/lib/google-drive";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
+import { limiteMB, mensajeArchivoPesado, pesoMB } from "@/lib/upload-limits";
 
 export const runtime = "nodejs";
 // Subir un video de decenas de MB a Drive tarda: damos margen de ejecución.
@@ -55,19 +56,16 @@ export async function POST(req: NextRequest) {
       return jsonError(400, `Tipo de archivo no permitido: ${file.type}`);
     }
 
+    const kind = isImage ? "imagen" : isVideo ? "video" : "documento";
+
+    // Mismo límite y mismo texto que el cliente (lib/upload-limits): el cliente corta
+    // antes para no gastar datos, pero la que manda es esta validación.
     const cfg = await getConfiguracion();
-    const sizeMB = file.size / (1024 * 1024);
-    if (isImage && sizeMB > cfg.maxSizeImagenMB) {
-      return jsonError(413, `Imagen excede el máximo de ${cfg.maxSizeImagenMB}MB`);
-    }
-    if (isVideo && sizeMB > cfg.maxSizeVideoMB) {
-      return jsonError(413, `Video excede el máximo de ${cfg.maxSizeVideoMB}MB`);
-    }
-    if (isPdf && sizeMB > cfg.maxSizePdfMB) {
-      return jsonError(413, `PDF excede el máximo de ${cfg.maxSizePdfMB}MB`);
+    const limite = limiteMB(kind, cfg);
+    if (pesoMB(file.size) > limite) {
+      return jsonError(413, mensajeArchivoPesado(kind, file.size, limite));
     }
 
-    const kind = isImage ? "imagen" : isVideo ? "video" : "documento";
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await uploadTareaFile({
       buffer,

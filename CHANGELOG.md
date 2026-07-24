@@ -50,6 +50,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - `offline-db`: nueva tabla Dexie `cacheProveedores` (schema v2) para poblar el dropdown de
   proveedores sin conexión
 
+### Added
+- **Errores de subida que se entienden.** El `FileUploader` avisa el peso máximo por
+  archivo al lado de cada contador (ej. `Videos (0/2) · máx 95 MB c/u`), y si el archivo
+  se pasa dice exactamente por qué: *"El video no puede pesar más de 95 MB — este pesa
+  187 MB"*. Si la subida se cae sin respuesta (el `Failed to fetch` pelado del navegador),
+  el mensaje explica que se cortó la conexión y cuánto pesaba el archivo. Límites y textos
+  viven una sola vez en `lib/upload-limits.ts` y los comparten el cliente y `/api/upload`
+- **Techo de subida por infraestructura** (`LIMITE_INFRA_MB = 95`): el máximo real es el
+  menor entre lo que dice la hoja `Configuracion` y lo que la infra soporta. Cloudflare
+  (plan Free) rechaza todo request de más de 100 MB **cortando la conexión mientras el
+  celular sube**, así que el navegador nunca ve el 413 y el `fetch` falla sin explicación.
+  Ahora se corta antes, del lado del cliente, con un mensaje claro
+
 ### Fixed
 - **Subir un video desde el celular fallaba con "Failed to parse body as FormData".**
   Next 16 clona y bufferea en memoria el body de todo request no-GET que pase por el
