@@ -50,13 +50,17 @@ export function AccionesTarea({
   usuarios?: Usuario[];
 }) {
   const [nuevoAsignado, setNuevoAsignado] = useState("");
-  const [comProceso, setComProceso] = useState(t.comentarioEnProceso ?? "");
+  const [comProceso, setComProceso] = useState("");
   const [comRevision, setComRevision] = useState("");
   const [notaCierre, setNotaCierre] = useState("");
-  // Paso explícito para mandar a revisión desde "En Proceso".
+  // Cada salto de etapa (entrar a En Proceso / entrar a En Revisión) se inicia explícitamente
+  // y recién ahí muestra su textarea de comentario. Mismo patrón para los dos.
+  const [iniciandoProceso, setIniciandoProceso] = useState(false);
   const [pasandoARevision, setPasandoARevision] = useState(false);
   // Confirmación de las acciones destructivas/terminales del admin.
   const [confirmAccion, setConfirmAccion] = useState<null | "cerrar" | "objetar">(null);
+  // Confirmación de "saltar de etapa sin comentario" (el textarea del salto está vacío).
+  const [confirmSinComentario, setConfirmSinComentario] = useState<null | "proceso" | "revision">(null);
 
   if (!isAdmin && !esAsignado) return null;
 
@@ -117,69 +121,66 @@ export function AccionesTarea({
         </button>
       )}
 
+      {/* Salto A: Aceptada → En Proceso. Botón → textarea + "Guardar y pasar a En proceso". */}
       {esAsignado && t.estado === "Aceptada" && (
-        <button
-          disabled={trPend("empezar")}
-          onClick={() => transicionar.mutate({ accion: "empezar" })}
-          className={BTN_DARK}
-        >
-          {trPend("empezar") && <Loader2 size={14} className="animate-spin" />}
-          Comenzar en Proceso
-        </button>
-      )}
-
-      {esAsignado && t.estado === "En Proceso" && (
-        <div className="space-y-3">
-          <div>
+        !iniciandoProceso ? (
+          <button onClick={() => setIniciandoProceso(true)} className={BTN_DARK}>
+            Comenzar en Proceso
+          </button>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <label className="mb-1 block text-sm text-slate-600">Comentario (en proceso)</label>
             <textarea value={comProceso} onChange={(e) => setComProceso(e.target.value)} rows={2} className="input w-full" />
-            <button
-              disabled={transicionar.isPending}
-              onClick={() => transicionar.mutate({ accion: "comentar", comentario: comProceso })}
-              className={`mt-1 ${BTN_OUTLINE}`}
-            >
-              {trPend("comentar") && <Loader2 size={14} className="animate-spin" />}
-              Guardar comentario
-            </button>
-          </div>
-
-          {/* Paso siguiente: se inicia explícitamente y recién ahí pide su comentario.
-              El botón primario aparece SOLO cuando ya hay un comentario en proceso guardado
-              (dato del servidor, así también aparece al reabrir una tarea que ya lo tenía).
-              Como el comentario es opcional, si no hay ninguno se ofrece una salida discreta. */}
-          {!pasandoARevision ? (
-            t.comentarioEnProceso?.trim() ? (
-              <button onClick={() => setPasandoARevision(true)} className={BTN_DARK}>
-                Pasar a En Revisión
-              </button>
-            ) : (
+            <div className="mt-2 flex gap-2">
               <button
-                onClick={() => setPasandoARevision(true)}
-                className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700"
+                disabled={transicionar.isPending}
+                onClick={() =>
+                  comProceso.trim()
+                    ? transicionar.mutate({ accion: "empezar", comentario: comProceso })
+                    : setConfirmSinComentario("proceso")
+                }
+                className={BTN_DARK}
               >
-                pasar a revisión sin comentar
+                {trPend("empezar") && <Loader2 size={14} className="animate-spin" />}
+                Guardar y pasar a En proceso
               </button>
-            )
-          ) : (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué hiciste)</label>
-              <textarea value={comRevision} onChange={(e) => setComRevision(e.target.value)} rows={2} className="input w-full" />
-              <div className="mt-2 flex gap-2">
-                <button
-                  disabled={transicionar.isPending}
-                  onClick={() => transicionar.mutate({ accion: "revisar", comentario: comRevision })}
-                  className={BTN_DARK}
-                >
-                  {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
-                  Confirmar y pasar a En Revisión
-                </button>
-                <button onClick={() => setPasandoARevision(false)} className={BTN_OUTLINE}>
-                  Cancelar
-                </button>
-              </div>
+              <button onClick={() => setIniciandoProceso(false)} className={BTN_OUTLINE}>
+                Cancelar
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )
+      )}
+
+      {/* Salto B: En Proceso → En Revisión. Mismo patrón que el salto A. */}
+      {esAsignado && t.estado === "En Proceso" && (
+        !pasandoARevision ? (
+          <button onClick={() => setPasandoARevision(true)} className={BTN_DARK}>
+            Pasar a revisión
+          </button>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué hiciste)</label>
+            <textarea value={comRevision} onChange={(e) => setComRevision(e.target.value)} rows={2} className="input w-full" />
+            <div className="mt-2 flex gap-2">
+              <button
+                disabled={transicionar.isPending}
+                onClick={() =>
+                  comRevision.trim()
+                    ? transicionar.mutate({ accion: "revisar", comentario: comRevision })
+                    : setConfirmSinComentario("revision")
+                }
+                className={BTN_DARK}
+              >
+                {trPend("revisar") && <Loader2 size={14} className="animate-spin" />}
+                Guardar y pasar a revisión
+              </button>
+              <button onClick={() => setPasandoARevision(false)} className={BTN_OUTLINE}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )
       )}
 
       {t.estado === "En Revisión" && (
@@ -260,6 +261,26 @@ export function AccionesTarea({
           setConfirmAccion(null);
         }}
         onCancel={() => setConfirmAccion(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmSinComentario !== null}
+        title={confirmSinComentario === "revision" ? "Pasar a revisión sin comentario" : "Pasar sin comentario"}
+        message={
+          confirmSinComentario === "revision"
+            ? "No cargaste un comentario de revisión. ¿Pasar la tarea a revisión igual?"
+            : "No cargaste un comentario en proceso. ¿Continuar igual?"
+        }
+        loading={transicionar.isPending}
+        onConfirm={() => {
+          if (confirmSinComentario === "revision") {
+            transicionar.mutate({ accion: "revisar", comentario: "" });
+          } else if (confirmSinComentario === "proceso") {
+            transicionar.mutate({ accion: "empezar", comentario: "" });
+          }
+          setConfirmSinComentario(null);
+        }}
+        onCancel={() => setConfirmSinComentario(null)}
       />
     </div>
   );

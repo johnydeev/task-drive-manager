@@ -36,11 +36,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
 
 ### Changed
-- **Flujo "En Proceso" del asignado más claro** (`AccionesTarea`): el botón para arrancar
-  ahora dice **"Comenzar en Proceso"** (antes "Pasar a En Proceso"), y el botón **"Pasar a
-  En Revisión"** aparece **recién cuando hay un comentario en proceso guardado**, en vez de
-  estar junto al textarea desde el principio (confundía el paso). Como el comentario es
-  opcional, si no hay ninguno se ofrece un enlace discreto **"pasar a revisión sin comentar"**
+- **Flujo del asignado unificado y simétrico** (`AccionesTarea`): los dos saltos de etapa
+  (Aceptada→En Proceso y En Proceso→En Revisión) usan **el mismo patrón**: un botón inicial
+  (**"Comenzar en Proceso"** / **"Pasar a revisión"**) que abre un textarea de comentario con
+  **"Guardar y pasar a {etapa}"** + **"Cancelar"**. Si el textarea queda vacío, un modal
+  pregunta si se avanza **sin comentario**. El **comentario en proceso ahora se carga al
+  entrar** a En Proceso (la acción `empezar` lo guarda) y sigue editándose desde la card de
+  Comentarios. Reemplaza el flujo anterior de dos botones ("Guardar comentario" + pasar a
+  revisión), que confundía
 - **Lista de tareas**: si la tarea **no tiene fecha estimada**, ya no se muestra la palabra
   "Estimada" colgada sin fecha (queda solo `Inicio {fecha}`)
 - **CI/CD unificado en 3 fases encadenadas** (`ci-cd.yml`): Test → Build → Deploy, en un solo

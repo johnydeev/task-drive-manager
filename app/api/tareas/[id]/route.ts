@@ -99,7 +99,10 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
   if (accion === "empezar") {
     if (!esAsignado) return jsonError(403, "Solo el asignado puede iniciar");
     if (t.estado !== "Aceptada") return jsonError(409, "La tarea no está en estado Aceptada");
-    return NextResponse.json(await updateTarea({ rowId: t.rowId, estado: "En Proceso" }));
+    // El comentario en proceso se carga al entrar (opcional): se guarda en la misma transición.
+    return NextResponse.json(
+      await updateTarea({ rowId: t.rowId, estado: "En Proceso", comentarioEnProceso: comentario ?? "" })
+    );
   }
 
   if (accion === "comentar") {

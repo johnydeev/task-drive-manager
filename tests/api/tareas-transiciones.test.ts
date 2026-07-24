@@ -112,6 +112,16 @@ describe("PATCH transiciones — asignado", () => {
     expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(expect.objectContaining({ estado: "En Proceso" }));
   });
 
+  it("empezar con comentario: guarda comentarioEnProceso al entrar a En Proceso", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Aceptada", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "empezar", comentario: "arranco con esto" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "En Proceso", comentarioEnProceso: "arranco con esto" })
+    );
+  });
+
   it("revisar: En Proceso → En Revisión con revisionEn + comentario", async () => {
     asSession("juan@x.com", "supervisor");
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Proceso", asignadoA: "juan@x.com" }));

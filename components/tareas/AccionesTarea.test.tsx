@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { AccionesTarea, type TransicionInput } from "./AccionesTarea";
 import type { Tarea } from "@/types";
@@ -47,25 +47,63 @@ const renderPanel = (t: Tarea, extra: Partial<Parameters<typeof AccionesTarea>[0
     />
   );
 
-describe("AccionesTarea — flujo En Proceso", () => {
-  it("en Aceptada el botón dice 'Comenzar en Proceso' (no 'Pasar a En Proceso')", () => {
+describe("AccionesTarea — salto Aceptada → En Proceso", () => {
+  it("sin iniciar muestra solo el botón 'Comenzar en Proceso' (sin textarea)", () => {
     renderPanel(tarea({ estado: "Aceptada" }));
-    expect(screen.getByRole("button", { name: /comenzar en proceso/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /pasar a en proceso/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^comenzar en proceso$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
-  it("en En Proceso SIN comentario guardado: no muestra el botón primario 'Pasar a En Revisión'", () => {
-    renderPanel(tarea({ estado: "En Proceso", comentarioEnProceso: "" }));
-    expect(screen.queryByRole("button", { name: /^pasar a en revisión$/i })).not.toBeInTheDocument();
-    // pero sí ofrece la salida opcional
-    expect(screen.getByRole("button", { name: /pasar a revisión sin comentar/i })).toBeInTheDocument();
+  it("al iniciar abre el textarea + 'Guardar y pasar a En proceso' + 'Cancelar'", () => {
+    renderPanel(tarea({ estado: "Aceptada" }));
+    fireEvent.click(screen.getByRole("button", { name: /^comenzar en proceso$/i }));
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /guardar y pasar a en proceso/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cancelar/i })).toBeInTheDocument();
   });
 
-  it("en En Proceso CON comentario guardado: muestra el botón primario 'Pasar a En Revisión'", () => {
-    renderPanel(tarea({ estado: "En Proceso", comentarioEnProceso: "avancé con la pintura" }));
-    expect(screen.getByRole("button", { name: /^pasar a en revisión$/i })).toBeInTheDocument();
+  it("guardar con el textarea vacío abre el modal de confirmación", () => {
+    renderPanel(tarea({ estado: "Aceptada" }));
+    fireEvent.click(screen.getByRole("button", { name: /^comenzar en proceso$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /guardar y pasar a en proceso/i }));
+    expect(screen.getByText(/sin comentario/i)).toBeInTheDocument();
+  });
+
+  it("guardar con texto dispara 'empezar' con el comentario", () => {
+    const transicionar = mockMutation<TransicionInput>();
+    renderPanel(tarea({ estado: "Aceptada" }), { transicionar });
+    fireEvent.click(screen.getByRole("button", { name: /^comenzar en proceso$/i }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "arranco" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar y pasar a en proceso/i }));
+    expect(transicionar.mutate).toHaveBeenCalledWith({ accion: "empezar", comentario: "arranco" });
+  });
+});
+
+describe("AccionesTarea — salto En Proceso → En Revisión", () => {
+  it("sin iniciar muestra solo el botón 'Pasar a revisión' (sin textarea ni 'Guardar comentario')", () => {
+    renderPanel(tarea({ estado: "En Proceso", comentarioEnProceso: "algo" }));
+    expect(screen.getByRole("button", { name: /^pasar a revisión$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar comentario/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /pasar a revisión sin comentar/i })
     ).not.toBeInTheDocument();
+  });
+
+  it("al iniciar abre el textarea + 'Guardar y pasar a revisión' + 'Cancelar'", () => {
+    renderPanel(tarea({ estado: "En Proceso" }));
+    fireEvent.click(screen.getByRole("button", { name: /^pasar a revisión$/i }));
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /guardar y pasar a revisión/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cancelar/i })).toBeInTheDocument();
+  });
+
+  it("guardar con texto dispara 'revisar' con el comentario", () => {
+    const transicionar = mockMutation<TransicionInput>();
+    renderPanel(tarea({ estado: "En Proceso" }), { transicionar });
+    fireEvent.click(screen.getByRole("button", { name: /^pasar a revisión$/i }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "terminado" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar y pasar a revisión/i }));
+    expect(transicionar.mutate).toHaveBeenCalledWith({ accion: "revisar", comentario: "terminado" });
   });
 });

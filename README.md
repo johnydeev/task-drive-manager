@@ -258,3 +258,8 @@ Listo para Vercel. Cargar las mismas env vars en el dashboard del proyecto. `NEX
 ## Deploy a producción
 
 Ver [docs/DEPLOY.md](docs/DEPLOY.md) para instrucciones paso a paso.
+
+## Seguridad / acceso a los datos
+
+Quién puede ver qué (listado de tareas vs. archivos multimedia) y por qué los archivos de
+Drive son públicos por link: ver [docs/SECURITY-acceso-drive.md](docs/SECURITY-acceso-drive.md).
