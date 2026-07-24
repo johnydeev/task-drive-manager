@@ -129,4 +129,10 @@ describe("AccionesTarea — confirmación de cerrar / objetar (admin)", () => {
     expect(screen.getByRole("button", { name: /^objetar tarea$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /eliminar/i })).not.toBeInTheDocument();
   });
+
+  it("con el textarea vacío: Cerrar habilitado (nota opcional), Objetar deshabilitado", () => {
+    renderPanel(enRevision(), { isAdmin: true, esAsignado: false });
+    expect(screen.getByRole("button", { name: /cerrar \(dar por realizada\)/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^objetar$/i })).toBeDisabled();
+  });
 });

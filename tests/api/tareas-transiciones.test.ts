@@ -181,12 +181,14 @@ describe("PATCH transiciones — cerrar (admin)", () => {
     );
   });
 
-  it("cerrar sin nota → 400 (la nota de cierre es obligatoria)", async () => {
+  it("cerrar sin nota → 200 con comentarioRealizado 'Sin comentarios' (ya no es obligatoria)", async () => {
     asSession("admin@x.com", "admin");
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
     const res = await patch({ accion: "cerrar", nota: "  " });
-    expect(res.status).toBe(400);
-    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "Realizada", comentarioRealizado: "Sin comentarios" })
+    );
   });
 
   it("el asignado no puede cerrar (403)", async () => {
@@ -194,6 +196,40 @@ describe("PATCH transiciones — cerrar (admin)", () => {
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "juan@x.com" }));
     const res = await patch({ accion: "cerrar" });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("PATCH transiciones — default 'Sin comentarios' al guardar vacío", () => {
+  it("empezar sin comentario → comentarioEnProceso 'Sin comentarios'", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Aceptada", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "empezar", comentario: "" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "En Proceso", comentarioEnProceso: "Sin comentarios" })
+    );
+  });
+
+  it("revisar sin comentario → comentarioRevision 'Sin comentarios'", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Proceso", asignadoA: "juan@x.com" }));
+    const res = await patch({ accion: "revisar", comentario: "   " });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "En Revisión", comentarioRevision: "Sin comentarios" })
+    );
+  });
+
+  it("editarComentarioProceso a vacío → 'Sin comentarios'", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Revisión", asignadoA: "juan@x.com", comentarioEnProceso: "algo" })
+    );
+    const res = await patch({ accion: "editarComentarioProceso", comentario: "" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ comentarioEnProceso: "Sin comentarios" })
+    );
   });
 });
 

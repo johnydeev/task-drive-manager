@@ -67,6 +67,11 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
   const esAdmin = session.user.rol === "admin";
   const esAsignado = (t.asignadoA ?? "").toLowerCase() === email;
 
+  // Los comentarios del ciclo de vida nunca quedan en blanco: si el usuario guarda vacío,
+  // se persiste "Sin comentarios" (visible para el admin y editable después). NO aplica a la
+  // objeción, que exige un motivo escrito.
+  const conDefault = (txt?: string) => (txt?.trim() ? txt.trim() : "Sin comentarios");
+
   // --- Asignar / reasignar (admin) ---
   if ("asignadoA" in body) {
     if (!esAdmin) return jsonError(403, "Solo el admin puede asignar");
@@ -101,7 +106,7 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     if (t.estado !== "Aceptada") return jsonError(409, "La tarea no está en estado Aceptada");
     // El comentario en proceso se carga al entrar (opcional): se guarda en la misma transición.
     return NextResponse.json(
-      await updateTarea({ rowId: t.rowId, estado: "En Proceso", comentarioEnProceso: comentario ?? "" })
+      await updateTarea({ rowId: t.rowId, estado: "En Proceso", comentarioEnProceso: conDefault(comentario) })
     );
   }
 
@@ -121,7 +126,7 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
         rowId: t.rowId,
         estado: "En Revisión",
         revisionEn: now,
-        comentarioRevision: comentario ?? "",
+        comentarioRevision: conDefault(comentario),
       })
     );
   }
@@ -134,7 +139,7 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
       return jsonError(409, "La tarea está cerrada: no se pueden editar los comentarios");
     }
     const campo = accion === "editarComentarioProceso" ? "comentarioEnProceso" : "comentarioRevision";
-    return NextResponse.json(await updateTarea({ rowId: t.rowId, [campo]: comentario ?? "" }));
+    return NextResponse.json(await updateTarea({ rowId: t.rowId, [campo]: conDefault(comentario) }));
   }
 
   if (accion === "objetar") {
@@ -151,15 +156,14 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     );
   }
 
-  // cerrar (admin)
+  // cerrar (admin). La nota de cierre es opcional: si viene vacía se guarda "Sin comentarios".
   if (!esAdmin) return jsonError(403, "Solo el admin puede cerrar la tarea");
   if (t.estado !== "En Revisión") return jsonError(409, "La tarea no está En Revisión");
-  if (!nota?.trim()) return jsonError(400, "La nota de cierre es requerida");
   const updated = await updateTarea({
     rowId: t.rowId,
     estado: "Realizada",
     realizadaEn: now,
-    comentarioRealizado: nota.trim(),
+    comentarioRealizado: conDefault(nota),
     fechaRealizado: now.slice(0, 10),
   });
 
