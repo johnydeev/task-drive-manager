@@ -8,6 +8,7 @@ import { AccionesTarea } from "./AccionesTarea";
 import { ComentarioEditable } from "./ComentarioEditable";
 import { AgregarArchivos } from "./AgregarArchivos";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
 import { useUsuarios } from "@/hooks/edificios-queries";
@@ -169,7 +170,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
 
         {/* Agregar archivos — el asignado suma media mientras trabaja o corrige (En Proceso / Objetada). */}
         {esAsignado && (t.estado === "En Proceso" || t.estado === "Objetada") && (
-          <Section title="Agregar archivos">
+          <CollapsibleSection title="Agregar archivos">
             <AgregarArchivos
               // Un guardado exitoso sube el conteo de media → remonta y limpia el staging.
               key={t.imagenes.length + t.videos.length + t.documentos.length}
@@ -181,7 +182,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
             {agregarArchivos.isError && (
               <p className="mt-2 text-xs text-red-600">No se pudieron guardar los archivos.</p>
             )}
-          </Section>
+          </CollapsibleSection>
         )}
 
         {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo admin. */}
@@ -291,55 +292,67 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           </Section>
         )}
 
-        {t.imagenes.length > 0 && (
-          <Section title={`Imágenes (${t.imagenes.length})`}>
-            <div className="grid grid-cols-3 gap-2">
-              {t.imagenes.map((url) => (
-                <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumbUrl(url, 800)} alt="" className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
-                </a>
-              ))}
+        {/* Media en una sola barra colapsable (Imágenes + Videos + Documentos) para bajar el ruido. */}
+        {t.imagenes.length + t.videos.length + t.documentos.length > 0 && (
+          <CollapsibleSection
+            title={`Archivos multimedia (${t.imagenes.length + t.videos.length + t.documentos.length})`}
+          >
+            <div className="space-y-4">
+              {t.imagenes.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-medium text-slate-500">Imágenes ({t.imagenes.length})</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {t.imagenes.map((url) => (
+                      <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={thumbUrl(url, 800)} alt="" className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {t.videos.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-medium text-slate-500">Videos ({t.videos.length})</p>
+                  <ul className="space-y-1">
+                    {t.videos.map((url) => (
+                      <li key={url}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 underline"
+                        >
+                          <Film size={14} /> Ver video
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {t.documentos.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-medium text-slate-500">Documentos ({t.documentos.length})</p>
+                  <ul className="space-y-1">
+                    {t.documentos.map((url) => (
+                      <li key={url}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 underline"
+                        >
+                          <FileText size={14} /> Documento adjunto
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-          </Section>
-        )}
-
-        {t.videos.length > 0 && (
-          <Section title={`Videos (${t.videos.length})`}>
-            <ul className="space-y-1">
-              {t.videos.map((url) => (
-                <li key={url}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 underline"
-                  >
-                    <Film size={14} /> Ver video
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
-
-        {t.documentos.length > 0 && (
-          <Section title={`Documentos (${t.documentos.length})`}>
-            <ul className="space-y-1">
-              {t.documentos.map((url) => (
-                <li key={url}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 underline"
-                  >
-                    <FileText size={14} /> Documento adjunto
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Section>
+          </CollapsibleSection>
         )}
       </div>
     </div>

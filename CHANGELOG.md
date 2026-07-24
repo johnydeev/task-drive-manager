@@ -43,12 +43,16 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
 
 ### Changed
-- **Comentarios nunca quedan en blanco**: al guardar vacío un comentario **en proceso**, de
-  **revisión** o de **cierre**, se persiste el texto **"Sin comentarios"** (visible para el
-  admin y editable después). Como consecuencia, la **nota de cierre pasa a ser opcional** (antes
-  era obligatoria): el botón "Cerrar (dar por realizada)" se puede tocar sin escribir nada. La
-  **objeción del admin sigue exigiendo un motivo** (no usa el default). El default lo aplica el
-  server (`PATCH /api/tareas/[id]`), así vale para cualquier vía
+- **Comentarios de trabajo nunca quedan en blanco**: al guardar vacío un comentario **en
+  proceso** o de **revisión**, se persiste el texto **"Sin comentarios"** (visible para el admin
+  y editable después). El default lo aplica el server (`PATCH /api/tareas/[id]`). La **nota de
+  cierre** y la **objeción** del admin **siguen siendo obligatorias** (no usan el default): para
+  cerrar u objetar tiene que haber un comentario
+- **Detalle de tarea con secciones colapsables** (menos ruido visual): los **archivos
+  multimedia** (imágenes, videos, documentos) ahora van en **una sola barra colapsable**
+  ("Archivos multimedia (N)"), colapsada por defecto; se expande para ver la evidencia. La
+  sección **"Agregar archivos"** del asignado también es colapsable. Nuevo
+  `components/ui/CollapsibleSection.tsx`
 - **Flujo del asignado unificado y simétrico** (`AccionesTarea`): los dos saltos de etapa
   (Aceptada→En Proceso y En Proceso→En Revisión) usan **el mismo patrón**: un botón inicial
   (**"Comenzar en Proceso"** / **"Pasar a revisión"**) que abre un textarea de comentario con

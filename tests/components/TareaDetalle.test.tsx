@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TareaDetalle } from "@/components/tareas/TareaDetalle";
 import type { Tarea } from "@/types";
@@ -65,9 +65,13 @@ function wrap(ui: React.ReactNode) {
 }
 
 describe("TareaDetalle", () => {
-  it("muestra la sección de documentos cuando hay PDFs adjuntos", async () => {
+  it("la media va en una barra colapsable: oculta hasta expandir", async () => {
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
-    const link = await screen.findByRole("link", { name: /documento/i });
+    // La barra aparece con el total, pero el link del documento no está hasta expandir.
+    const barra = await screen.findByRole("button", { name: /archivos multimedia \(1\)/i });
+    expect(screen.queryByRole("link", { name: /documento/i })).not.toBeInTheDocument();
+    fireEvent.click(barra);
+    const link = screen.getByRole("link", { name: /documento/i });
     expect(link).toHaveAttribute("href", DOC_URL);
   });
 
@@ -145,7 +149,9 @@ describe("TareaDetalle", () => {
       asignadoA: "op@x.com", notaObjecion: "falta foto",
     });
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
-    expect(await screen.findByText(/agregar archivos/i)).toBeInTheDocument();
+    // Es una barra colapsable: al expandir aparece el botón "Guardar archivos".
+    const barra = await screen.findByRole("button", { name: /^agregar archivos$/i });
+    fireEvent.click(barra);
     expect(screen.getByRole("button", { name: /guardar archivos/i })).toBeInTheDocument();
   });
 
@@ -159,7 +165,7 @@ describe("TareaDetalle", () => {
     });
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     expect(await screen.findByRole("heading", { name: /test/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /guardar archivos/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^agregar archivos$/i })).not.toBeInTheDocument();
   });
 
   it("en una tarea Realizada el asignado NO ve 'Agregar archivos'", async () => {
@@ -172,7 +178,7 @@ describe("TareaDetalle", () => {
     });
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     expect(await screen.findByRole("heading", { name: /test/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /guardar archivos/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^agregar archivos$/i })).not.toBeInTheDocument();
   });
 
   it("un supervisor que no la creó la ve pero sin acciones de escritura", async () => {

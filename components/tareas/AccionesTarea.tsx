@@ -192,12 +192,12 @@ export function AccionesTarea({
           {puedeCerrar && (
             <div>
               <label className="mb-1 block text-sm text-slate-600">
-                Comentario (nota de cierre opcional / motivo de objeción)
+                Comentario (nota de cierre / motivo de objeción) <span className="text-red-600">*</span>
               </label>
               <textarea value={notaCierre} onChange={(e) => setNotaCierre(e.target.value)} rows={2} className="input w-full" />
               <div className="mt-1 flex gap-2">
                 <button
-                  disabled={transicionar.isPending}
+                  disabled={!notaCierre.trim() || transicionar.isPending}
                   onClick={() => setConfirmAccion("cerrar")}
                   className={BTN_GREEN}
                 >
@@ -215,7 +215,7 @@ export function AccionesTarea({
               </div>
               {!notaCierre.trim() && (
                 <p className="mt-1 text-xs text-slate-500">
-                  Si cerrás sin nota, se guarda &quot;Sin comentarios&quot;. El motivo es obligatorio para objetar.
+                  Para cerrar u objetar debe existir un comentario.
                 </p>
               )}
             </div>
