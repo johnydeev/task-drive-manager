@@ -123,6 +123,17 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     );
   }
 
+  // Editar un comentario ya cargado: solo el asignado, mientras la tarea siga activa
+  // (persistida ≠ Realizada). No cambia el estado ni toca timestamps: solo pisa el texto.
+  if (accion === "editarComentarioProceso" || accion === "editarComentarioRevision") {
+    if (!esAsignado) return jsonError(403, "Solo el asignado puede editar sus comentarios");
+    if (t.estado === "Realizada") {
+      return jsonError(409, "La tarea está cerrada: no se pueden editar los comentarios");
+    }
+    const campo = accion === "editarComentarioProceso" ? "comentarioEnProceso" : "comentarioRevision";
+    return NextResponse.json(await updateTarea({ rowId: t.rowId, [campo]: comentario ?? "" }));
+  }
+
   if (accion === "objetar") {
     if (!esAdmin) return jsonError(403, "Solo el admin puede objetar");
     if (t.estado !== "En Revisión") return jsonError(409, "Solo se puede objetar una tarea En Revisión");

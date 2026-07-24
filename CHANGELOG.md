@@ -8,6 +8,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **Editar comentarios de la tarea** desde el detalle: el **responsable** (asignado) puede
+  corregir sus comentarios **En proceso** y **Revisión** con un botón chico de editar,
+  **mientras la tarea siga activa** (una vez Realizada quedan fijos, para no desincronizar
+  el reporte ya emitido). Nuevo `components/tareas/ComentarioEditable.tsx` y dos acciones en
+  `PATCH /api/tareas/[id]` (`editarComentarioProceso` / `editarComentarioRevision`,
+  asignado-only, 409 si la tarea está cerrada). Objeción y Cierre siguen siendo de solo lectura
 - **Modales de éxito** tras crear ("Tarea creada exitosamente"), editar ("Tarea editada
   exitosamente") y eliminar ("Tarea eliminada exitosamente") una tarea. Nuevo
   `components/ui/SuccessDialog.tsx`. Al cerrarlo, crear/eliminar navegan y editar cierra la edición
@@ -30,6 +36,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
 
 ### Changed
+- **Flujo "En Proceso" del asignado más claro** (`AccionesTarea`): el botón para arrancar
+  ahora dice **"Comenzar en Proceso"** (antes "Pasar a En Proceso"), y el botón **"Pasar a
+  En Revisión"** aparece **recién cuando hay un comentario en proceso guardado**, en vez de
+  estar junto al textarea desde el principio (confundía el paso). Como el comentario es
+  opcional, si no hay ninguno se ofrece un enlace discreto **"pasar a revisión sin comentar"**
+- **Lista de tareas**: si la tarea **no tiene fecha estimada**, ya no se muestra la palabra
+  "Estimada" colgada sin fecha (queda solo `Inicio {fecha}`)
 - **CI/CD unificado en 3 fases encadenadas** (`ci-cd.yml`): Test → Build → Deploy, en un solo
   workflow. Reemplaza `ci.yml` + `release.yml`, que corrían sueltos y en paralelo (la imagen
   se buildeaba aunque los tests fallaran). El deploy automático corre en un self-hosted runner

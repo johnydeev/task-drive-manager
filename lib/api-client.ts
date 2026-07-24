@@ -102,7 +102,15 @@ export const api = {
     transicionar: (
       rowId: string,
       input: {
-        accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar" | "objetar";
+        accion:
+          | "aceptar"
+          | "empezar"
+          | "revisar"
+          | "cerrar"
+          | "comentar"
+          | "objetar"
+          | "editarComentarioProceso"
+          | "editarComentarioRevision";
         comentario?: string;
         nota?: string;
       }

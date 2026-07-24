@@ -3,6 +3,7 @@ import {
   tareaNuevaSchema,
   tareaFormSchema,
   tareaUpdateSchema,
+  tareaTransicionSchema,
   configuracionSchema,
   directivaNuevaSchema,
   directivaPatchSchema,
@@ -156,6 +157,22 @@ describe("directivaPatchSchema", () => {
   it("acepta nota opcional", () => {
     const r = directivaPatchSchema.parse({ id: "1", accion: "cerrar", nota: "listo" });
     expect(r.nota).toBe("listo");
+  });
+});
+
+describe("tareaTransicionSchema — edición de comentarios", () => {
+  it("acepta editarComentarioProceso con comentario", () => {
+    expect(
+      tareaTransicionSchema.safeParse({ accion: "editarComentarioProceso", comentario: "corrijo" }).success
+    ).toBe(true);
+  });
+  it("acepta editarComentarioRevision con comentario", () => {
+    expect(
+      tareaTransicionSchema.safeParse({ accion: "editarComentarioRevision", comentario: "corrijo" }).success
+    ).toBe(true);
+  });
+  it("rechaza una acción inexistente", () => {
+    expect(tareaTransicionSchema.safeParse({ accion: "editarOtraCosa" }).success).toBe(false);
   });
 });
 

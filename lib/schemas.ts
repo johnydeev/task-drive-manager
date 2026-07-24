@@ -158,9 +158,20 @@ export const tareaAsignarSchema = z.object({
 });
 
 // Transiciones del ciclo de vida. El permiso depende de la acción (validado en el handler).
+// editarComentario* NO cambian el estado: el asignado corrige un comentario ya guardado
+// mientras la tarea siga activa (no Realizada).
 export const tareaTransicionSchema = z.object({
-  accion: z.enum(["aceptar", "empezar", "revisar", "cerrar", "comentar", "objetar"]),
-  comentario: z.string().optional(), // revisar → comentarioRevision · comentar → comentarioEnProceso
+  accion: z.enum([
+    "aceptar",
+    "empezar",
+    "revisar",
+    "cerrar",
+    "comentar",
+    "objetar",
+    "editarComentarioProceso",
+    "editarComentarioRevision",
+  ]),
+  comentario: z.string().optional(), // revisar → comentarioRevision · comentar/editar → el campo respectivo
   nota: z.string().optional(),       // cerrar → nota de cierre (comentarioRealizado)
 });
 

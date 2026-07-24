@@ -87,6 +87,47 @@ describe("TareaDetalle", () => {
     expect(screen.getByText("falta el informe")).toBeInTheDocument();
   });
 
+  it("el asignado ve el botón de editar en los comentarios de una tarea activa", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "En Proceso", prioridad: "Media", supervisor: "a@b.com",
+      asignadoA: "op@x.com", comentarioEnProceso: "voy avanzando",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByRole("button", { name: /editar comentario en proceso/i })).toBeInTheDocument();
+  });
+
+  it("un no-asignado NO ve el botón de editar comentarios", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "En Proceso", prioridad: "Media", supervisor: "a@b.com",
+      asignadoA: "op@x.com", comentarioEnProceso: "voy avanzando",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByText("voy avanzando")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /editar comentario/i })).not.toBeInTheDocument();
+  });
+
+  it("en una tarea Realizada el asignado ya NO puede editar los comentarios", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "Realizada", prioridad: "Media", supervisor: "a@b.com",
+      asignadoA: "op@x.com", comentarioEnProceso: "hecho",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByText("hecho")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /editar comentario/i })).not.toBeInTheDocument();
+  });
+
   it("un supervisor que no la creó la ve pero sin acciones de escritura", async () => {
     useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } }, status: "authenticated" });
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));

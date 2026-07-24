@@ -186,3 +186,58 @@ describe("PATCH transiciones — cerrar (admin)", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("PATCH transiciones — editar comentarios (asignado)", () => {
+  it("el asignado edita el comentario en proceso (no cambia el estado)", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Revisión", asignadoA: "juan@x.com", comentarioEnProceso: "viejo" })
+    );
+    const res = await patch({ accion: "editarComentarioProceso", comentario: "nuevo texto" });
+    expect(res.status).toBe(200);
+    const arg = vi.mocked(updateTarea).mock.calls[0][0];
+    expect(arg).toMatchObject({ comentarioEnProceso: "nuevo texto" });
+    expect(arg).not.toHaveProperty("estado");
+  });
+
+  it("el asignado edita el comentario de revisión", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Revisión", asignadoA: "juan@x.com", comentarioRevision: "viejo" })
+    );
+    const res = await patch({ accion: "editarComentarioRevision", comentario: "revisión corregida" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ comentarioRevision: "revisión corregida" })
+    );
+  });
+
+  it("un no-asignado no puede editar comentarios (403)", async () => {
+    asSession("otro@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Revisión", asignadoA: "juan@x.com" })
+    );
+    const res = await patch({ accion: "editarComentarioProceso", comentario: "x" });
+    expect(res.status).toBe(403);
+    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+  });
+
+  it("no se puede editar una tarea Realizada (409)", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "Realizada", asignadoA: "juan@x.com" })
+    );
+    const res = await patch({ accion: "editarComentarioProceso", comentario: "x" });
+    expect(res.status).toBe(409);
+    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+  });
+
+  it("el admin (no asignado) tampoco edita los comentarios del asignado (403)", async () => {
+    asSession("admin@x.com", "admin");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Revisión", asignadoA: "juan@x.com" })
+    );
+    const res = await patch({ accion: "editarComentarioRevision", comentario: "x" });
+    expect(res.status).toBe(403);
+  });
+});

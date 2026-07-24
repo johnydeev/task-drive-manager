@@ -44,7 +44,15 @@ export function useTareaDetalle(rowId: string) {
 
   const transicionar = useMutation({
     mutationFn: (input: {
-      accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar" | "objetar";
+      accion:
+        | "aceptar"
+        | "empezar"
+        | "revisar"
+        | "cerrar"
+        | "comentar"
+        | "objetar"
+        | "editarComentarioProceso"
+        | "editarComentarioRevision";
       comentario?: string;
       nota?: string;
     }) => api.tareas.transicionar(rowId, input),

@@ -8,7 +8,15 @@ import type { Tarea, Usuario } from "@/types";
 import { Loader2 } from "lucide-react";
 
 export type TransicionInput = {
-  accion: "aceptar" | "empezar" | "revisar" | "cerrar" | "comentar" | "objetar";
+  accion:
+    | "aceptar"
+    | "empezar"
+    | "revisar"
+    | "cerrar"
+    | "comentar"
+    | "objetar"
+    | "editarComentarioProceso"
+    | "editarComentarioRevision";
   comentario?: string;
   nota?: string;
 };
@@ -116,7 +124,7 @@ export function AccionesTarea({
           className={BTN_DARK}
         >
           {trPend("empezar") && <Loader2 size={14} className="animate-spin" />}
-          Pasar a En Proceso
+          Comenzar en Proceso
         </button>
       )}
 
@@ -135,11 +143,23 @@ export function AccionesTarea({
             </button>
           </div>
 
-          {/* Paso siguiente: se inicia explícitamente y recién ahí pide su comentario. */}
+          {/* Paso siguiente: se inicia explícitamente y recién ahí pide su comentario.
+              El botón primario aparece SOLO cuando ya hay un comentario en proceso guardado
+              (dato del servidor, así también aparece al reabrir una tarea que ya lo tenía).
+              Como el comentario es opcional, si no hay ninguno se ofrece una salida discreta. */}
           {!pasandoARevision ? (
-            <button onClick={() => setPasandoARevision(true)} className={BTN_DARK}>
-              Pasar a En Revisión
-            </button>
+            t.comentarioEnProceso?.trim() ? (
+              <button onClick={() => setPasandoARevision(true)} className={BTN_DARK}>
+                Pasar a En Revisión
+              </button>
+            ) : (
+              <button
+                onClick={() => setPasandoARevision(true)}
+                className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700"
+              >
+                pasar a revisión sin comentar
+              </button>
+            )
           ) : (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <label className="mb-1 block text-sm text-slate-600">Comentario de revisión (qué hiciste)</label>

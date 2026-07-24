@@ -207,7 +207,8 @@ export default function TareasPage() {
                     {t.edificio} · {t.dpto || "Sin especificar"}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Inicio {formatFecha(t.fechaInicio)} · Estimada {formatFecha(t.fechaEstimada)}
+                    Inicio {formatFecha(t.fechaInicio)}
+                    {t.fechaEstimada ? ` · Estimada ${formatFecha(t.fechaEstimada)}` : ""}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">

@@ -5,6 +5,7 @@ import { cn, formatFecha, formatDateTime } from "@/lib/utils";
 import { thumbUrl } from "@/lib/drive-url";
 import { TareaForm } from "./TareaForm";
 import { AccionesTarea } from "./AccionesTarea";
+import { ComentarioEditable } from "./ComentarioEditable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
@@ -71,6 +72,10 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
 
   // Narrowing local: tras los guards de arriba, tareaQ.data está definido.
   const t: Tarea = tareaQ.data;
+
+  // El asignado puede editar sus comentarios (en proceso / revisión) mientras la tarea
+  // siga activa; una vez Realizada quedan fijos (no desincronizar el reporte ya emitido).
+  const comentariosEditables = esAsignado && t.estado !== "Realizada";
 
   if (editing) {
     return (
@@ -228,17 +233,24 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         {(t.comentarioEnProceso || t.comentarioRevision || t.notaObjecion || t.comentarioRealizado) && (
           <Section title="Comentarios">
             {t.comentarioEnProceso && (
-              <div>
-                <p className="text-xs font-medium text-slate-500">En proceso</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioEnProceso}</p>
-              </div>
+              <ComentarioEditable
+                label="En proceso"
+                valor={t.comentarioEnProceso}
+                editable={comentariosEditables}
+                saving={transicionar.isPending}
+                onSave={(comentario) => transicionar.mutate({ accion: "editarComentarioProceso", comentario })}
+              />
             )}
             {t.comentarioRevision && (
               <div className="mt-2">
-                <p className="text-xs font-medium text-slate-500">
-                  Revisión{t.revisionEn ? ` - ${formatFecha(t.revisionEn)}` : ""}
-                </p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{t.comentarioRevision}</p>
+                <ComentarioEditable
+                  label="Revisión"
+                  fecha={t.revisionEn ? formatFecha(t.revisionEn) : undefined}
+                  valor={t.comentarioRevision}
+                  editable={comentariosEditables}
+                  saving={transicionar.isPending}
+                  onSave={(comentario) => transicionar.mutate({ accion: "editarComentarioRevision", comentario })}
+                />
               </div>
             )}
             {t.notaObjecion && (
