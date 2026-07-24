@@ -255,6 +255,8 @@ export function AccionesTarea({
             ? "La tarea vuelve al responsable como Objetada, con tu comentario como motivo. ¿Confirmás?"
             : "Se va a dar por Realizada y se generará el reporte. Esta acción no se puede deshacer desde la app. ¿Confirmás?"
         }
+        confirmLabel={confirmAccion === "objetar" ? "Objetar tarea" : "Cerrar tarea"}
+        variant={confirmAccion === "objetar" ? "danger" : "default"}
         loading={transicionar.isPending}
         onConfirm={() => {
           if (confirmAccion) transicionar.mutate({ accion: confirmAccion, nota: notaCierre });
@@ -271,6 +273,8 @@ export function AccionesTarea({
             ? "No cargaste un comentario de revisión. ¿Pasar la tarea a revisión igual?"
             : "No cargaste un comentario en proceso. ¿Continuar igual?"
         }
+        confirmLabel="Aceptar"
+        variant="default"
         loading={transicionar.isPending}
         onConfirm={() => {
           if (confirmSinComentario === "revision") {

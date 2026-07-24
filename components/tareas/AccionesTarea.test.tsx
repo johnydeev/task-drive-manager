@@ -62,11 +62,14 @@ describe("AccionesTarea — salto Aceptada → En Proceso", () => {
     expect(screen.getByRole("button", { name: /cancelar/i })).toBeInTheDocument();
   });
 
-  it("guardar con el textarea vacío abre el modal de confirmación", () => {
+  it("guardar con el textarea vacío abre el modal de confirmación (Aceptar, no Eliminar)", () => {
     renderPanel(tarea({ estado: "Aceptada" }));
     fireEvent.click(screen.getByRole("button", { name: /^comenzar en proceso$/i }));
     fireEvent.click(screen.getByRole("button", { name: /guardar y pasar a en proceso/i }));
     expect(screen.getByText(/sin comentario/i)).toBeInTheDocument();
+    // El modal es una confirmación, NO una acción destructiva: el botón dice "Aceptar".
+    expect(screen.getByRole("button", { name: /^aceptar$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /eliminar/i })).not.toBeInTheDocument();
   });
 
   it("guardar con texto dispara 'empezar' con el comentario", () => {
@@ -105,5 +108,25 @@ describe("AccionesTarea — salto En Proceso → En Revisión", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "terminado" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar y pasar a revisión/i }));
     expect(transicionar.mutate).toHaveBeenCalledWith({ accion: "revisar", comentario: "terminado" });
+  });
+});
+
+describe("AccionesTarea — confirmación de cerrar / objetar (admin)", () => {
+  const enRevision = () => tarea({ estado: "En Revisión", asignadoA: "op@x.com" });
+
+  it("el modal de Cerrar dice 'Cerrar tarea' (no 'Eliminar')", () => {
+    renderPanel(enRevision(), { isAdmin: true, esAsignado: false });
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "todo ok" } });
+    fireEvent.click(screen.getByRole("button", { name: /cerrar \(dar por realizada\)/i }));
+    expect(screen.getByRole("button", { name: /^cerrar tarea$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /eliminar/i })).not.toBeInTheDocument();
+  });
+
+  it("el modal de Objetar dice 'Objetar tarea' (no 'Eliminar')", () => {
+    renderPanel(enRevision(), { isAdmin: true, esAsignado: false });
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "falta algo" } });
+    fireEvent.click(screen.getByRole("button", { name: /^objetar$/i }));
+    expect(screen.getByRole("button", { name: /^objetar tarea$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /eliminar/i })).not.toBeInTheDocument();
   });
 });

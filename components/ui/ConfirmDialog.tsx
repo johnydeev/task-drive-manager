@@ -8,23 +8,32 @@ interface Props {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  // "danger" (default): acción destructiva, botón rojo. "default": confirmación neutra, botón oscuro.
+  variant?: "danger" | "default";
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-// Diálogo modal de confirmación para acciones destructivas.
+// Diálogo modal de confirmación. Por defecto asume una acción destructiva (botón rojo);
+// para confirmaciones neutras (ej. "¿continuar sin comentario?") usar variant="default".
 export function ConfirmDialog({
   open,
   title,
   message,
   confirmLabel = "Eliminar",
   cancelLabel = "Cancelar",
+  variant = "danger",
   loading = false,
   onConfirm,
   onCancel,
 }: Props) {
   if (!open) return null;
+
+  const confirmColor =
+    variant === "danger"
+      ? "bg-red-600 hover:bg-red-700"
+      : "bg-slate-900 hover:bg-slate-700";
 
   return (
     <div
@@ -50,7 +59,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-60 ${confirmColor}`}
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
             {confirmLabel}
