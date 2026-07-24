@@ -59,6 +59,12 @@ export function useTareaDetalle(rowId: string) {
     onSuccess: refresh,
   });
 
+  const agregarArchivos = useMutation({
+    mutationFn: (media: { imagenes?: string[]; videos?: string[]; documentos?: string[] }) =>
+      api.tareas.agregarArchivos(rowId, media),
+    onSuccess: refresh,
+  });
+
   const generarReporte = useMutation({
     mutationFn: () => api.tareas.generarReporte(rowId),
     onSuccess: ({ reporteUrl }) => {
@@ -95,6 +101,7 @@ export function useTareaDetalle(rowId: string) {
     eliminar,
     asignar,
     transicionar,
+    agregarArchivos,
     generarReporte,
     isAdmin,
     esAsignado,

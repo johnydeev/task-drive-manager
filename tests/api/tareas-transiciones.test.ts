@@ -199,6 +199,67 @@ describe("PATCH transiciones — cerrar (admin)", () => {
   });
 });
 
+describe("PATCH transiciones — agregarArchivos (asignado)", () => {
+  const IMG_YA = "https://drive.google.com/file/d/ya/view";
+  const IMG_NUEVA = "https://drive.google.com/file/d/nueva/view";
+
+  it("el asignado agrega una imagen En Proceso → append a la media existente", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Proceso", asignadoA: "juan@x.com", imagenes: [IMG_YA] })
+    );
+    const res = await patch({ accion: "agregarArchivos", imagenes: [IMG_NUEVA] });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ imagenes: [IMG_YA, IMG_NUEVA] })
+    );
+  });
+
+  it("el asignado agrega archivos Objetada → 200", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "Objetada", asignadoA: "juan@x.com", documentos: [] })
+    );
+    const res = await patch({ accion: "agregarArchivos", documentos: [IMG_NUEVA] });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ documentos: [IMG_NUEVA] })
+    );
+  });
+
+  it("dedup: una URL ya presente no se duplica", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Proceso", asignadoA: "juan@x.com", imagenes: [IMG_YA] })
+    );
+    const res = await patch({ accion: "agregarArchivos", imagenes: [IMG_YA, IMG_NUEVA] });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(updateTarea)).toHaveBeenCalledWith(
+      expect.objectContaining({ imagenes: [IMG_YA, IMG_NUEVA] })
+    );
+  });
+
+  it("un no-asignado no puede agregar archivos → 403", async () => {
+    asSession("otro@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "En Proceso", asignadoA: "juan@x.com" })
+    );
+    const res = await patch({ accion: "agregarArchivos", imagenes: [IMG_NUEVA] });
+    expect(res.status).toBe(403);
+    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+  });
+
+  it("en un estado no permitido (Aceptada) → 409", async () => {
+    asSession("juan@x.com", "supervisor");
+    vi.mocked(getTareaPersistida).mockResolvedValue(
+      tarea({ estado: "Aceptada", asignadoA: "juan@x.com" })
+    );
+    const res = await patch({ accion: "agregarArchivos", imagenes: [IMG_NUEVA] });
+    expect(res.status).toBe(409);
+    expect(vi.mocked(updateTarea)).not.toHaveBeenCalled();
+  });
+});
+
 describe("PATCH transiciones — default 'Sin comentarios' al guardar vacío", () => {
   it("empezar sin comentario → comentarioEnProceso 'Sin comentarios'", async () => {
     asSession("juan@x.com", "supervisor");

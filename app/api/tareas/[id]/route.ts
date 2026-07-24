@@ -10,7 +10,12 @@ import {
 import { trashTareaFolder } from "@/lib/google-drive";
 import { generateAndUploadReporte } from "@/lib/pdf-generator";
 import { jsonError } from "@/lib/api-utils";
-import { tareaAsignarSchema, tareaTransicionSchema, tareaUpdateSchema } from "@/lib/schemas";
+import {
+  tareaAgregarArchivosSchema,
+  tareaAsignarSchema,
+  tareaTransicionSchema,
+  tareaUpdateSchema,
+} from "@/lib/schemas";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -88,6 +93,29 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
         asignadaEn: now,
         aceptadaEn: "", // D3: reasignar resetea el ciclo
         revisionEn: "",
+      })
+    );
+  }
+
+  // --- Agregar archivos (asignado, En Proceso u Objetada) ---
+  // Append de media (no reemplazo): el cliente manda solo lo nuevo, el server lo suma a lo
+  // persistido con dedup por URL. No toca estado ni timestamps del ciclo.
+  if (body.accion === "agregarArchivos") {
+    if (!esAsignado) return jsonError(403, "Solo el asignado puede agregar archivos");
+    if (t.estado !== "En Proceso" && t.estado !== "Objetada") {
+      return jsonError(409, "Solo se pueden agregar archivos con la tarea En Proceso u Objetada");
+    }
+    const { imagenes, videos, documentos } = tareaAgregarArchivosSchema.parse(body);
+    const sumar = (curr: string[], add?: string[]) => [
+      ...curr,
+      ...(add ?? []).filter((u) => !curr.includes(u)),
+    ];
+    return NextResponse.json(
+      await updateTarea({
+        rowId: t.rowId,
+        imagenes: sumar(t.imagenes, imagenes),
+        videos: sumar(t.videos, videos),
+        documentos: sumar(t.documentos, documentos),
       })
     );
   }

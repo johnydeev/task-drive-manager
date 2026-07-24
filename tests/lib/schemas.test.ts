@@ -4,6 +4,7 @@ import {
   tareaFormSchema,
   tareaUpdateSchema,
   tareaTransicionSchema,
+  tareaAgregarArchivosSchema,
   configuracionSchema,
   directivaNuevaSchema,
   directivaPatchSchema,
@@ -173,6 +174,22 @@ describe("tareaTransicionSchema — edición de comentarios", () => {
   });
   it("rechaza una acción inexistente", () => {
     expect(tareaTransicionSchema.safeParse({ accion: "editarOtraCosa" }).success).toBe(false);
+  });
+});
+
+describe("tareaAgregarArchivosSchema", () => {
+  it("acepta arrays de URLs de Drive", () => {
+    const r = tareaAgregarArchivosSchema.safeParse({
+      imagenes: ["https://drive.google.com/file/d/a/view"],
+      videos: [],
+    });
+    expect(r.success).toBe(true);
+  });
+  it("acepta payload vacío (todo opcional)", () => {
+    expect(tareaAgregarArchivosSchema.safeParse({}).success).toBe(true);
+  });
+  it("rechaza una url inválida", () => {
+    expect(tareaAgregarArchivosSchema.safeParse({ imagenes: ["no-es-url"] }).success).toBe(false);
   });
 });
 

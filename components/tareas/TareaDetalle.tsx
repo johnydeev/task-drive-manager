@@ -6,12 +6,14 @@ import { thumbUrl } from "@/lib/drive-url";
 import { TareaForm } from "./TareaForm";
 import { AccionesTarea } from "./AccionesTarea";
 import { ComentarioEditable } from "./ComentarioEditable";
+import { AgregarArchivos } from "./AgregarArchivos";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
 import { useUsuarios } from "@/hooks/edificios-queries";
+import { useConfig } from "@/hooks/queries";
 import { displayName } from "@/lib/user-display";
-import type { EstadoTarea, Prioridad, Tarea } from "@/types";
+import { CONFIGURACION_DEFAULT, type EstadoTarea, type Prioridad, type Tarea } from "@/types";
 import { ArrowLeft, Edit3, FileDown, FileText, Film, Loader2, Trash2 } from "lucide-react";
 
 const estadoBadge: Record<EstadoTarea, string> = {
@@ -36,6 +38,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     eliminar,
     asignar,
     transicionar,
+    agregarArchivos,
     generarReporte,
     isAdmin,
     esAsignado,
@@ -49,6 +52,7 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     onDeleteDoneClose,
   } = useTareaDetalle(rowId);
   const usuariosQ = useUsuarios();
+  const configQ = useConfig();
 
   if (tareaQ.isLoading) {
     return (
@@ -162,6 +166,23 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
           transicionar={transicionar}
           usuarios={usuariosQ.data}
         />
+
+        {/* Agregar archivos — el asignado suma media mientras trabaja o corrige (En Proceso / Objetada). */}
+        {esAsignado && (t.estado === "En Proceso" || t.estado === "Objetada") && (
+          <Section title="Agregar archivos">
+            <AgregarArchivos
+              // Un guardado exitoso sube el conteo de media → remonta y limpia el staging.
+              key={t.imagenes.length + t.videos.length + t.documentos.length}
+              tarea={t}
+              config={configQ.data ?? CONFIGURACION_DEFAULT}
+              guardando={agregarArchivos.isPending}
+              onGuardar={(media) => agregarArchivos.mutate(media)}
+            />
+            {agregarArchivos.isError && (
+              <p className="mt-2 text-xs text-red-600">No se pudieron guardar los archivos.</p>
+            )}
+          </Section>
+        )}
 
         {/* Reporte PDF — descargar lo puede cualquiera; generar/regenerar solo admin. */}
         {(isAdmin || t.reporteUrl) && (

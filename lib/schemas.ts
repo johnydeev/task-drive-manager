@@ -179,3 +179,11 @@ export const tareaTransicionSchema = z.object({
 export const parteComunNuevaSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
 });
+
+// El asignado agrega archivos (imágenes/videos/PDFs ya subidos a Drive) a una tarea
+// En Proceso u Objetada. Solo URLs; el server appendea a la media existente.
+export const tareaAgregarArchivosSchema = z.object({
+  imagenes: z.array(z.string().url()).optional(),
+  videos: z.array(z.string().url()).optional(),
+  documentos: z.array(z.string().url()).optional(),
+});

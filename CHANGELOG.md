@@ -8,6 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **El responsable puede agregar archivos** (imágenes, videos, PDFs) desde el detalle de la
+  tarea, mientras está **En Proceso** u **Objetada** (típicamente para sumar evidencia al
+  corregir una objeción del admin). Nueva sección "Agregar archivos" (reusa el uploader con
+  cámara/galería/grabar/PDF) visible solo para el asignado en esos estados; los archivos van a
+  la misma carpeta de Drive de la tarea. Backend: acción `agregarArchivos` en
+  `PATCH /api/tareas/[id]` (asignado-only, **append** con dedup, 409 en otros estados). Es solo
+  **agregar**: no puede borrar la media ya guardada
 - **Editar comentarios de la tarea** desde el detalle: el **responsable** (asignado) puede
   corregir sus comentarios **En proceso** y **Revisión** con un botón chico de editar,
   **mientras la tarea siga activa** (una vez Realizada quedan fijos, para no desincronizar

@@ -119,6 +119,14 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(input),
       }),
+    agregarArchivos: (
+      rowId: string,
+      media: { imagenes?: string[]; videos?: string[]; documentos?: string[] }
+    ) =>
+      request<Tarea>(`/api/tareas/${encodeURIComponent(rowId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ accion: "agregarArchivos", ...media }),
+      }),
     generarReporte: (rowId: string) =>
       request<{ reporteUrl: string }>(
         `/api/tareas/${encodeURIComponent(rowId)}/reporte`,

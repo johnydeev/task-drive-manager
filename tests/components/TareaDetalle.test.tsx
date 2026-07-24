@@ -42,10 +42,17 @@ vi.mock("@/lib/api-client", () => {
         get: vi.fn().mockResolvedValue(fakeTarea),
         asignar: vi.fn(),
         transicionar: vi.fn(),
+        agregarArchivos: vi.fn(),
         generarReporte: vi.fn(),
         remove: vi.fn(),
       },
       usuarios: { list: vi.fn().mockResolvedValue([]) },
+      configuracion: {
+        get: vi.fn().mockResolvedValue({
+          maxImagenes: 10, maxVideos: 3, maxDocumentos: 5,
+          maxSizeImagenMB: 10, maxSizeVideoMB: 100, maxSizePdfMB: 20,
+        }),
+      },
     },
   };
 });
@@ -126,6 +133,46 @@ describe("TareaDetalle", () => {
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     expect(await screen.findByText("hecho")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /editar comentario/i })).not.toBeInTheDocument();
+  });
+
+  it("el asignado ve la sección 'Agregar archivos' en una tarea Objetada", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "Objetada", prioridad: "Media", supervisor: "a@b.com",
+      asignadoA: "op@x.com", notaObjecion: "falta foto",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByText(/agregar archivos/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /guardar archivos/i })).toBeInTheDocument();
+  });
+
+  it("un no-asignado NO ve 'Agregar archivos'", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "otro@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "En Proceso", prioridad: "Media", supervisor: "a@b.com", asignadoA: "op@x.com",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByRole("heading", { name: /test/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar archivos/i })).not.toBeInTheDocument();
+  });
+
+  it("en una tarea Realizada el asignado NO ve 'Agregar archivos'", async () => {
+    useSession.mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } }, status: "authenticated" });
+    vi.mocked(api.tareas.get).mockResolvedValueOnce({
+      rowId: TAREA_ROW_ID, objetivo: "Test", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "Realizada", prioridad: "Media", supervisor: "a@b.com", asignadoA: "op@x.com",
+    });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
+    expect(await screen.findByRole("heading", { name: /test/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar archivos/i })).not.toBeInTheDocument();
   });
 
   it("un supervisor que no la creó la ve pero sin acciones de escritura", async () => {
