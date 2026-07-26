@@ -7,6 +7,7 @@ import { ReactNode, useState } from "react";
 import { cn } from "@/lib/utils";
 import { OfflineIndicator } from "./OfflineIndicator";
 import { MobileDrawer } from "./MobileDrawer";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {
   ClipboardList,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Plus,
   Building2,
   Menu,
+  Download,
 } from "lucide-react";
 
 interface NavItem {
@@ -38,6 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.rol === "admin";
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   const items = NAV.filter((n) => !n.adminOnly || isAdmin);
   const bottomItems = items.filter((n) => !n.adminOnly); // Tareas, Edificios, Dashboard
@@ -77,6 +80,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="px-3 pb-5">
+          {canInstall && (
+            <button
+              onClick={() => promptInstall()}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+            >
+              <Download size={18} />
+              Instalar app
+            </button>
+          )}
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
@@ -111,6 +123,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClose={() => setDrawerOpen(false)}
         email={session?.user?.email}
         items={drawerItems}
+        canInstall={canInstall}
+        onInstall={promptInstall}
       />
 
       {/* Bottom nav mobile */}

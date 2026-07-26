@@ -61,4 +61,27 @@ describe("MobileDrawer", () => {
     fireEvent.click(screen.getByRole("button", { name: /cerrar sesión/i }));
     expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/login" });
   });
+
+  it("con canInstall muestra 'Instalar app' y al tocar llama onInstall + onClose", () => {
+    const onInstall = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <MobileDrawer
+        open
+        onClose={onClose}
+        email="a@x.com"
+        items={adminItems}
+        canInstall
+        onInstall={onInstall}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /instalar app/i }));
+    expect(onInstall).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("sin canInstall no muestra 'Instalar app'", () => {
+    render(<MobileDrawer open onClose={() => {}} email="a@x.com" items={adminItems} />);
+    expect(screen.queryByRole("button", { name: /instalar app/i })).not.toBeInTheDocument();
+  });
 });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect } from "react";
-import { LogOut, X } from "lucide-react";
+import { Download, LogOut, X } from "lucide-react";
 import type { ComponentType } from "react";
 
 interface DrawerItem {
@@ -17,11 +17,13 @@ interface Props {
   onClose: () => void;
   email?: string | null;
   items: DrawerItem[];
+  canInstall?: boolean;
+  onInstall?: () => void;
 }
 
 // Drawer lateral mobile (desde la izquierda). Contiene los destinos de admin
 // (Usuarios/Config, ya filtrados por el shell) y "Cerrar sesión" para todos los roles.
-export function MobileDrawer({ open, onClose, email, items }: Props) {
+export function MobileDrawer({ open, onClose, email, items, canInstall, onInstall }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -66,6 +68,19 @@ export function MobileDrawer({ open, onClose, email, items }: Props) {
           ))}
         </nav>
         <div className="border-t border-slate-200 px-2 py-2">
+          {canInstall && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onInstall?.();
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <Download size={18} />
+              Instalar app
+            </button>
+          )}
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
