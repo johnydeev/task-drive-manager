@@ -10,7 +10,7 @@
 
 ## 1. Contexto
 
-El proyecto `task-drive-manager` está completo a nivel funcional (login, tareas, dashboard, gestión de usuarios, configuración, PDFs adjuntos, generación de reportes, modo offline, PWA). Hoy corre solo en local con `DEMO_MODE=1` contra datos hardcoded. El cliente —Administración Morinigo— todavía **no aprobó** el reemplazo de la app actual (AppSheet), pero quiere ver el sistema corriendo en producción para evaluar antes de aprobar la migración.
+El proyecto `task-drive-manager` está completo a nivel funcional (login, tareas, dashboard, gestión de usuarios, configuración, PDFs adjuntos, generación de reportes, modo offline, PWA). Hoy corre solo en local con `DEMO_MODE=1` contra datos hardcoded. El cliente todavía **no aprobó** el reemplazo de la app actual (AppSheet), pero quiere ver el sistema corriendo en producción para evaluar antes de aprobar la migración.
 
 Paralelamente, el cliente ya opera una segunda aplicación, `ia-drive-doc-processor` (TypeScript/Next.js/Postgres/Docker), que es la **fuente de verdad de consorcios y proveedores**. Esa app gestiona facturas de proveedores con extracción IA y mantiene un Google Sheets externo (`_Consorcios`) que task-drive-manager debe consumir como única fuente de edificios.
 
@@ -191,8 +191,7 @@ Ya creada vacía. Llenado:
 
 | email | nombre | rol | activo | creado_en |
 |---|---|---|---|---|
-| contacto@morinigoadm.com | Administración Morinigo | admin | TRUE | 2026-06-16T00:00:00.000Z |
-| castrojonathand@gmail.com | Jonathan Castro | admin | TRUE | 2026-06-16T00:00:00.000Z |
+| admin@ejemplo.com | Administrador | admin | TRUE | 2026-06-16T00:00:00.000Z |
 
 ### 7.4 Hoja `Configuración` (seed inicial requerido)
 

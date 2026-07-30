@@ -8,6 +8,7 @@ import { UpdateBanner } from "@/components/providers/UpdateBanner";
 import { getActiveSession } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo-mode";
 import { DemoBanner } from "@/components/layout/DemoBanner";
+import { APP_NAME, APP_SHORT_NAME } from "@/lib/app-name";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,12 +21,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gestión Morinigo",
+  title: APP_NAME,
   description: "Administración de consorcios — registro y seguimiento de tareas",
-  applicationName: "Gestión Morinigo",
+  applicationName: APP_NAME,
   appleWebApp: {
     capable: true,
-    title: "Morinigo",
+    title: APP_SHORT_NAME,
     statusBarStyle: "default",
   },
   icons: {

@@ -21,7 +21,7 @@ export function demoSession(): Session {
   return {
     user: {
       name: "Demo Admin",
-      email: "demo@morinigo.local",
+      email: "demo@demo.local",
       image: null,
       rol: "admin",
       activo: true,

@@ -517,7 +517,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-slate-200 md:bg-white">
         <div className="px-6 py-5">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg font-semibold text-slate-900">Gestión Morinigo</h1>
+            <h1 className="text-lg font-semibold text-slate-900">{APP_NAME}</h1>
             <OfflineIndicator />
           </div>
           {session?.user?.email && (
@@ -566,7 +566,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu size={22} />
           </button>
-          <h1 className="text-center text-base font-semibold text-slate-900">Gestión Morinigo</h1>
+          <h1 className="text-center text-base font-semibold text-slate-900">{APP_NAME}</h1>
           <div className="justify-self-end">
             <OfflineIndicator />
           </div>

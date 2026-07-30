@@ -1328,7 +1328,7 @@ export function TareaReportePdf({ tarea, generatedAt }: { tarea: Tarea; generate
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>Reporte de Tarea</Text>
-          <Text style={styles.subtitle}>Administración Morinigo · {tarea.edificio}</Text>
+          <Text style={styles.subtitle}>{APP_NAME} · {tarea.edificio}</Text>
         </View>
 
         <View style={styles.section}>
@@ -1402,7 +1402,7 @@ export function TareaReportePdf({ tarea, generatedAt }: { tarea: Tarea; generate
         )}
 
         <Text style={styles.footer} fixed>
-          Generado el {generatedAt} · Administración Morinigo
+          Generado el {generatedAt} · {APP_NAME}
         </Text>
       </Page>
     </Document>
@@ -1996,7 +1996,7 @@ git commit -m "docs: actualizar estado con PDFs + reportes"
 5. **Imágenes en el PDF**: `@react-pdf/renderer` hace fetch de las URLs server-side. Si Drive bloquea hotlinking de thumbnails, las imágenes pueden no aparecer en el PDF. **Mitigación:** las URLs de `drive.google.com/thumbnail?id=X&sz=w400` son públicas si el archivo lo es (que sí, porque aplicamos `permissions: anyone`). Si esto falla en producción, agregar fallback: omitir imágenes del PDF y solo listar URLs.
 
 ### Pendiente fuera de scope (no es parte de este plan)
-- Logo de Morinigo en el PDF: cuando el usuario suba `public/logo-source.png`, agregar `<Image src="/icon-512.png" />` en el header.
+- Logo en el PDF: cuando el usuario suba `public/logo-source.png`, agregar `<Image src="/icon-512.png" />` en el header.
 - Notificación al cliente cuando el reporte se genera (email): fuera de scope.
 - Versionado de reportes (regenerar conserva el anterior): por ahora, regenerar reemplaza la URL anterior en la Sheet pero NO borra el archivo viejo en Drive. Eso es deliberado — el historial de PDFs vive en Drive aunque la app solo apunte al último.
 

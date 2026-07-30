@@ -1,5 +1,6 @@
 import { Document, Image, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Tarea } from "@/types";
+import { APP_NAME } from "@/lib/app-name";
 
 const colors = {
   text: "#0f172a",
@@ -54,7 +55,7 @@ export function TareaReportePdf({ tarea, generatedAt, supervisorNombre }: Props)
         <View style={styles.header}>
           <Text style={styles.title}>Reporte de Tarea</Text>
           <Text style={styles.subtitle}>
-            Administración Morinigo · {tarea.edificio}
+            {APP_NAME} · {tarea.edificio}
             {ubicacion ? ` - ${ubicacion}` : ""}
           </Text>
         </View>
@@ -123,6 +124,8 @@ export function TareaReportePdf({ tarea, generatedAt, supervisorNombre }: Props)
             <Text style={styles.sectionTitle}>Imágenes ({tarea.imagenes.length})</Text>
             <View style={styles.imageGrid}>
               {tarea.imagenes.slice(0, 9).map((url) => (
+                // El <Image> de @react-pdf/renderer no soporta prop `alt` (no es next/image).
+                // eslint-disable-next-line jsx-a11y/alt-text
                 <Image key={url} src={thumbFromDriveUrl(url)} style={styles.thumb} />
               ))}
             </View>
@@ -154,7 +157,7 @@ export function TareaReportePdf({ tarea, generatedAt, supervisorNombre }: Props)
         )}
 
         <Text style={styles.footer} fixed>
-          Generado el {generatedAt} · Administración Morinigo
+          Generado el {generatedAt} · {APP_NAME}
         </Text>
       </Page>
     </Document>

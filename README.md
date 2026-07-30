@@ -1,6 +1,19 @@
-# Gestión Morinigo — Task Drive Manager
+# Task Drive Manager
 
-App web mobile-first (PWA) para la administración de ~50 consorcios en Buenos Aires. Reemplaza a AppSheet usando una **Google Sheet existente** como fuente de verdad y Google Drive para almacenar imágenes y videos de cada tarea.
+App web mobile-first (PWA) para la administración de consorcios. Reemplaza a AppSheet usando una **Google Sheet existente** como fuente de verdad y Google Drive para almacenar imágenes y videos de cada tarea.
+
+> El nombre visible de la app es configurable (`NEXT_PUBLIC_APP_NAME`); por defecto es **Task Drive Manager**.
+
+## Probar sin credenciales (modo demo)
+
+Para verla funcionando sin configurar Google, corré en **modo demo** (datos falsos, sin tocar Sheets/Drive ni login):
+
+```bash
+npm install
+DEMO_MODE=1 npm run dev   # http://localhost:4000
+```
+
+En demo, cualquier "login" entra como admin y las pantallas se pueblan con datos de ejemplo (`lib/demo-data.ts`).
 
 ## Stack
 

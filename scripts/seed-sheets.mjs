@@ -30,8 +30,8 @@ const sheets = google.sheets({ version: "v4", auth });
 
 const USUARIOS_SEED = [
   ["email", "nombre", "rol", "activo", "creado_en"],
-  ["contacto@morinigoadm.com", "Administración Morinigo", "admin", "TRUE", new Date().toISOString()],
-  ["castrojonathand@gmail.com", "Jonathan Castro", "admin", "TRUE", new Date().toISOString()],
+  // Reemplazá por el/los email(s) de admin real(es) antes de correr el seed.
+  ["admin@ejemplo.com", "Administrador", "admin", "TRUE", new Date().toISOString()],
 ];
 
 const CONFIG_SEED = [

@@ -61,28 +61,28 @@ const PROVEEDORES: string[] = [
 
 const USUARIOS: Usuario[] = [
   {
-    email: "demo@morinigo.local",
+    email: "demo@demo.local",
     nombre: "Demo Admin",
     rol: "admin",
     activo: true,
     creadoEn: "2026-01-15T10:00:00.000Z",
   },
   {
-    email: "carlos.gomez@morinigo.local",
+    email: "carlos.gomez@demo.local",
     nombre: "Carlos Gómez",
     rol: "supervisor",
     activo: true,
     creadoEn: "2026-02-10T14:30:00.000Z",
   },
   {
-    email: "maria.lopez@morinigo.local",
+    email: "maria.lopez@demo.local",
     nombre: "María López",
     rol: "supervisor",
     activo: true,
     creadoEn: "2026-03-05T09:15:00.000Z",
   },
   {
-    email: "pedro.ramirez@morinigo.local",
+    email: "pedro.ramirez@demo.local",
     nombre: "Pedro Ramírez",
     rol: "supervisor",
     activo: false,
@@ -109,7 +109,7 @@ const TAREAS: Tarea[] = [
     estado: "En Proceso",
     presupuesto: 850000,
     prioridad: "Alta",
-    supervisor: "carlos.gomez@morinigo.local",
+    supervisor: "carlos.gomez@demo.local",
   },
   {
     rowId: "2026-05-20T09:15:00.000Z",
@@ -131,7 +131,7 @@ const TAREAS: Tarea[] = [
     presupuesto: 320000,
     fechaRealizado: "2026-05-24",
     prioridad: "Alta",
-    supervisor: "maria.lopez@morinigo.local",
+    supervisor: "maria.lopez@demo.local",
   },
   {
     rowId: "2026-06-01T11:00:00.000Z",
@@ -148,7 +148,7 @@ const TAREAS: Tarea[] = [
     documentos: [],
     estado: "Sin asignar",
     prioridad: "Alta",
-    supervisor: "demo@morinigo.local",
+    supervisor: "demo@demo.local",
   },
   {
     rowId: "2026-05-15T16:20:00.000Z",
@@ -169,7 +169,7 @@ const TAREAS: Tarea[] = [
     presupuesto: 95000,
     fechaRealizado: "2026-05-18",
     prioridad: "Media",
-    supervisor: "carlos.gomez@morinigo.local",
+    supervisor: "carlos.gomez@demo.local",
   },
   {
     rowId: "2026-06-02T10:45:00.000Z",
@@ -187,7 +187,7 @@ const TAREAS: Tarea[] = [
     estado: "Sin asignar",
     presupuesto: 45000,
     prioridad: "Media",
-    supervisor: "maria.lopez@morinigo.local",
+    supervisor: "maria.lopez@demo.local",
   },
   {
     rowId: "2026-05-30T13:00:00.000Z",
@@ -207,7 +207,7 @@ const TAREAS: Tarea[] = [
     estado: "En Proceso",
     presupuesto: 38000,
     prioridad: "Baja",
-    supervisor: "demo@morinigo.local",
+    supervisor: "demo@demo.local",
   },
   {
     rowId: "2026-04-22T08:30:00.000Z",
@@ -228,7 +228,7 @@ const TAREAS: Tarea[] = [
     presupuesto: 220000,
     fechaRealizado: "2026-04-28",
     prioridad: "Baja",
-    supervisor: "carlos.gomez@morinigo.local",
+    supervisor: "carlos.gomez@demo.local",
   },
   {
     rowId: "2026-06-03T09:00:00.000Z",
@@ -247,7 +247,7 @@ const TAREAS: Tarea[] = [
     estado: "Sin asignar",
     presupuesto: 180000,
     prioridad: "Media",
-    supervisor: "maria.lopez@morinigo.local",
+    supervisor: "maria.lopez@demo.local",
   },
 ];
 

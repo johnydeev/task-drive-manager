@@ -97,6 +97,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Marca de la app (NEXT_PUBLIC_*, se hornea en el build). Se toma de las variables
+          # de repo NEXT_PUBLIC_APP_NAME / NEXT_PUBLIC_APP_SHORT_NAME (Settings → Secrets and
+          # variables → Actions → Variables). Si NO están seteadas, la app usa el default
+          # "Task Drive Manager".
+          build-args: |
+            NEXT_PUBLIC_APP_NAME=${{ vars.NEXT_PUBLIC_APP_NAME }}
+            NEXT_PUBLIC_APP_SHORT_NAME=${{ vars.NEXT_PUBLIC_APP_SHORT_NAME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

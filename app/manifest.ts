@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
+import { APP_NAME, APP_SHORT_NAME } from "@/lib/app-name";
 
 // Manifest de la PWA. Next 16 genera /manifest.webmanifest a partir de este archivo.
 // Cambiar valores acá no requiere otros ajustes — los <link rel="manifest"> se inyectan solos.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Administración Morinigo",
-    short_name: "Morinigo",
+    name: APP_NAME,
+    short_name: APP_SHORT_NAME,
     description: "Gestión de tareas y seguimiento de consorcios",
     start_url: "/tareas",
     scope: "/",

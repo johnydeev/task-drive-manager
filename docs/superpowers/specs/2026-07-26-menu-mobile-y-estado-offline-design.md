@@ -47,7 +47,7 @@ Dexie), cualquier página, y todo el resto del sidebar desktop.
 
 **Header mobile** (`md:hidden`), tres zonas en una línea:
 - **Izquierda:** botón **hamburguesa** (☰, `aria-label="Abrir menú"`) que abre el drawer.
-- **Centro:** título **"Gestión Morinigo"** centrado.
+- **Centro:** título de la app centrado.
 - **Derecha:** el **indicador de estado** (ver #4).
 
 Se **quita** el botón "Cerrar sesión" del header (pasa al drawer).

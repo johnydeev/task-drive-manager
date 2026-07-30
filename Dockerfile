@@ -19,6 +19,15 @@ COPY . .
 ENV SERWIST_SUPPRESS_TURBOPACK_WARNING=1
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Marca de la app. Las NEXT_PUBLIC_* se hornean en el BUILD, así que hay que pasarlas acá
+# (no alcanza con el .env de runtime). Sin build-arg, la app usa el default "Task Drive Manager".
+# Para conservar una marca propia:
+#   docker build --build-arg NEXT_PUBLIC_APP_NAME="Tu Marca" --build-arg NEXT_PUBLIC_APP_SHORT_NAME="Marca" ...
+ARG NEXT_PUBLIC_APP_NAME
+ARG NEXT_PUBLIC_APP_SHORT_NAME
+ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
+ENV NEXT_PUBLIC_APP_SHORT_NAME=$NEXT_PUBLIC_APP_SHORT_NAME
+
 RUN npm run build
 
 # --- Stage: runner ---

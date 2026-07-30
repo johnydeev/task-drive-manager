@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { APP_NAME } from "@/lib/app-name";
 
 function LoginContent() {
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ function LoginContent() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm border border-slate-200">
-        <h1 className="text-2xl font-semibold text-slate-900">Gestión Morinigo</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{APP_NAME}</h1>
         <p className="mt-2 text-sm text-slate-600">
           Iniciá sesión con tu cuenta de Google autorizada por la administración.
         </p>
