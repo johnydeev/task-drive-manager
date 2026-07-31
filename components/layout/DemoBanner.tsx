@@ -10,7 +10,7 @@ export function DemoBanner() {
     <div className="sticky top-0 z-50 flex items-center justify-center gap-2 border-b border-amber-200 bg-amber-100 px-4 py-1.5 text-xs font-medium text-amber-900">
       <AlertCircle size={14} />
       <span>
-        Modo demo activo · datos de ejemplo · borrar <code className="rounded bg-amber-200 px-1">DEMO_MODE</code> de <code className="rounded bg-amber-200 px-1">.env.local</code> para desactivar
+        Modo DEMO activo · datos de ejemplo
       </span>
     </div>
   );
