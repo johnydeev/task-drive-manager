@@ -29,20 +29,17 @@ La particularidad técnica: **no usa una base de datos tradicional**. La fuente 
 - **La dependencia de un tercero:** con herramientas no-code, los datos quedan "secuestrados" en la plataforma y se paga por usuario. Acá los datos viven en el **Google propio del cliente**.
 - **La responsabilidad difusa:** roles (administrador / encargado) y un **ciclo de estados** definido para cada tarea, con permisos validados en el servidor.
 
-## Ventajas frente a otras aplicaciones
+## Ventajas
 
-| | Task Drive Manager | AppSheet / no-code | Trello / Asana (apps genéricas) | WhatsApp / papel |
-|---|:---:|:---:|:---:|:---:|
-| **Datos propios (tu Google, sin lock-in)** | ✅ | ❌ (quedan en la plataforma) | ❌ | — |
-| **Funciona sin internet + sincroniza** | ✅ | Parcial | ❌ | ❌ |
-| **A medida del rubro** (edificios, dptos, partes comunes, proveedores) | ✅ | Limitado | ❌ genérico | ❌ |
-| **Evidencia con fotos/videos por tarea** | ✅ | Parcial | Adjuntos sueltos | Disperso |
-| **Informe PDF automático para propietarios** | ✅ | ❌ | ❌ | ❌ |
-| **Instalable como app (sin tienda) + auto-actualiza** | ✅ | Parcial | App de terceros | — |
-| **Costo por usuario / suscripción atada** | ❌ (es propio) | ✅ (por asiento) | ✅ | — |
-| **Ciclo de estados + roles** | ✅ | Manual | Genérico | ❌ |
+- **Datos propios, sin lock-in:** la información vive en la Google Sheet + Google Drive del cliente. Siempre suyos, sin quedar atados a una plataforma.
+- **Funciona sin internet:** se sigue trabajando y cargando tareas sin señal, y sincroniza solo al recuperar la conexión.
+- **A medida del rubro:** modela edificios, departamentos, partes comunes y proveedores tal como los maneja una administradora.
+- **Evidencia por tarea:** fotos, videos y PDFs de cada trabajo, organizados automáticamente en Drive.
+- **Informe PDF automático:** al cerrar una tarea se genera un reporte listo para rendir a los propietarios.
+- **Instalable y siempre actualizada:** se instala como app (sin tienda) en celular y computadora, y se actualiza sola.
+- **Ciclo de estados con roles:** un flujo definido para cada tarea y permisos por rol validados en el servidor.
 
-En resumen: combina lo **a medida** de un desarrollo propio con la **simplicidad de datos** de una planilla, sin la dependencia ni el costo por usuario de las plataformas no-code.
+Combina lo **a medida** de un desarrollo propio con la **simplicidad** de tener los datos en una planilla que el cliente ya conoce.
 
 ## Funcionalidades principales
 
