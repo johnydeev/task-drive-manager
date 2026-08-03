@@ -66,11 +66,11 @@ export function IntegranteCard({
       {/* Edificios */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Edificios</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-2">
           {asignaciones.map((a) => (
             <span
               key={a.edificio}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700"
             >
               <Link
                 href={`/tareas?edificio=${encodeURIComponent(a.edificio)}`}
@@ -83,12 +83,12 @@ export function IntegranteCard({
                   onClick={() => removeM.mutate(a.edificio)}
                   disabled={removeM.isPending && removeM.variables === a.edificio}
                   aria-label={`Quitar ${a.edificio}`}
-                  className="-mr-0.5 ml-0.5 text-slate-400 hover:text-red-600 disabled:opacity-50"
+                  className="-mr-1 ml-0.5 text-slate-400 hover:text-red-600 disabled:opacity-50"
                 >
                   {removeM.isPending && removeM.variables === a.edificio ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                   ) : (
-                    <X size={12} />
+                    <X size={14} />
                   )}
                 </button>
               )}
