@@ -258,6 +258,11 @@ const CONFIG: Configuracion = {
   maxSizeImagenMB: 10,
   maxSizeVideoMB: 100,
   maxSizePdfMB: 20,
+  membreteNombre: "Administración Demo",
+  membreteEmail: "contacto@demo.local",
+  membreteDireccion: "Av. Siempreviva 742, C.A.B.A",
+  membreteTelefono: "Tel: 4000-0000 de 9 a 18hs",
+  membreteLogoUrl: "",
 };
 
 // =====================================================

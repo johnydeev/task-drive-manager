@@ -33,6 +33,10 @@ export function ConfiguracionForm() {
     setForm((f) => ({ ...f, [key]: Number.isFinite(v) ? v : 0 }));
   };
 
+  const handleText = (key: keyof Configuracion) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+  };
+
   return (
     <form
       onSubmit={(e) => {
@@ -54,6 +58,30 @@ export function ConfiguracionForm() {
         <Field label="Peso máximo por video (MB)">
           <input type="number" min={1} step="1" value={form.maxSizeVideoMB} onChange={handleNumber("maxSizeVideoMB")} className="input" />
         </Field>
+      </div>
+
+      <div className="border-t border-slate-200 pt-4">
+        <h3 className="text-sm font-semibold text-slate-900">Membrete de los informes</h3>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Datos que encabezan el informe por edificio y su PDF. Los campos vacíos no se muestran.
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Field label="Nombre de la administración">
+            <input type="text" value={form.membreteNombre} onChange={handleText("membreteNombre")} className="input" />
+          </Field>
+          <Field label="Email de contacto">
+            <input type="text" value={form.membreteEmail} onChange={handleText("membreteEmail")} className="input" />
+          </Field>
+          <Field label="Dirección">
+            <input type="text" value={form.membreteDireccion} onChange={handleText("membreteDireccion")} className="input" />
+          </Field>
+          <Field label="Teléfono y horario">
+            <input type="text" value={form.membreteTelefono} onChange={handleText("membreteTelefono")} className="input" />
+          </Field>
+          <Field label="URL del logo" hint="Imagen pública (Drive). Vacío = informe sin logo.">
+            <input type="text" value={form.membreteLogoUrl} onChange={handleText("membreteLogoUrl")} className="input" />
+          </Field>
+        </div>
       </div>
 
       {error && (

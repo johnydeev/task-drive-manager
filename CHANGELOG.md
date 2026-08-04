@@ -8,6 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **Sección Informes**: informe de tareas por edificio y rango de fechas, con el membrete de la
+  administración y las tareas agrupadas en **Pendientes / En Proceso / Realizadas** (columnas
+  Dpto, Prioridad, Informe, Comentario y Estado). Botón **Exportar PDF** que descarga el informe
+  armado con `@react-pdf/renderer` — no se guarda en Drive, se regenera cuando haga falta.
+  Accesible para admin y supervisor: en desktop está en el sidebar, en mobile en el menú
+  hamburguesa. El membrete (nombre, email, dirección, teléfono y logo) se carga en la hoja
+  `Configuracion` y se edita desde **Config**, así cada despliegue usa su propia marca
 - **El responsable puede agregar archivos** (imágenes, videos, PDFs) desde el detalle de la
   tarea, mientras está **En Proceso** u **Objetada** (típicamente para sumar evidencia al
   corregir una objeción del admin). Nueva sección "Agregar archivos" (reusa el uploader con

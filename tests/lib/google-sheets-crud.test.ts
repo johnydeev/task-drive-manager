@@ -33,6 +33,8 @@ import {
   setUsuarioActivo,
   appendUsuario,
   getConfiguracion,
+  updateConfiguracion,
+  resetConfigCache,
   getDptos,
   getEdificios,
 } from "@/lib/google-sheets";
@@ -230,6 +232,10 @@ describe("setUsuarioActivo (real)", () => {
 });
 
 describe("getConfiguracion (real)", () => {
+  // El cache de config vive a nivel de módulo (TTL 5 min): sin limpiarlo, cada test
+  // leería lo que dejó el anterior en vez de las filas que mockea.
+  beforeEach(() => resetConfigCache());
+
   it("parsea los valores y cae al default si falta una clave", async () => {
     mockRanges({
       "Configuracion!A2:B": [
@@ -242,6 +248,57 @@ describe("getConfiguracion (real)", () => {
     expect(cfg.maxSizeVideoMB).toBe(50);
     // max_videos no vino -> default
     expect(cfg.maxVideos).toBeGreaterThan(0);
+  });
+
+  it("lee las claves del membrete", async () => {
+    mockRanges({
+      "Configuracion!A2:B": [
+        ["max_imagenes", "7"],
+        ["membrete_nombre", "Administración Morinigo"],
+        ["membrete_email", "contacto@morinigoadm.com"],
+        ["membrete_direccion", "Colombres 528 C.A.B.A"],
+        ["membrete_telefono", "Tel: 4957-1938 de 13 a 17hs"],
+        ["membrete_logo_url", "https://drive.google.com/logo.png"],
+      ],
+    });
+    const cfg = await getConfiguracion();
+    expect(cfg.membreteNombre).toBe("Administración Morinigo");
+    expect(cfg.membreteEmail).toBe("contacto@morinigoadm.com");
+    expect(cfg.membreteDireccion).toBe("Colombres 528 C.A.B.A");
+    expect(cfg.membreteTelefono).toBe("Tel: 4957-1938 de 13 a 17hs");
+    expect(cfg.membreteLogoUrl).toBe("https://drive.google.com/logo.png");
+  });
+
+  it("deja el membrete vacío si la hoja no tiene esas filas", async () => {
+    mockRanges({ "Configuracion!A2:B": [["max_imagenes", "7"]] });
+    const cfg = await getConfiguracion();
+    expect(cfg.membreteNombre).toBe("");
+    expect(cfg.membreteLogoUrl).toBe("");
+  });
+});
+
+describe("updateConfiguracion (real)", () => {
+  it("escribe también las claves del membrete, en un rango que las cubre", async () => {
+    mockRanges({});
+    await updateConfiguracion({
+      maxImagenes: 6,
+      maxVideos: 2,
+      maxDocumentos: 5,
+      maxSizeImagenMB: 10,
+      maxSizeVideoMB: 50,
+      maxSizePdfMB: 20,
+      membreteNombre: "Administración Morinigo",
+      membreteEmail: "contacto@morinigoadm.com",
+      membreteDireccion: "Colombres 528 C.A.B.A",
+      membreteTelefono: "Tel: 4957-1938 de 13 a 17hs",
+      membreteLogoUrl: "https://drive.google.com/logo.png",
+    });
+    const call = valuesUpdate.mock.calls.at(-1)![0];
+    expect(call.range).toBe("Configuracion!A2:B12");
+    const claves = call.requestBody.values.map((r: [string, unknown]) => r[0]);
+    expect(claves).toContain("membrete_nombre");
+    expect(claves).toContain("membrete_logo_url");
+    expect(call.requestBody.values).toHaveLength(11);
   });
 });
 

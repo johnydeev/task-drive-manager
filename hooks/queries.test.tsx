@@ -89,6 +89,8 @@ describe("hooks de datos por entidad", () => {
     vi.mocked(api.configuracion.get).mockResolvedValue({
       maxImagenes: 10, maxVideos: 3, maxDocumentos: 5,
       maxSizeImagenMB: 10, maxSizeVideoMB: 100, maxSizePdfMB: 20,
+      membreteNombre: "", membreteEmail: "", membreteDireccion: "",
+      membreteTelefono: "", membreteLogoUrl: "",
     });
     const { result } = renderHook(() => useConfig(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

@@ -19,6 +19,7 @@ import {
   Building2,
   Menu,
   Download,
+  FileText,
 } from "lucide-react";
 
 interface NavItem {
@@ -26,11 +27,15 @@ interface NavItem {
   label: string;
   Icon: typeof ClipboardList;
   adminOnly?: boolean;
+  // Visible para todos, pero fuera de la bottom nav mobile: va al drawer. La bottom nav
+  // tiene lugar para 3 destinos + "Nueva"; sumar una cuarta celda la deja ilegible.
+  drawerOnly?: boolean;
 }
 
 const NAV: NavItem[] = [
   { href: "/tareas", label: "Tareas", Icon: ClipboardList },
   { href: "/edificios", label: "Edificios", Icon: Building2 },
+  { href: "/informes", label: "Informes", Icon: FileText, drawerOnly: true },
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/usuarios", label: "Usuarios", Icon: Users, adminOnly: true },
   { href: "/configuracion", label: "Config", Icon: Settings, adminOnly: true },
@@ -44,8 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { canInstall, promptInstall } = useInstallPrompt();
 
   const items = NAV.filter((n) => !n.adminOnly || isAdmin);
-  const bottomItems = items.filter((n) => !n.adminOnly); // Tareas, Edificios, Dashboard
-  const drawerItems = items.filter((n) => n.adminOnly); // Usuarios, Config (solo admin)
+  const bottomItems = items.filter((n) => !n.adminOnly && !n.drawerOnly); // Tareas, Edificios, Dashboard
+  const drawerItems = items.filter((n) => n.adminOnly || n.drawerOnly); // Informes + Usuarios/Config (admin)
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

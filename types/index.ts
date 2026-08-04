@@ -98,6 +98,13 @@ export interface Configuracion {
   maxSizeImagenMB: number;
   maxSizeVideoMB: number;
   maxSizePdfMB: number;
+  // Membrete de los informes por edificio. Vive en la hoja Configuracion para que cada
+  // despliegue cargue su propia marca sin tocar el código. Vacío = no se dibuja.
+  membreteNombre: string;
+  membreteEmail: string;
+  membreteDireccion: string;
+  membreteTelefono: string;
+  membreteLogoUrl: string;
 }
 
 export const CONFIGURACION_DEFAULT: Configuracion = {
@@ -107,6 +114,11 @@ export const CONFIGURACION_DEFAULT: Configuracion = {
   maxSizeImagenMB: 10,
   maxSizeVideoMB: 100,
   maxSizePdfMB: 20,
+  membreteNombre: "",
+  membreteEmail: "",
+  membreteDireccion: "",
+  membreteTelefono: "",
+  membreteLogoUrl: "",
 };
 
 // Tarea pendiente de sync (vive en IndexedDB).

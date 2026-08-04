@@ -16,4 +16,4 @@ export {
   type TareaFilters,
 } from "./sheets/tareas";
 export { getUsuarios, getUsuarioByEmail, appendUsuario, setUsuarioActivo } from "./sheets/usuarios";
-export { getConfiguracion, updateConfiguracion } from "./sheets/config";
+export { getConfiguracion, updateConfiguracion, resetConfigCache } from "./sheets/config";

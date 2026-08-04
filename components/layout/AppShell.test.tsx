@@ -14,6 +14,11 @@ const asAdmin = () =>
     data: { user: { email: "admin@x.com", rol: "admin" } },
   } as never);
 
+const asSupervisor = () =>
+  vi.mocked(useSession).mockReturnValue({
+    data: { user: { email: "sup@x.com", rol: "supervisor" } },
+  } as never);
+
 beforeEach(() => vi.clearAllMocks());
 
 describe("AppShell — bottom nav mobile", () => {
@@ -74,5 +79,44 @@ describe("AppShell — bottom nav mobile", () => {
     });
     // Drawer cerrado → el único "Instalar app" es el del sidebar desktop.
     expect(screen.getByRole("button", { name: /instalar app/i })).toBeInTheDocument();
+  });
+});
+
+describe("AppShell — sección Informes", () => {
+  it("Informes está en el shell para un supervisor (sidebar desktop)", () => {
+    asSupervisor();
+    render(
+      <AppShell>
+        <div>c</div>
+      </AppShell>
+    );
+    expect(screen.getByRole("link", { name: /informes/i })).toBeInTheDocument();
+  });
+
+  it("Informes NO ocupa una celda de la bottom nav mobile", () => {
+    asSupervisor();
+    render(
+      <AppShell>
+        <div>c</div>
+      </AppShell>
+    );
+    const bottom = screen.getByTestId("bottom-nav");
+    expect(bottom).not.toHaveTextContent("Informes");
+    // Siguen siendo 3 destinos + "Nueva"
+    expect(within(bottom).getAllByRole("link")).toHaveLength(4);
+  });
+
+  it("Informes está en el drawer mobile, también para un no-admin", () => {
+    asSupervisor();
+    render(
+      <AppShell>
+        <div>c</div>
+      </AppShell>
+    );
+    fireEvent.click(screen.getByRole("button", { name: /abrir menú/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("link", { name: /informes/i })).toBeInTheDocument();
+    // El supervisor no ve los destinos de admin
+    expect(within(dialog).queryByRole("link", { name: /usuarios/i })).not.toBeInTheDocument();
   });
 });

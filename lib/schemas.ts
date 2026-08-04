@@ -131,6 +131,12 @@ export const configuracionSchema = z.object({
   maxSizeImagenMB: z.number().positive(),
   maxSizeVideoMB: z.number().positive(),
   maxSizePdfMB: z.number().positive(),
+  // Membrete de los informes: todo opcional. Un despliegue sin marca cargada guarda igual.
+  membreteNombre: z.string().optional().default(""),
+  membreteEmail: z.string().optional().default(""),
+  membreteDireccion: z.string().optional().default(""),
+  membreteTelefono: z.string().optional().default(""),
+  membreteLogoUrl: z.string().optional().default(""),
 });
 
 // Directiva que el admin crea/asigna a un integrante. Reusa isoDate.
