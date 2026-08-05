@@ -14,7 +14,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   armado con `@react-pdf/renderer` — no se guarda en Drive, se regenera cuando haga falta.
   Accesible para admin y supervisor: en desktop está en el sidebar, en mobile en el menú
   hamburguesa. El membrete (nombre, email, dirección, teléfono y logo) se carga en la hoja
-  `Configuracion` y se edita desde **Config**, así cada despliegue usa su propia marca
+  `Configuracion` y se edita desde **Config**, así cada despliegue usa su propia marca. El logo
+  acepta tanto una **URL pública** (Drive) como una **ruta del propio sitio** (`/mi-logo.png`,
+  archivo en `public/`), que el generador de PDF resuelve contra el disco
 - **El responsable puede agregar archivos** (imágenes, videos, PDFs) desde el detalle de la
   tarea, mientras está **En Proceso** u **Objetada** (típicamente para sumar evidencia al
   corregir una objeción del admin). Nueva sección "Agregar archivos" (reusa el uploader con

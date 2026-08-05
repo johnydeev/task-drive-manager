@@ -13,7 +13,8 @@ const colors = {
   muted: "#64748b",
   border: "#cbd5e1",
   accent: "#7c92aa",
-  head: "#e2e8f0",
+  head: "#d9d9d9",
+  link: "#1155cc",
 };
 
 // Fondo por grupo, siguiendo la planilla que la administración usaba a mano.
@@ -25,15 +26,34 @@ const FONDO_GRUPO: Record<GrupoInforme, string> = {
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 9, color: colors.text, fontFamily: "Helvetica" },
-  membrete: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  logo: { width: 64, height: 64, marginRight: 12 },
-  marca: { flex: 1 },
-  nombre: { fontSize: 18, fontFamily: "Helvetica-Bold" },
-  contacto: { fontSize: 9, color: colors.muted, marginTop: 2 },
-  separador: { borderBottom: `2pt solid ${colors.accent}`, marginBottom: 8 },
-  meta: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
-  metaTexto: { fontSize: 10, fontFamily: "Helvetica-Bold" },
-  grupoTitulo: { fontSize: 11, fontFamily: "Helvetica-Bold", marginTop: 10, marginBottom: 4 },
+  // Membrete calcado de la planilla que la administración usaba a mano: logo y nombre
+  // centrados arriba, contacto repartido a los costados y una regla gruesa debajo.
+  membrete: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  logo: { width: 72, height: 72, marginRight: 16 },
+  nombre: { fontSize: 24, fontFamily: "Helvetica-Bold", textAlign: "center" },
+  contactoFila: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  email: { fontSize: 9, color: colors.link, fontFamily: "Helvetica-Bold" },
+  direccion: { fontSize: 9, fontFamily: "Helvetica-Bold" },
+  separador: { borderBottom: `2pt solid ${colors.text}`, marginBottom: 8 },
+  meta: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+  metaTexto: { fontSize: 10, fontFamily: "Helvetica-BoldOblique" },
+  grupoTitulo: {
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    backgroundColor: colors.head,
+    borderTop: `1pt solid ${colors.border}`,
+    borderLeft: `1pt solid ${colors.border}`,
+    borderRight: `1pt solid ${colors.border}`,
+    paddingVertical: 3,
+    marginTop: 12,
+  },
   fila: { flexDirection: "row", borderBottom: `1pt solid ${colors.border}` },
   celda: { padding: 4 },
   encabezado: { backgroundColor: colors.head, fontFamily: "Helvetica-Bold" },
@@ -74,17 +94,16 @@ export function InformeEdificioPdf({ edificio, desde, hasta, grupos, config, gen
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={config.membreteLogoUrl} style={styles.logo} />
           ) : null}
-          <View style={styles.marca}>
-            <Text style={styles.nombre}>{config.membreteNombre || APP_NAME}</Text>
-            {config.membreteEmail ? (
-              <Text style={styles.contacto}>{config.membreteEmail}</Text>
-            ) : null}
-            {config.membreteDireccion || config.membreteTelefono ? (
-              <Text style={styles.contacto}>
-                {[config.membreteDireccion, config.membreteTelefono].filter(Boolean).join(" · ")}
-              </Text>
-            ) : null}
-          </View>
+          <Text style={styles.nombre}>
+            {(config.membreteNombre || APP_NAME).toUpperCase()}
+          </Text>
+        </View>
+
+        <View style={styles.contactoFila}>
+          <Text style={styles.email}>{config.membreteEmail}</Text>
+          <Text style={styles.direccion}>
+            {[config.membreteDireccion, config.membreteTelefono].filter(Boolean).join(" ")}
+          </Text>
         </View>
         <View style={styles.separador} />
 

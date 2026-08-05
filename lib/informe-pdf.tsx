@@ -1,6 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { InformeEdificioPdf } from "@/components/pdf/InformeEdificioPdf";
 import { agruparParaInforme } from "./informes";
+import { resolverLogoParaPdf } from "./membrete-logo";
 import type { Configuracion, Tarea } from "@/types";
 
 interface Args {
@@ -24,13 +25,19 @@ export async function renderInformeEdificio({
   const generatedAt = new Date().toLocaleDateString("es-AR", {
     timeZone: "America/Argentina/Buenos_Aires",
   });
+  // El logo puede venir como URL pública o como ruta del propio sitio (public/): en el
+  // segundo caso hay que darle a react-pdf el archivo en disco, no la ruta web.
+  const configPdf: Configuracion = {
+    ...config,
+    membreteLogoUrl: resolverLogoParaPdf(config.membreteLogoUrl),
+  };
   return renderToBuffer(
     <InformeEdificioPdf
       edificio={edificio}
       desde={desde}
       hasta={hasta}
       grupos={agruparParaInforme(tareas)}
-      config={config}
+      config={configPdf}
       generatedAt={generatedAt}
     />
   );
