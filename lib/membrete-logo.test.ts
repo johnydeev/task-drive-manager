@@ -7,9 +7,17 @@ const siempreExiste = () => true;
 const nuncaExiste = () => false;
 
 describe("resolverLogoParaPdf", () => {
-  it("deja pasar una URL http(s) tal cual", () => {
-    const url = "https://drive.google.com/uc?id=abc";
+  it("deja pasar una URL http(s) que no es un link de archivo de Drive", () => {
+    const url = "https://ejemplo.com/logo.png";
     expect(resolverLogoParaPdf(url, CWD, nuncaExiste)).toBe(url);
+  });
+
+  it("traduce el link de 'Compartir' de Drive al thumbnail (el /view es HTML, no la imagen)", () => {
+    const compartir =
+      "https://drive.google.com/file/d/1c_SMC_ZcqodLLROf4pW3iMDBFIlUFoT6/view?usp=sharing";
+    expect(resolverLogoParaPdf(compartir, CWD, nuncaExiste)).toBe(
+      "https://drive.google.com/thumbnail?id=1c_SMC_ZcqodLLROf4pW3iMDBFIlUFoT6&sz=w400"
+    );
   });
 
   it("traduce una ruta del sitio al archivo de public/", () => {

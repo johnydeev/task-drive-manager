@@ -2,6 +2,7 @@
 
 import type { Configuracion } from "@/types";
 import { APP_NAME } from "@/lib/app-name";
+import { logoMembreteUrl } from "@/lib/drive-url";
 
 interface Props {
   config?: Configuracion;
@@ -16,16 +17,18 @@ export function MembreteHeader({ config, edificio, desde, hasta }: Props) {
     .filter(Boolean)
     .join(" · ");
   const rango = [desde, hasta].filter(Boolean).join(" al ");
+  // Un link de "Compartir" de Drive apunta a una página, no a la imagen: se traduce.
+  const logo = logoMembreteUrl(config?.membreteLogoUrl);
 
   return (
     <div className="rounded-t-2xl border border-b-0 border-slate-200 bg-white p-4 md:p-6">
       {/* Logo + nombre centrados, calcado de la planilla original */}
       <div className="flex items-center justify-center gap-4">
-        {config?.membreteLogoUrl ? (
+        {logo ? (
           // Imagen externa arbitraria (Drive): <img> evita configurar remotePatterns de next/image.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={config.membreteLogoUrl}
+            src={logo}
             alt=""
             className="h-16 w-16 shrink-0 rounded-full object-contain md:h-20 md:w-20"
           />

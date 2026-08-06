@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logoMembreteUrl } from "./drive-url";
 
 // El <Image> de @react-pdf/renderer corre en el server: resuelve URLs absolutas por HTTP,
 // pero NO una ruta del sitio como "/membrete-logo.png" (no tiene origen). Para poder
@@ -16,7 +17,8 @@ export function resolverLogoParaPdf(
 ): string {
   const url = logoUrl?.trim();
   if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
+  // Un link de Drive se traduce a su thumbnail (el /view es HTML, no la imagen).
+  if (/^https?:\/\//i.test(url)) return logoMembreteUrl(url);
   if (!url.startsWith("/")) return "";
 
   // Se ignora cualquier query/hash y se corta el path traversal: solo archivos de public/.
