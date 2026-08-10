@@ -196,7 +196,7 @@ describe("validación de enums al escribir (E)", () => {
 describe("getUsuarios (real)", () => {
   it("normaliza rol y trata activo por defecto en true", async () => {
     mockRanges({
-      "Usuarios!A:F": [
+      "Usuarios!A:G": [
         ["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"],
         ["Admin@X.com", "Admin", "ADMIN", "", "2026-01-01", ""],
         ["sup@x.com", "Sup", "supervisor", "false", "2026-01-01", ""],
@@ -213,7 +213,7 @@ describe("getUsuarios (real)", () => {
 describe("setUsuarioActivo (real)", () => {
   it("encuentra la fila por email y actualiza la columna D", async () => {
     mockRanges({
-      "Usuarios!A:F": [
+      "Usuarios!A:G": [
         ["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"],
         ["a@x.com", "A", "admin", "true", "", ""],
         ["b@x.com", "B", "supervisor", "true", "", ""],
@@ -226,7 +226,7 @@ describe("setUsuarioActivo (real)", () => {
   });
 
   it("lanza si el usuario no existe", async () => {
-    mockRanges({ "Usuarios!A:F": [["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"]] });
+    mockRanges({ "Usuarios!A:G": [["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"]] });
     await expect(setUsuarioActivo("nope@x.com", true)).rejects.toThrow();
   });
 });

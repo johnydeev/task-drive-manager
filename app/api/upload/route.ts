@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { uploadTareaFile, trashFileByUrl } from "@/lib/google-drive";
+import { uploadFirma, uploadVisitaFoto } from "@/lib/drive-visitas";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { limiteMB, mensajeArchivoPesado, pesoMB } from "@/lib/upload-limits";
@@ -45,6 +46,38 @@ export async function POST(req: NextRequest) {
 
     if (!(file instanceof File)) return jsonError(400, "Falta archivo");
     if (!edificio) return jsonError(400, "Falta edificio");
+
+    // Destinos alternativos al de tareas. Se resuelven antes porque no requieren
+    // objetivo/ubicación/rowId, que son propios de una tarea.
+    const destino = (form.get("destino") ?? "").toString();
+
+    if (destino === "firma") {
+      const emailFirma = (form.get("email") ?? "").toString();
+      if (!emailFirma) return jsonError(400, "Falta el email del usuario");
+      if (!IMAGE_MIMES.has(file.type)) {
+        return jsonError(400, `La firma tiene que ser una imagen: ${file.type}`);
+      }
+      const subida = await uploadFirma({
+        buffer: Buffer.from(await file.arrayBuffer()),
+        mimeType: file.type,
+        email: emailFirma,
+      });
+      return NextResponse.json({ url: subida.url, kind: "imagen" });
+    }
+
+    if (destino === "visita") {
+      if (!IMAGE_MIMES.has(file.type)) {
+        return jsonError(400, `Solo se permiten imágenes en una visita: ${file.type}`);
+      }
+      const subida = await uploadVisitaFoto({
+        buffer: Buffer.from(await file.arrayBuffer()),
+        originalName: file.name,
+        mimeType: file.type,
+        edificio,
+      });
+      return NextResponse.json({ url: subida.url, kind: "imagen" });
+    }
+
     if (!objetivo) return jsonError(400, "Falta objetivo");
     if (!ubicacion) return jsonError(400, "Falta la ubicación (dpto/parte común)");
     if (!rowId) return jsonError(400, "Falta el identificador de la tarea");

@@ -1,5 +1,5 @@
 import type { Consorcio } from "./consorcios";
-import { edificioMatches } from "./sheets/edificios";
+import { edificioMatches } from "./edificio-match";
 
 // Resuelve el CUIT de un edificio a partir de su nombre, contra el listado de
 // _Consorcios. Matchea por nombre canónico o por cualquiera de sus nombres

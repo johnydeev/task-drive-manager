@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tareaFolderName, sanitizeSegment } from "@/lib/google-drive";
+import { tareaFolderName, sanitizeSegment, nombreArchivoVisita } from "@/lib/google-drive";
 
 describe("sanitizeSegment", () => {
   it("reemplaza caracteres problemáticos por espacios y colapsa", () => {
@@ -51,5 +51,25 @@ describe("tareaFolderName", () => {
   it("tolera rowId inválido sin romper", () => {
     const name = tareaFolderName({ rowId: "no-es-fecha", ubicacion: "1A", objetivo: "X" });
     expect(name).toMatch(/^\d{4}-\d{2}-\d{2} · 1A · X$/);
+  });
+});
+
+describe("nombreArchivoVisita", () => {
+  it("arma VISITA - DD-MM-AAAA - Edificio.pdf", () => {
+    expect(nombreArchivoVisita("Castro Barros 1310", "2026-08-08")).toBe(
+      "VISITA - 08-08-2026 - Castro Barros 1310.pdf"
+    );
+  });
+
+  it("limpia los caracteres que Drive no acepta en un nombre", () => {
+    expect(nombreArchivoVisita("Edificio A/B: 12", "2026-01-05")).toBe(
+      "VISITA - 05-01-2026 - Edificio A B 12.pdf"
+    );
+  });
+
+  it("agrega un sufijo cuando ya existe un archivo con ese nombre", () => {
+    expect(nombreArchivoVisita("Castro Barros 1310", "2026-08-08", 2)).toBe(
+      "VISITA - 08-08-2026 - Castro Barros 1310 (2).pdf"
+    );
   });
 });

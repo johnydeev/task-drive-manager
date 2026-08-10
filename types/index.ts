@@ -31,6 +31,7 @@ export interface Usuario {
   activo: boolean;
   creadoEn: string; // ISO datetime
   actualizadoEn?: string; // ISO datetime — última modificación (rol/activo)
+  firmaUrl?: string; // URL de la firma en Drive, para estampar en el PDF de visita
 }
 
 // Estructura de una tarea según hoja "Ingreso de Pendiente".
@@ -171,4 +172,56 @@ export interface DirectivaPatchInput {
 export interface Asignacion {
   email: string;
   edificio: string;
+}
+
+// =====================================================
+// Visitas de control por edificio
+// =====================================================
+
+// Los 9 datos del consorcio que encabezan el formulario. Se guardan por edificio
+// (hoja EdificioFicha) para precargar la próxima visita, y se sobrescriben en cada una.
+export interface EdificioFicha {
+  edificio: string;
+  seguroPoliza: string;
+  ascensores: string;
+  fumigacion: string;
+  empresaMatafuegoVenc: string;
+  encargado: string;
+  calderaTermotanque: string;
+  empresaLimpieza: string;
+  horarioTrabajo: string;
+  encargadoLimpiezaHs: string;
+  actualizadoEn?: string;
+}
+
+export const EDIFICIO_FICHA_VACIA: Omit<EdificioFicha, "edificio"> = {
+  seguroPoliza: "",
+  ascensores: "",
+  fumigacion: "",
+  empresaMatafuegoVenc: "",
+  encargado: "",
+  calderaTermotanque: "",
+  empresaLimpieza: "",
+  horarioTrabajo: "",
+  encargadoLimpiezaHs: "",
+};
+
+// Fila de la hoja Visitas: es el ÍNDICE del historial, no los datos del formulario
+// (esos viven dentro del PDF).
+export interface Visita {
+  id: string; // timestamp ISO
+  edificio: string;
+  fecha: string; // ISO date, la pone el server (día de emisión)
+  pdfUrl: string;
+  supervisor: string; // email
+  creadoEn: string;
+}
+
+// Lo que manda el formulario. Nada de esto se guarda en columnas salvo el edificio.
+export interface VisitaNuevaInput {
+  edificio: string;
+  ficha: Partial<Omit<EdificioFicha, "edificio" | "actualizadoEn">>;
+  controles: Record<string, "Realizada" | "No realizada">;
+  informeGeneral?: string;
+  fotos: string[]; // URLs de Drive ya subidas
 }

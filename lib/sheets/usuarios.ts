@@ -9,7 +9,7 @@ import { rolEnum } from "../schemas";
 import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Headers: email · nombre · rol · activo · creado_en · actualizado_en
-const RANGE = `${SHEETS.usuarios}!A:F`;
+const RANGE = `${SHEETS.usuarios}!A:G`;
 
 export function rowsToUsuarios(rows: string[][]): Usuario[] {
   if (rows.length === 0) return [];
@@ -28,6 +28,7 @@ export function rowsToUsuarios(rows: string[][]): Usuario[] {
         activo: activoRaw === "" ? true : toBool(activoRaw),
         creadoEn: h.get(r, "creado_en"),
         actualizadoEn: h.get(r, "actualizado_en") || undefined,
+        firmaUrl: h.get(r, "firma_url") || undefined,
       };
     });
 }
@@ -94,6 +95,38 @@ export async function setUsuarioActivo(email: string, activo: boolean): Promise<
   });
 
   // Registrar la última modificación si existe la columna.
+  const updIdx = h.index("actualizado_en");
+  if (updIdx !== -1) {
+    await getSheets().spreadsheets.values.update({
+      spreadsheetId: getSheetId(),
+      range: `${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[nowBuenosAiresISO()]] },
+    });
+  }
+}
+
+// Guarda (o borra, con "") la URL de la firma del usuario. Escribe SOLO esa celda,
+// ubicándola por header — mismo patrón que setUsuarioActivo.
+export async function setUsuarioFirma(email: string, firmaUrl: string): Promise<void> {
+  if (isDemoMode()) return;
+  const rows = await readRange(RANGE);
+  const h = buildHeaderMap(rows[0] ?? []);
+  const target = email.trim().toLowerCase();
+  const idx = rows.slice(1).findIndex((r) => h.get(r, "email").trim().toLowerCase() === target);
+  if (idx === -1) throw new Error(`Usuario ${email} no encontrado`);
+  const rowNumber = idx + 2;
+
+  const firmaIdx = h.index("firma_url");
+  if (firmaIdx === -1) throw new Error("La hoja Usuarios no tiene la columna firma_url");
+
+  await getSheets().spreadsheets.values.update({
+    spreadsheetId: getSheetId(),
+    range: `${SHEETS.usuarios}!${colLetter(firmaIdx + 1)}${rowNumber}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[firmaUrl]] },
+  });
+
   const updIdx = h.index("actualizado_en");
   if (updIdx !== -1) {
     await getSheets().spreadsheets.values.update({

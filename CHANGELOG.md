@@ -8,6 +8,18 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **Visitas de control por edificio**: formulario con los campos del parte en papel (datos del
+  consorcio, 15 controles por sector marcados *Realizada / No realizada*, informe general y
+  fotos) que al guardar **genera un PDF y lo archiva** en Drive, en
+  `Tareas/{Edificio}/Visitas/`, con el nombre `VISITA - DD-MM-AAAA - Edificio.pdf`. Los datos del
+  formulario **no se guardan en la planilla**: viven en el PDF. En la hoja `Visitas` queda el
+  índice del historial (edificio, fecha y link), y los 9 datos fijos del consorcio se recuerdan en
+  `EdificioFicha` para precargar la visita siguiente. Nueva pestaña **Visitas** dentro de
+  **Informes/Visitas**, con el panel de todos los consorcios ordenados por antigüedad de la última
+  visita (se resaltan los de más de 45 días) y el historial de PDFs de cada uno. Los PDF son
+  inmutables: para corregir una visita se carga de nuevo y **solo el admin** puede eliminar la
+  errónea. La **firma del supervisor** se carga desde Usuarios (dibujándola o subiendo una imagen)
+  y se estampa en el PDF
 - **Sección Informes**: informe de tareas por edificio y rango de fechas, con el membrete de la
   administración y las tareas agrupadas en **Pendientes / En Proceso / Realizadas** (columnas
   Dpto, Prioridad, Informe, Comentario y Estado). Botón **Exportar PDF** que descarga el informe

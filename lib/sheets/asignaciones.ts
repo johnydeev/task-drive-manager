@@ -4,7 +4,7 @@ import type { Asignacion, Edificio } from "@/types";
 import { getConsorciosActivos } from "../consorcios";
 import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
 import { buildHeaderMap } from "./headers";
-import { edificioMatches } from "./edificios";
+import { edificioMatches } from "../edificio-match";
 import { nowBuenosAiresISO } from "../fecha-ar";
 
 // Headers: edificio · edificio_cuit · email · creado_en

@@ -35,7 +35,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/tareas", label: "Tareas", Icon: ClipboardList },
   { href: "/edificios", label: "Edificios", Icon: Building2 },
-  { href: "/informes", label: "Informes", Icon: FileText, drawerOnly: true },
+  { href: "/informes", label: "Informes/Visitas", Icon: FileText, drawerOnly: true },
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/usuarios", label: "Usuarios", Icon: Users, adminOnly: true },
   { href: "/configuracion", label: "Config", Icon: Settings, adminOnly: true },

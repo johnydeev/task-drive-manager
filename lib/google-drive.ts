@@ -32,7 +32,7 @@ const MIME_EXT: Record<string, string> = {
 
 let driveClient: drive_v3.Drive | null = null;
 
-function getDrive() {
+export function getDrive() {
   if (!driveClient) {
     driveClient = google.drive({ version: "v3", auth: getGoogleAuth() });
   }
@@ -42,7 +42,7 @@ function getDrive() {
 // Cache en memoria de carpetas ya creadas/encontradas: clave = `${parent}::${name}`
 const folderCache = new Map<string, string>();
 
-async function ensureFolder(name: string, parentId: string): Promise<string> {
+export async function ensureFolder(name: string, parentId: string): Promise<string> {
   const cacheKey = `${parentId}::${name}`;
   const cached = folderCache.get(cacheKey);
   if (cached) return cached;
@@ -191,7 +191,7 @@ export async function trashReportesDeTarea(opts: {
 }
 
 // Cuenta los archivos existentes en una carpeta para calcular el próximo índice (NN).
-async function nextIndex(folderId: string): Promise<number> {
+export async function nextIndex(folderId: string): Promise<number> {
   const res = await getDrive().files.list({
     q: `'${folderId}' in parents and trashed=false`,
     fields: "files(id)",
@@ -216,7 +216,7 @@ function argParts(date: Date) {
   };
 }
 
-function pad2(n: number): string {
+export function pad2(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
@@ -232,7 +232,7 @@ export function sanitizeSegment(input: string, maxLen = 60): string {
 }
 
 // Extrae la extensión (con punto) del nombre original; fallback al mime.
-function extFor(originalName: string, mimeType: string): string {
+export function extFor(originalName: string, mimeType: string): string {
   const m = originalName.match(/\.[a-zA-Z0-9]+$/);
   if (m) return m[0].toLowerCase();
   return MIME_EXT[mimeType] ?? "";
@@ -250,6 +250,17 @@ export function tareaFolderName(opts: { rowId: string; ubicacion: string; objeti
   const ubic = sanitizeSegment(opts.ubicacion) || "Sin ubicacion";
   const obj = sanitizeSegment(opts.objetivo) || "Tarea";
   return `${ymd} · ${ubic} · ${obj}`;
+}
+
+// Nombre del PDF de una visita: "VISITA - DD-MM-AAAA - Edificio.pdf" (formato de fecha
+// argentino, pedido del cliente). `copia` numera los repetidos: puede haber más de una
+// visita del mismo edificio el mismo día y Drive admite nombres duplicados.
+export function nombreArchivoVisita(edificio: string, fechaISO: string, copia = 1): string {
+  const [y, m, d] = fechaISO.slice(0, 10).split("-");
+  const fecha = `${d}-${m}-${y}`;
+  const nombre = sanitizeSegment(edificio) || "Sin edificio";
+  const sufijo = copia > 1 ? ` (${copia})` : "";
+  return `VISITA - ${fecha} - ${nombre}${sufijo}.pdf`;
 }
 
 function demoFolderId(opts: { edificio: string; objetivo: string }): string {
@@ -325,7 +336,7 @@ export async function uploadTareaFile(opts: {
 }
 
 // Subida de bajo nivel a una carpeta concreta. Hace el archivo público.
-async function uploadFile(opts: {
+export async function uploadFile(opts: {
   buffer: Buffer;
   name: string;
   mimeType: string;

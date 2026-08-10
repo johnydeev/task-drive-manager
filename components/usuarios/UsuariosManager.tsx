@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { cn, formatFecha } from "@/lib/utils";
+import { thumbUrl } from "@/lib/drive-url";
+import { FirmaCanvas } from "@/components/ui/FirmaCanvas";
 import { Loader2, UserPlus } from "lucide-react";
 import type { Rol } from "@/types";
 
@@ -30,6 +32,32 @@ export function UsuariosManager() {
     mutationFn: ({ email, activo }: { email: string; activo: boolean }) =>
       api.usuarios.setActivo(email, activo),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["usuarios"] }),
+  });
+
+  // Firma del integrante: se sube a Drive y la URL queda en la hoja Usuarios.
+  // Se estampa en el PDF de las visitas que carga esa persona.
+  const [firmaDe, setFirmaDe] = useState<string | null>(null);
+
+  const subirFirma = useMutation({
+    mutationFn: async ({ email, blob }: { email: string; blob: Blob }) => {
+      const fd = new FormData();
+      fd.append("file", new File([blob], "firma.png", { type: blob.type || "image/png" }));
+      fd.append("destino", "firma");
+      fd.append("email", email);
+      // El endpoint pide edificio para el flujo de tareas; en firma no se usa.
+      fd.append("edificio", "_firmas");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "No se pudo subir la firma");
+      }
+      const { url } = (await res.json()) as { url: string };
+      await api.usuarios.setFirma(email, url);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      setFirmaDe(null);
+    },
   });
 
   return (
@@ -122,6 +150,7 @@ export function UsuariosManager() {
               <th className="px-4 py-2">Rol</th>
               <th className="px-4 py-2">Creado</th>
               <th className="px-4 py-2">Estado</th>
+              <th className="px-4 py-2">Firma</th>
             </tr>
           </thead>
           <tbody>
@@ -159,11 +188,62 @@ export function UsuariosManager() {
                     {u.activo ? "Activo" : "Inactivo"}
                   </button>
                 </td>
+                <td className="px-4 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setFirmaDe(firmaDe === u.email ? null : u.email)}
+                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    {u.firmaUrl ? "Cambiar firma" : "Cargar firma"}
+                  </button>
+                </td>
               </tr>
             ))}
+            {usuariosQ.data?.map((u) =>
+              firmaDe === u.email ? (
+                <tr key={`${u.email}-firma`} className="border-t border-slate-100 bg-slate-50">
+                  <td colSpan={6} className="px-4 py-3">
+                    <p className="mb-2 text-xs font-medium text-slate-700">
+                      Firma de {u.nombre || u.email}
+                    </p>
+                    {u.firmaUrl && (
+                      // Imagen externa de Drive: <img> evita configurar remotePatterns.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={thumbUrl(u.firmaUrl, 300)}
+                        alt=""
+                        className="mb-2 h-16 object-contain"
+                      />
+                    )}
+                    <p className="mb-2 text-xs text-slate-600">Dibujala o subí una imagen.</p>
+                    <FirmaCanvas
+                      guardando={subirFirma.isPending}
+                      onGuardar={(blob) => subirFirma.mutate({ email: u.email, blob })}
+                    />
+                    <label className="mt-2 block text-xs text-slate-600">
+                      …o subir una imagen
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={subirFirma.isPending}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) subirFirma.mutate({ email: u.email, blob: f });
+                          e.target.value = "";
+                        }}
+                        className="mt-1 block w-full text-xs"
+                      />
+                    </label>
+                    {subirFirma.isError && (
+                      <p className="mt-1 text-xs text-red-600">No se pudo guardar la firma.</p>
+                    )}
+                  </td>
+                </tr>
+              ) : null
+            )}
             {usuariosQ.data?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   No hay usuarios cargados todavía.
                 </td>
               </tr>

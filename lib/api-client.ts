@@ -14,6 +14,8 @@ import type {
   Tarea,
   TareaNuevaInput,
   Usuario,
+  Visita,
+  VisitaNuevaInput,
 } from "@/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -149,6 +151,11 @@ export const api = {
         `/api/usuarios?email=${encodeURIComponent(email)}`,
         { method: "PATCH", body: JSON.stringify({ activo }) }
       ),
+    setFirma: (email: string, firmaUrl: string) =>
+      request<{ ok: true }>(
+        `/api/usuarios?email=${encodeURIComponent(email)}`,
+        { method: "PATCH", body: JSON.stringify({ firmaUrl }) }
+      ),
   },
   configuracion: {
     get: () => request<Configuracion>("/api/configuracion"),
@@ -183,6 +190,16 @@ export const api = {
       request<{ ok: true }>(`/api/directivas?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
     patch: (input: DirectivaPatchInput) =>
       request<Directiva>("/api/directivas", { method: "PATCH", body: JSON.stringify(input) }),
+  },
+  visitas: {
+    list: (edificio?: string) =>
+      request<Visita[]>(
+        edificio ? `/api/visitas?edificio=${encodeURIComponent(edificio)}` : "/api/visitas"
+      ),
+    create: (input: VisitaNuevaInput) =>
+      request<Visita>("/api/visitas", { method: "POST", body: JSON.stringify(input) }),
+    remove: (id: string) =>
+      request<{ ok: true }>(`/api/visitas/${encodeURIComponent(id)}`, { method: "DELETE" }),
   },
   upload: Object.assign(
     async (

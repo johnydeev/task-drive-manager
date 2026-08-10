@@ -9,6 +9,7 @@ import {
   directivaNuevaSchema,
   directivaPatchSchema,
   asignacionSchema,
+  visitaNuevaSchema,
 } from "@/lib/schemas";
 
 describe("tareaNuevaSchema", () => {
@@ -244,5 +245,49 @@ describe("asignacionSchema", () => {
   });
   it("rechaza edificio vacío", () => {
     expect(asignacionSchema.safeParse({ email: "a@x.com", edificio: "" }).success).toBe(false);
+  });
+});
+
+describe("visitaNuevaSchema", () => {
+  const base = { edificio: "Castro Barros 1310" };
+
+  it("acepta una visita con solo el edificio", () => {
+    const r = visitaNuevaSchema.parse(base);
+    expect(r.edificio).toBe("Castro Barros 1310");
+    expect(r.controles).toEqual({});
+    expect(r.fotos).toEqual([]);
+  });
+
+  it("rechaza sin edificio", () => {
+    expect(() => visitaNuevaSchema.parse({})).toThrow();
+  });
+
+  it("acepta los controles con sus dos estados", () => {
+    const r = visitaNuevaSchema.parse({
+      ...base,
+      controles: { hall: "Realizada", cochera: "No realizada" },
+    });
+    expect(r.controles.hall).toBe("Realizada");
+    expect(r.controles.cochera).toBe("No realizada");
+  });
+
+  it("rechaza un estado que no existe", () => {
+    expect(() => visitaNuevaSchema.parse({ ...base, controles: { hall: "Mas o menos" } })).toThrow();
+  });
+
+  it("rechaza una clave de control inventada", () => {
+    expect(() => visitaNuevaSchema.parse({ ...base, controles: { pileta: "Realizada" } })).toThrow();
+  });
+
+  it("acepta cabecera, informe y fotos", () => {
+    const r = visitaNuevaSchema.parse({
+      ...base,
+      ficha: { encargado: "Juan", seguroPoliza: "12345" },
+      informeGeneral: "Todo en orden",
+      fotos: ["https://drive.google.com/file/d/abc/view"],
+    });
+    expect(r.ficha.encargado).toBe("Juan");
+    expect(r.informeGeneral).toBe("Todo en orden");
+    expect(r.fotos).toHaveLength(1);
   });
 });

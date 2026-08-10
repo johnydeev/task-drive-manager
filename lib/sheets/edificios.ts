@@ -3,6 +3,7 @@ import { isDemoMode } from "../demo-mode";
 import { getDemoDptos, getDemoEdificios } from "../demo-data";
 import { readRange, SHEETS } from "./core";
 import { buildHeaderMap } from "./headers";
+import { edificioMatches } from "../edificio-match";
 
 // =====================================================
 // Edificios
@@ -25,20 +26,10 @@ export async function getEdificios(): Promise<Edificio[]> {
 // minúsculas, sin acentos, sin espacios extra. Necesario porque los edificios
 // vienen de _Consorcios (nombre canónico, ej. "BELGRANO 1429") pero los Dptos
 // referencian con el nombre de la app vieja (ej. "Belgrano 1429").
-function normalizeEdificio(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\s+/g, " ");
-}
-
-export function edificioMatches(a: string, b: string): boolean {
-  const na = normalizeEdificio(a);
-  const nb = normalizeEdificio(b);
-  return na !== "" && na === nb;
-}
+// La comparación vive en lib/edificio-match.ts, sin dependencias: también la usan
+// componentes de cliente, y desde acá arrastrarían `googleapis` al bundle del navegador.
+// Se re-exporta para no romper los imports que ya la traían de este módulo.
+export { edificioMatches };
 
 // Headers: id_dpto · dpto · edificio_ref · edificio_cuit (edificio_cuit se puebla en Fase 2).
 export function rowsToDptos(rows: string[][]): Dpto[] {

@@ -15,5 +15,7 @@ export {
   updateTarea,
   type TareaFilters,
 } from "./sheets/tareas";
-export { getUsuarios, getUsuarioByEmail, appendUsuario, setUsuarioActivo } from "./sheets/usuarios";
+export { getUsuarios, getUsuarioByEmail, appendUsuario, setUsuarioActivo, setUsuarioFirma } from "./sheets/usuarios";
 export { getConfiguracion, updateConfiguracion, resetConfigCache } from "./sheets/config";
+export { getVisitas, getVisitaById, appendVisita, deleteVisita, rowsToVisitas } from "./sheets/visitas";
+export { getEdificioFicha, guardarEdificioFicha } from "./sheets/edificio-ficha";

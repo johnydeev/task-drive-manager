@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, requireSession } from "@/lib/auth";
-import { appendUsuario, getUsuarioByEmail, getUsuarios, setUsuarioActivo } from "@/lib/google-sheets";
+import {
+  appendUsuario,
+  getUsuarioByEmail,
+  getUsuarios,
+  setUsuarioActivo,
+  setUsuarioFirma,
+} from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
-import { usuarioNuevoSchema, usuarioPatchSchema } from "@/lib/schemas";
+import { firmaSchema, usuarioNuevoSchema, usuarioPatchSchema } from "@/lib/schemas";
 
 export const runtime = "nodejs";
 
@@ -44,6 +50,12 @@ export async function PATCH(req: NextRequest) {
     if (!email) return jsonError(400, "Falta query param 'email'");
 
     const body = await req.json();
+    // Dos patches distintos sobre el mismo endpoint: activar/desactivar y firma.
+    if (typeof body?.firmaUrl === "string") {
+      const parsedFirma = firmaSchema.parse({ email, firmaUrl: body.firmaUrl });
+      await setUsuarioFirma(email, parsedFirma.firmaUrl);
+      return NextResponse.json({ ok: true });
+    }
     const parsed = usuarioPatchSchema.parse(body);
     await setUsuarioActivo(email, parsed.activo);
     return NextResponse.json({ ok: true });

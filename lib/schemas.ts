@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { esClaveItem } from "./visitas-items";
 
 export const estadoEnum = z.enum([
   "Sin asignar",
@@ -192,4 +193,42 @@ export const tareaAgregarArchivosSchema = z.object({
   imagenes: z.array(z.string().url()).optional(),
   videos: z.array(z.string().url()).optional(),
   documentos: z.array(z.string().url()).optional(),
+});
+
+// Visita de control. El edificio es lo único obligatorio: el formulario se completa
+// caminando el edificio y tiene que poder guardarse incompleto. La fecha NO viene del
+// cliente (la pone el server con el día de emisión).
+export const estadoItemVisitaEnum = z.enum(["Realizada", "No realizada"]);
+
+export const visitaNuevaSchema = z.object({
+  edificio: z.string().min(1, "Edificio requerido"),
+  ficha: z
+    .object({
+      seguroPoliza: z.string().optional(),
+      ascensores: z.string().optional(),
+      fumigacion: z.string().optional(),
+      empresaMatafuegoVenc: z.string().optional(),
+      encargado: z.string().optional(),
+      calderaTermotanque: z.string().optional(),
+      empresaLimpieza: z.string().optional(),
+      horarioTrabajo: z.string().optional(),
+      encargadoLimpiezaHs: z.string().optional(),
+    })
+    .optional()
+    .default({}),
+  // Solo se aceptan las claves de lib/visitas-items.ts: una clave inventada es un bug
+  // del cliente, no un dato a guardar.
+  controles: z
+    .record(z.string(), estadoItemVisitaEnum)
+    .optional()
+    .default({})
+    .refine((c) => Object.keys(c).every(esClaveItem), { message: "Control desconocido" }),
+  informeGeneral: z.string().optional(),
+  fotos: z.array(z.string().url()).optional().default([]),
+});
+
+// Firma de un usuario (la carga el admin en Usuarios): URL de Drive ya subida.
+export const firmaSchema = z.object({
+  email: z.string().email().transform((e) => e.toLowerCase()),
+  firmaUrl: z.string().url().or(z.literal("")),
 });

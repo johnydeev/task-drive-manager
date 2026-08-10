@@ -14,6 +14,8 @@ export const SHEETS = {
   directivas: "Directivas",
   tareaArchivos: "TareaArchivos",
   partesComunes: "Partes Comunes",
+  visitas: "Visitas",
+  edificioFicha: "EdificioFicha",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:AD`;
