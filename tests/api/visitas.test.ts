@@ -157,4 +157,23 @@ describe("DELETE /api/visitas/[id]", () => {
     const res = await DELETE(req(), ctx("9"));
     expect(res.status).toBe(404);
   });
+
+  // Si el PDF se borró definitivo por fuera de la app, Drive tira 404. La fila tiene que
+  // poder borrarse igual: si no, la visita queda huérfana y sin forma de sacarla.
+  it("borra la fila aunque el PDF ya no exista en Drive", async () => {
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    vi.mocked(getVisitaById).mockResolvedValue({
+      id: "1",
+      edificio: "A",
+      fecha: "2026-08-08",
+      pdfUrl: PDF_URL,
+      supervisor: "sup@x.com",
+      creadoEn: "2026-08-08",
+    });
+    vi.mocked(trashFileByUrl).mockRejectedValue(new Error("File not found: 404"));
+
+    const res = await DELETE(req(), ctx("1"));
+    expect(res.status).toBe(200);
+    expect(deleteVisita).toHaveBeenCalledWith("1");
+  });
 });

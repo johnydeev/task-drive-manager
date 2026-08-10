@@ -19,7 +19,19 @@ export const DELETE = withAuth<Ctx>(async (_req, session, { params }) => {
   const visita = await getVisitaById(decodeURIComponent(id));
   if (!visita) return jsonError(404, "Visita no encontrada");
 
-  if (visita.pdfUrl) await trashFileByUrl(visita.pdfUrl);
+  // El archivo se busca por su id, no por la ruta: da igual dónde esté en Drive (sirve
+  // para las visitas emitidas con la estructura de carpetas anterior, o movidas a mano).
+  //
+  // Si ya no existe —borrado definitivo por fuera de la app— Drive responde 404. Eso NO
+  // puede impedir borrar la fila: si no, la visita queda huérfana y sin forma de sacarla
+  // desde la app.
+  if (visita.pdfUrl) {
+    try {
+      await trashFileByUrl(visita.pdfUrl);
+    } catch (err) {
+      console.error("No se pudo mandar el PDF a la papelera; se borra la fila igual:", err);
+    }
+  }
   await deleteVisita(visita.id);
 
   return NextResponse.json({ ok: true });
