@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { VisitaForm } from "./VisitaForm";
 import { EDIFICIO_FICHA_VACIA } from "@/types";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/api-client", () => ({
   api: {
     edificios: { list: vi.fn() },
@@ -151,6 +152,37 @@ describe("VisitaForm", () => {
     fetchMock.mockClear();
     unmount();
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE")).toHaveLength(0);
+  });
+
+  // El PDF recién emitido se ofrece a mano: no hay que ir a buscarlo al historial.
+  it("al guardar muestra el modal con las acciones sobre el PDF, sin navegar todavía", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await elegirEdificio(user);
+    await user.click(screen.getByRole("button", { name: /guardar y generar pdf/i }));
+
+    expect(await screen.findByText(/visita guardada y pdf generado/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ver pdf/i })).toHaveAttribute(
+      "href",
+      "https://drive.google.com/file/d/x/view"
+    );
+    expect(screen.getByRole("link", { name: /descargar pdf/i })).toHaveAttribute(
+      "href",
+      "https://drive.google.com/uc?export=download&id=x"
+    );
+    expect(screen.getByRole("button", { name: /compartir pdf/i })).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("al cerrar el modal va a la pestaña Visitas", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await elegirEdificio(user);
+    await user.click(screen.getByRole("button", { name: /guardar y generar pdf/i }));
+    await screen.findByText(/visita guardada y pdf generado/i);
+
+    await user.click(screen.getByRole("button", { name: /^listo$/i }));
+    expect(push).toHaveBeenCalledWith("/informes?tab=visitas");
   });
 
   it("avisa si falla la generación del PDF", async () => {

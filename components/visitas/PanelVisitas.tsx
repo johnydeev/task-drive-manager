@@ -9,6 +9,7 @@ import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { resumenPorEdificio } from "@/lib/visitas-panel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { AccionesPdf } from "./AccionesPdf";
 import type { Visita } from "@/types";
 
 const fmt = (iso: string) => {
@@ -101,11 +102,16 @@ export function PanelVisitas() {
                       href={v.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-slate-800 hover:underline"
+                      className="flex min-w-0 items-center gap-2 text-sm text-slate-800 hover:underline"
                     >
                       <FileText size={14} className="shrink-0 text-slate-500" />
                       {fmt(v.fecha)}
                     </a>
+                    <AccionesPdf
+                      pdfUrl={v.pdfUrl}
+                      titulo={`Visita ${v.edificio} ${fmt(v.fecha)}`}
+                      variante="compacto"
+                    />
                     {isAdmin && (
                       <button
                         type="button"

@@ -7,10 +7,18 @@ interface Props {
   message: string;
   buttonLabel?: string;
   onClose: () => void;
+  /** Contenido opcional entre el mensaje y el botón (ej. acciones sobre lo recién creado). */
+  children?: React.ReactNode;
 }
 
-// Modal informativo de éxito para operaciones (crear/editar/eliminar tarea).
-export function SuccessDialog({ open, message, buttonLabel = "Aceptar", onClose }: Props) {
+// Modal informativo de éxito para operaciones (crear/editar/eliminar tarea, guardar visita).
+export function SuccessDialog({
+  open,
+  message,
+  buttonLabel = "Aceptar",
+  onClose,
+  children,
+}: Props) {
   if (!open) return null;
 
   return (
@@ -24,6 +32,7 @@ export function SuccessDialog({ open, message, buttonLabel = "Aceptar", onClose 
       >
         <CheckCircle2 className="mx-auto text-emerald-500" size={40} />
         <p className="mt-3 text-base font-medium text-slate-900">{message}</p>
+        {children && <div className="mt-4">{children}</div>}
         <button
           type="button"
           onClick={onClose}

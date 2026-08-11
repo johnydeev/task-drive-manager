@@ -6,6 +6,13 @@ export function thumbUrl(url: string, size = 400): string {
   return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}`;
 }
 
+// URL de descarga directa de un archivo de Drive. El link normal (/file/d/{id}/view)
+// abre el visor; éste baja el archivo. Si no es un link de Drive, se devuelve tal cual.
+export function descargaUrl(url: string): string {
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  return m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : url;
+}
+
 // URL del logo del membrete, lista para un <img> o para el <Image> del PDF.
 //
 // El link que da "Compartir" en Drive (https://drive.google.com/file/d/{id}/view?usp=sharing)

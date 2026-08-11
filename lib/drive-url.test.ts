@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { thumbUrl, logoMembreteUrl } from "./drive-url";
+import { thumbUrl, logoMembreteUrl, descargaUrl } from "./drive-url";
 
 describe("thumbUrl", () => {
   const view = "https://drive.google.com/file/d/ABC123/view";
@@ -35,5 +35,17 @@ describe("logoMembreteUrl", () => {
   it("devuelve vacío si no hay logo configurado", () => {
     expect(logoMembreteUrl(undefined)).toBe("");
     expect(logoMembreteUrl("   ")).toBe("");
+  });
+});
+
+describe("descargaUrl", () => {
+  it("convierte el link de Drive en descarga directa", () => {
+    expect(descargaUrl("https://drive.google.com/file/d/ABC123/view")).toBe(
+      "https://drive.google.com/uc?export=download&id=ABC123"
+    );
+  });
+
+  it("deja intacta una URL que no es de Drive", () => {
+    expect(descargaUrl("https://example.com/a.pdf")).toBe("https://example.com/a.pdf");
   });
 });

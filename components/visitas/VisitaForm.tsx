@@ -2,6 +2,8 @@
 
 import { Loader2, Save } from "lucide-react";
 import { BLOQUES_VISITA } from "@/lib/visitas-items";
+import { SuccessDialog } from "@/components/ui/SuccessDialog";
+import { AccionesPdf } from "./AccionesPdf";
 import { FotosVisita } from "./FotosVisita";
 import { useVisitaForm } from "./hooks/useVisitaForm";
 import type { EdificioFicha } from "@/types";
@@ -47,6 +49,8 @@ export function VisitaForm() {
     setFotos,
     guardar,
     error,
+    emitida,
+    cerrarEmitida,
   } = useVisitaForm();
 
   return (
@@ -158,6 +162,22 @@ export function VisitaForm() {
           Guardar y generar PDF
         </button>
       </div>
+
+      {/* El PDF recién emitido a mano: se puede abrir, bajar o mandar sin ir a buscarlo
+          al historial. Al cerrar se navega a la pestaña Visitas. */}
+      <SuccessDialog
+        open={!!emitida}
+        message="Visita guardada y PDF generado"
+        buttonLabel="Listo"
+        onClose={cerrarEmitida}
+      >
+        {emitida && (
+          <AccionesPdf
+            pdfUrl={emitida.pdfUrl}
+            titulo={`Visita ${emitida.edificio}`}
+          />
+        )}
+      </SuccessDialog>
     </form>
   );
 }

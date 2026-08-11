@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import { EDIFICIO_FICHA_VACIA, type EdificioFicha } from "@/types";
+import { EDIFICIO_FICHA_VACIA, type EdificioFicha, type Visita } from "@/types";
 
 type DatosFicha = Omit<EdificioFicha, "edificio" | "actualizadoEn">;
 
@@ -73,16 +73,22 @@ export function useVisitaForm() {
     };
   }, []);
 
+  // Visita recién emitida: sostiene el modal de éxito con las acciones sobre su PDF.
+  // La navegación se difiere hasta que el usuario cierra el modal.
+  const [emitida, setEmitida] = useState<Visita | null>(null);
+
   const guardar = useMutation({
     mutationFn: () => api.visitas.create({ edificio, ficha, controles, informeGeneral, fotos }),
-    onSuccess: () => {
+    onSuccess: (visita) => {
       guardadaRef.current = true;
       setError(null);
-      // Vuelve a la pestaña Visitas, no a Tareas: es donde queda la visita recién cargada.
-      router.push("/informes?tab=visitas");
+      setEmitida(visita);
     },
     onError: (e: Error) => setError(e.message),
   });
+
+  // Vuelve a la pestaña Visitas, no a Tareas: es donde queda la visita recién cargada.
+  const cerrarEmitida = () => router.push("/informes?tab=visitas");
 
   const setControl = (clave: string, valor: "Realizada" | "No realizada") =>
     setControles((c) => ({ ...c, [clave]: valor }));
@@ -105,5 +111,7 @@ export function useVisitaForm() {
     setFotos,
     guardar,
     error,
+    emitida,
+    cerrarEmitida,
   };
 }
