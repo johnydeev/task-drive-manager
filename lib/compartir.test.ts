@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { compartirEnlace } from "./compartir";
+import { compartirEnlace, compartirArchivo } from "./compartir";
 
 const URL_PDF = "https://drive.google.com/file/d/abc/view";
 
@@ -44,5 +44,37 @@ describe("compartirEnlace", () => {
   it("devuelve error si el portapapeles rechaza", async () => {
     const writeText = vi.fn().mockRejectedValue(new Error("denied"));
     expect(await compartirEnlace({ url: URL_PDF }, { clipboard: { writeText } })).toBe("error");
+  });
+});
+
+describe("compartirArchivo", () => {
+  const archivo = new File(["x"], "visita.pdf", { type: "application/pdf" });
+
+  it("comparte el archivo cuando el dispositivo lo soporta", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const canShare = vi.fn().mockReturnValue(true);
+    const r = await compartirArchivo({ archivo, titulo: "Visita" }, { share, canShare });
+    expect(r).toBe("compartido");
+    expect(share).toHaveBeenCalledWith({ files: [archivo], title: "Visita" });
+  });
+
+  it("devuelve 'no-soportado' si canShare rechaza los archivos", async () => {
+    const share = vi.fn();
+    const canShare = vi.fn().mockReturnValue(false);
+    const r = await compartirArchivo({ archivo }, { share, canShare });
+    expect(r).toBe("no-soportado");
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it("devuelve 'no-soportado' si no hay Web Share", async () => {
+    expect(await compartirArchivo({ archivo }, {})).toBe("no-soportado");
+  });
+
+  it("respeta la cancelación del usuario", async () => {
+    const share = vi.fn().mockRejectedValue(
+      Object.assign(new Error("cancel"), { name: "AbortError" })
+    );
+    const r = await compartirArchivo({ archivo }, { share, canShare: () => true });
+    expect(r).toBe("cancelado");
   });
 });

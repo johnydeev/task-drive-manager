@@ -114,6 +114,29 @@ export async function agruparVisitaEnCarpeta(opts: {
   return carpeta;
 }
 
+// Baja un archivo de Drive por su id. Lo usa el endpoint que sirve el PDF de una visita
+// desde nuestro propio origen: el navegador no puede hacer fetch directo a Drive (CORS),
+// y sin el archivo en mano no se puede compartir como adjunto ni renombrar la descarga.
+export async function descargarArchivo(
+  fileId: string
+): Promise<{ buffer: Buffer; nombre: string; mimeType: string }> {
+  const drive = getDrive();
+  const meta = await drive.files.get({
+    fileId,
+    fields: "name, mimeType",
+    supportsAllDrives: true,
+  });
+  const contenido = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "arraybuffer" }
+  );
+  return {
+    buffer: Buffer.from(contenido.data as ArrayBuffer),
+    nombre: meta.data.name ?? "archivo.pdf",
+    mimeType: meta.data.mimeType ?? "application/pdf",
+  };
+}
+
 // Sube la firma de un usuario a {raíz}/_Firmas/.
 export async function uploadFirma(opts: {
   buffer: Buffer;

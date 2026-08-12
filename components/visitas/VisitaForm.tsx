@@ -174,6 +174,7 @@ export function VisitaForm() {
         {emitida && (
           <AccionesPdf
             pdfUrl={emitida.pdfUrl}
+            visitaId={emitida.id}
             titulo={`Visita ${emitida.edificio}`}
           />
         )}

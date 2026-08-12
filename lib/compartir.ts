@@ -6,9 +6,35 @@
 
 export type ResultadoCompartir = "compartido" | "copiado" | "cancelado" | "error";
 
+interface DatosCompartir {
+  title?: string;
+  text?: string;
+  url?: string;
+  files?: File[];
+}
+
 interface Navegador {
-  share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+  share?: (data: DatosCompartir) => Promise<void>;
+  canShare?: (data: DatosCompartir) => boolean;
   clipboard?: { writeText: (t: string) => Promise<void> };
+}
+
+// Comparte el ARCHIVO en sí (llega el PDF, no un enlace). Requiere Web Share Level 2:
+// anda en Android/Chrome y iOS 15+, no en la mayoría de los navegadores de escritorio.
+// Devuelve "no-soportado" para que el caller pueda caer a compartir el link.
+export async function compartirArchivo(
+  opts: { archivo: File; titulo?: string },
+  nav: Navegador = typeof navigator !== "undefined" ? navigator : {}
+): Promise<ResultadoCompartir | "no-soportado"> {
+  const datos = { files: [opts.archivo], title: opts.titulo };
+  if (typeof nav.share !== "function" || !nav.canShare?.(datos)) return "no-soportado";
+  try {
+    await nav.share(datos);
+    return "compartido";
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") return "cancelado";
+    return "error";
+  }
 }
 
 export async function compartirEnlace(

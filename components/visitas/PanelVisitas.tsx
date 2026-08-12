@@ -109,6 +109,7 @@ export function PanelVisitas() {
                     </a>
                     <AccionesPdf
                       pdfUrl={v.pdfUrl}
+                      visitaId={v.id}
                       titulo={`Visita ${v.edificio} ${fmt(v.fecha)}`}
                       variante="compacto"
                     />

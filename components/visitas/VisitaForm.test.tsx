@@ -166,9 +166,10 @@ describe("VisitaForm", () => {
       "href",
       "https://drive.google.com/file/d/x/view"
     );
+    // La descarga pasa por nuestro server para conservar el nombre del archivo.
     expect(screen.getByRole("link", { name: /descargar pdf/i })).toHaveAttribute(
       "href",
-      "https://drive.google.com/uc?export=download&id=x"
+      "/api/visitas/1/pdf"
     );
     expect(screen.getByRole("button", { name: /compartir pdf/i })).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();

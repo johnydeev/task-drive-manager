@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AccionesPdf } from "./AccionesPdf";
 
 const PDF = "https://drive.google.com/file/d/abc/view";
@@ -9,26 +8,68 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.unstubAllGlobals());
 
 describe("AccionesPdf", () => {
-  it("enlaza al visor y a la descarga directa", () => {
-    render(<AccionesPdf pdfUrl={PDF} titulo="Visita" />);
+  it("enlaza al visor y, con visitaId, baja el PDF por nuestro server", () => {
+    render(<AccionesPdf pdfUrl={PDF} titulo="Visita" visitaId="v1" />);
     expect(screen.getByRole("link", { name: /ver pdf/i })).toHaveAttribute("href", PDF);
     expect(screen.getByRole("link", { name: /descargar pdf/i })).toHaveAttribute(
       "href",
-      "https://drive.google.com/uc?export=download&id=abc"
+      "/api/visitas/v1/pdf"
     );
   });
 
-  it("usa el menú nativo del sistema al compartir", async () => {
+  it("sin visitaId la descarga cae al link de Drive", () => {
+    render(<AccionesPdf pdfUrl={PDF} titulo="Visita" />);
+    expect(screen.getByRole("link", { name: /descargar pdf/i })).toHaveAttribute("href", PDF);
+  });
+
+  // Lo pedido: que llegue el PDF, no un enlace.
+  it("comparte el ARCHIVO cuando el dispositivo lo soporta", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal("navigator", { share });
-    const user = userEvent.setup();
+    vi.stubGlobal("navigator", { share, canShare: () => true });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["%PDF"], { type: "application/pdf" }),
+      })
+    );
 
-    render(<AccionesPdf pdfUrl={PDF} titulo="Visita Castro Barros" />);
-    await user.click(screen.getByRole("button", { name: /compartir pdf/i }));
+    render(<AccionesPdf pdfUrl={PDF} titulo="Visita Castro Barros" visitaId="v1" />);
+    fireEvent.click(screen.getByRole("button", { name: /compartir pdf/i }));
 
-    expect(share).toHaveBeenCalledWith({ title: "Visita Castro Barros", url: PDF });
-    // El menú nativo ya da su propio feedback: no se muestra aviso.
-    expect(screen.queryByText(/link copiado/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(share).toHaveBeenCalled());
+    const datos = share.mock.calls[0][0];
+    expect(datos.files).toHaveLength(1);
+    expect(datos.files[0].name).toBe("Visita Castro Barros.pdf");
+    expect(datos.url).toBeUndefined(); // va el archivo, no el enlace
+  });
+
+  it("si el dispositivo no soporta archivos, comparte el link", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { share, canShare: () => false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["%PDF"], { type: "application/pdf" }),
+      })
+    );
+
+    render(<AccionesPdf pdfUrl={PDF} titulo="Visita" visitaId="v1" />);
+    fireEvent.click(screen.getByRole("button", { name: /compartir pdf/i }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledWith({ title: "Visita", url: PDF }));
+  });
+
+  it("si no se puede bajar el PDF, igual comparte el link", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { share, canShare: () => true });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    render(<AccionesPdf pdfUrl={PDF} titulo="Visita" visitaId="v1" />);
+    fireEvent.click(screen.getByRole("button", { name: /compartir pdf/i }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledWith({ title: "Visita", url: PDF }));
   });
 
   // Estos dos usan fireEvent en vez de userEvent: `userEvent.setup()` reemplaza
