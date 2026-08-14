@@ -33,34 +33,56 @@ const styles = StyleSheet.create({
   fichaFila: { flexDirection: "row", marginBottom: 3 },
   fichaLabel: { width: 150, color: colors.muted },
   fichaValor: { flex: 1, borderBottom: `0.5pt solid ${colors.border}` },
+  // Los dos bloques de control van uno al lado del otro: cada tabla es angosta (una X
+  // por fila) y a lo ancho desperdiciaban media hoja que ahora usa el informe.
+  bloques: { flexDirection: "row", gap: 10, marginTop: 8 },
+  bloqueCol: { flex: 1 },
   bloqueTitulo: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     backgroundColor: colors.head,
     textAlign: "center",
     paddingVertical: 2,
-    marginTop: 10,
   },
   filaItem: { flexDirection: "row", borderBottom: `0.5pt solid ${colors.border}` },
-  celdaItem: { padding: 3 },
-  encabezado: { backgroundColor: "#f1f5f9", fontFamily: "Helvetica-Bold" },
+  celdaItem: { padding: 2.5, fontSize: 8 },
+  celdaCheck: { padding: 2.5, fontSize: 8, textAlign: "center" },
+  encabezado: { backgroundColor: "#f1f5f9", fontFamily: "Helvetica-Bold", fontSize: 6.5 },
   seccion: { marginTop: 12 },
   seccionTitulo: { fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 3 },
-  informe: { lineHeight: 1.4, minHeight: 40 },
-  fotos: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
-  foto: { width: 120, height: 120, marginRight: 4, marginBottom: 4 },
+  // Caja generosa: es el espacio que se ganó al poner los bloques de control lado a lado
+  // y mandar las fotos a hoja aparte. Crece si el texto es más largo.
+  informe: {
+    lineHeight: 1.4,
+    minHeight: 170,
+    border: `0.5pt solid ${colors.border}`,
+    padding: 6,
+  },
+  // Grilla de fotos: 2 por fila, 3 filas = 6 por hoja.
+  filaFotos: { flexDirection: "row", gap: 9, marginBottom: 9 },
+  foto: { width: 260, height: 232, objectFit: "contain" },
   firmaBloque: { marginTop: 20, alignItems: "flex-end" },
   firmaImg: { width: 120, height: 50, objectFit: "contain" },
   firmaLinea: { width: 160, borderTop: `0.5pt solid ${colors.text}`, marginTop: 2, paddingTop: 2 },
   firmaTexto: { fontSize: 8, textAlign: "center" },
 });
 
-const ANCHOS = { item: "60%", si: "20%", no: "20%" };
+const ANCHOS = { item: "52%", si: "24%", no: "24%" };
 
 // Marca de check en las columnas Realizada / No realizada.
 function marca(valor: string | undefined, esperado: string): string {
   return valor === esperado ? "X" : "";
 }
+
+// Parte una lista en grupos de n (filas de fotos y páginas de fotos).
+function enGrupos<T>(items: T[], n: number): T[][] {
+  const grupos: T[][] = [];
+  for (let i = 0; i < items.length; i += n) grupos.push(items.slice(i, i + n));
+  return grupos;
+}
+
+const FOTOS_POR_FILA = 2;
+const FOTOS_POR_PAGINA = 6;
 
 interface Props {
   edificio: string;
@@ -132,49 +154,43 @@ export function VisitaPdf({
           </View>
         ))}
 
-        {BLOQUES_VISITA.map((bloque) => (
-          <View key={bloque.titulo}>
-            <Text style={styles.bloqueTitulo}>{bloque.titulo}</Text>
-            <View style={[styles.filaItem, styles.encabezado]}>
-              <Text style={[styles.celdaItem, { width: ANCHOS.item }]}>Sector</Text>
-              <Text style={[styles.celdaItem, { width: ANCHOS.si, textAlign: "center" }]}>
-                Realizada
-              </Text>
-              <Text style={[styles.celdaItem, { width: ANCHOS.no, textAlign: "center" }]}>
-                No realizada
-              </Text>
-            </View>
-            {bloque.items.map((item) => (
-              <View key={item.clave} style={styles.filaItem} wrap={false}>
-                <Text style={[styles.celdaItem, { width: ANCHOS.item }]}>{item.label}</Text>
-                <Text style={[styles.celdaItem, { width: ANCHOS.si, textAlign: "center" }]}>
-                  {marca(controles[item.clave], "Realizada")}
+        <View style={styles.bloques}>
+          {BLOQUES_VISITA.map((bloque) => (
+            <View key={bloque.titulo} style={styles.bloqueCol}>
+              <Text style={styles.bloqueTitulo}>{bloque.titulo}</Text>
+              <View style={[styles.filaItem, styles.encabezado]}>
+                <Text style={[styles.celdaItem, styles.encabezado, { width: ANCHOS.item }]}>
+                  Sector
                 </Text>
-                <Text style={[styles.celdaItem, { width: ANCHOS.no, textAlign: "center" }]}>
-                  {marca(controles[item.clave], "No realizada")}
+                <Text style={[styles.celdaCheck, styles.encabezado, { width: ANCHOS.si }]}>
+                  Realizada
+                </Text>
+                <Text style={[styles.celdaCheck, styles.encabezado, { width: ANCHOS.no }]}>
+                  No realizada
                 </Text>
               </View>
-            ))}
-          </View>
-        ))}
+              {bloque.items.map((item) => (
+                <View key={item.clave} style={styles.filaItem} wrap={false}>
+                  <Text style={[styles.celdaItem, { width: ANCHOS.item }]}>{item.label}</Text>
+                  <Text style={[styles.celdaCheck, { width: ANCHOS.si }]}>
+                    {marca(controles[item.clave], "Realizada")}
+                  </Text>
+                  <Text style={[styles.celdaCheck, { width: ANCHOS.no }]}>
+                    {marca(controles[item.clave], "No realizada")}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
 
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>INFORME GENERAL:</Text>
           <Text style={styles.informe}>{informeGeneral || " "}</Text>
         </View>
 
-        {fotos.length > 0 && (
-          <View style={styles.seccion}>
-            <Text style={styles.seccionTitulo}>Fotos ({fotos.length})</Text>
-            <View style={styles.fotos}>
-              {fotos.slice(0, 9).map((url) => (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image key={url} src={url} style={styles.foto} />
-              ))}
-            </View>
-          </View>
-        )}
-
+        {/* La firma cierra la PRIMERA hoja, antes de las fotos: el parte queda completo
+            y firmado en una sola página, y las fotos son el anexo. */}
         <View style={styles.firmaBloque}>
           {firmaUrl ? (
             // eslint-disable-next-line jsx-a11y/alt-text
@@ -185,6 +201,25 @@ export function VisitaPdf({
             <Text style={[styles.firmaTexto, { color: colors.muted }]}>Supervisor</Text>
           </View>
         </View>
+
+        {/* Las fotos SIEMPRE arrancan en hoja nueva (`break`), sobre todo si sobra lugar
+            en la primera: así el informe general se queda con todo el espacio libre.
+            Van de a 6 por hoja, en filas de 2. */}
+        {enGrupos(fotos, FOTOS_POR_PAGINA).map((pagina, i) => (
+          <View key={`pagina-fotos-${i}`} break>
+            <Text style={styles.seccionTitulo}>
+              {i === 0 ? `Fotos (${fotos.length})` : "Fotos (continuación)"}
+            </Text>
+            {enGrupos(pagina, FOTOS_POR_FILA).map((fila, j) => (
+              <View key={`fila-${i}-${j}`} style={styles.filaFotos} wrap={false}>
+                {fila.map((url) => (
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  <Image key={url} src={url} style={styles.foto} />
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
       </Page>
     </Document>
   );
