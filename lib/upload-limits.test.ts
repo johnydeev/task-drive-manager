@@ -4,6 +4,7 @@ import {
   limiteMB,
   mensajeArchivoPesado,
   mensajeErrorSubida,
+  mensajeFormatoNoSoportado,
 } from "./upload-limits";
 import { CONFIGURACION_DEFAULT } from "@/types";
 
@@ -63,5 +64,30 @@ describe("mensajeErrorSubida", () => {
   it("deja pasar los errores que ya vienen con mensaje del servidor", () => {
     const msg = mensajeErrorSubida(new Error("Tipo de archivo no permitido: video/3gpp"), "video", 2 * MB);
     expect(msg).toBe("Tipo de archivo no permitido: video/3gpp");
+  });
+});
+
+describe("mensajeFormatoNoSoportado", () => {
+  // HEIC es el formato por defecto del iPhone: el mensaje tiene que decir qué hacer,
+  // no escupir el mime crudo.
+  it("explica qué hacer con una foto HEIC del iPhone", () => {
+    const m = mensajeFormatoNoSoportado("image/heic");
+    expect(m).toMatch(/iPhone/i);
+    expect(m).toMatch(/JPG/i);
+    expect(m).not.toMatch(/image\/heic/);
+  });
+
+  it("cubre también HEIF", () => {
+    expect(mensajeFormatoNoSoportado("image/heif")).toMatch(/iPhone/i);
+  });
+
+  it("para otros formatos dice cuál llegó y cuáles sirven", () => {
+    const m = mensajeFormatoNoSoportado("image/gif");
+    expect(m).toContain("image/gif");
+    expect(m).toMatch(/JPG, PNG o WEBP/);
+  });
+
+  it("no rompe si el navegador no mandó tipo", () => {
+    expect(mensajeFormatoNoSoportado("")).toContain("desconocido");
   });
 });

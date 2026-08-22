@@ -49,6 +49,54 @@ describe("FotosVisita", () => {
     expect(borrado![0]).toBe(`/api/upload?url=${encodeURIComponent(FOTO)}`);
   });
 
+  // El bug de GARAY 350: una foto fallida a mitad de la tanda descartaba las que ya
+  // habían subido a Drive. Quedaban huérfanas, fuera del PDF y sin poder limpiarse.
+  it("conserva las fotos que sí subieron aunque una falle", async () => {
+    const onChange = vi.fn();
+    let n = 0;
+    fetchMock.mockImplementation(async () => {
+      n++;
+      if (n < 3) return { ok: true, json: async () => ({ url: `${FOTO}#${n}` }) };
+      return { ok: false, json: async () => ({ error: "El archivo pesa demasiado" }) };
+    });
+
+    const user = userEvent.setup();
+    render(<FotosVisita edificio="Castro Barros 1310" fotos={[]} onChange={onChange} />);
+    await user.upload(screen.getByLabelText(/agregar fotos/i), [
+      new File(["a"], "a.jpg", { type: "image/jpeg" }),
+      new File(["b"], "b.jpg", { type: "image/jpeg" }),
+      new File(["c"], "c.jpg", { type: "image/jpeg" }),
+    ]);
+
+    // Las dos que subieron entran al formulario…
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([`${FOTO}#1`, `${FOTO}#2`]));
+    // …y el error dice cuál falló.
+    expect(await screen.findByText(/c\.jpg/)).toBeInTheDocument();
+  });
+
+  it("nombra el archivo que falló, no un error genérico", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "El archivo pesa demasiado" }),
+    });
+    const user = userEvent.setup();
+    render(<FotosVisita edificio="Castro Barros 1310" fotos={[]} onChange={vi.fn()} />);
+    await user.upload(
+      screen.getByLabelText(/agregar fotos/i),
+      new File(["x"], "IMG_4821.jpg", { type: "image/jpeg" })
+    );
+    expect(await screen.findByText(/IMG_4821\.jpg/)).toBeInTheDocument();
+  });
+
+  // El selector del celular filtra antes de subir: HEIC del iPhone no llega al server.
+  it("solo ofrece los formatos que el PDF puede dibujar", () => {
+    render(<FotosVisita edificio="Castro Barros 1310" fotos={[]} onChange={vi.fn()} />);
+    expect(screen.getByLabelText(/agregar fotos/i)).toHaveAttribute(
+      "accept",
+      "image/jpeg,image/png,image/webp"
+    );
+  });
+
   it("muestra el error si la subida falla", async () => {
     fetchMock.mockResolvedValue({
       ok: false,

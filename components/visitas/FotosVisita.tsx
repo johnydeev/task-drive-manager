@@ -17,12 +17,18 @@ export function FotosVisita({ edificio, fotos, onChange, disabled }: Props) {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Cada foto se resuelve por separado. Antes un `throw` a mitad de la tanda descartaba
+  // las que YA se habían subido a Drive: no entraban al formulario, no salían en el PDF
+  // y quedaban huérfanas en la carpeta del consorcio. Ahora lo que subió, subió.
   const subir = async (files: FileList) => {
     setSubiendo(true);
     setError(null);
-    try {
-      const nuevas: string[] = [];
-      for (const file of Array.from(files)) {
+
+    const subidas: string[] = [];
+    const fallidas: string[] = [];
+
+    for (const file of Array.from(files)) {
+      try {
         const form = new FormData();
         form.append("file", file);
         form.append("destino", "visita");
@@ -30,17 +36,18 @@ export function FotosVisita({ edificio, fotos, onChange, disabled }: Props) {
         const res = await fetch("/api/upload", { method: "POST", body: form });
         if (!res.ok) {
           const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? "No se pudo subir la foto");
+          throw new Error(body?.error ?? "No se pudo subir");
         }
         const { url } = (await res.json()) as { url: string };
-        nuevas.push(url);
+        subidas.push(url);
+      } catch (e) {
+        fallidas.push(`${file.name}: ${e instanceof Error ? e.message : "no se pudo subir"}`);
       }
-      onChange([...fotos, ...nuevas]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo subir la foto");
-    } finally {
-      setSubiendo(false);
     }
+
+    if (subidas.length > 0) onChange([...fotos, ...subidas]);
+    if (fallidas.length > 0) setError(fallidas.join(" · "));
+    setSubiendo(false);
   };
 
   return (
@@ -50,7 +57,9 @@ export function FotosVisita({ edificio, fotos, onChange, disabled }: Props) {
         Agregar fotos
         <input
           type="file"
-          accept="image/*"
+          // Explícito en vez de `image/*`: así el selector del celular ya filtra los
+          // formatos que el PDF no puede dibujar (HEIC), en vez de fallar al subir.
+          accept="image/jpeg,image/png,image/webp"
           multiple
           className="hidden"
           disabled={disabled || subiendo || !edificio}

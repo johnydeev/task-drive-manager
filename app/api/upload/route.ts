@@ -4,7 +4,12 @@ import { uploadTareaFile, trashFileByUrl } from "@/lib/google-drive";
 import { uploadFirma, uploadVisitaFoto } from "@/lib/drive-visitas";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
-import { limiteMB, mensajeArchivoPesado, pesoMB } from "@/lib/upload-limits";
+import {
+  limiteMB,
+  mensajeArchivoPesado,
+  mensajeFormatoNoSoportado,
+  pesoMB,
+} from "@/lib/upload-limits";
 
 export const runtime = "nodejs";
 // Subir un video de decenas de MB a Drive tarda: damos margen de ejecución.
@@ -30,6 +35,7 @@ async function parseFormData(req: NextRequest): Promise<FormData> {
 }
 
 const IMAGE_MIMES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
 const VIDEO_MIMES = new Set(["video/mp4", "video/quicktime"]);
 const PDF_MIMES = new Set(["application/pdf"]);
 
@@ -66,8 +72,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (destino === "visita") {
+      // El PDF de la visita se arma con @react-pdf/renderer, que solo dibuja JPG/PNG/WEBP.
+      // Aceptar HEIC (lo que saca el iPhone) haría que la foto no aparezca en el informe,
+      // así que se rechaza acá con un mensaje que diga qué hacer.
       if (!IMAGE_MIMES.has(file.type)) {
-        return jsonError(400, `Solo se permiten imágenes en una visita: ${file.type}`);
+        return jsonError(400, mensajeFormatoNoSoportado(file.type));
+      }
+      const cfgVisita = await getConfiguracion();
+      const limiteVisita = limiteMB("imagen", cfgVisita);
+      if (pesoMB(file.size) > limiteVisita) {
+        return jsonError(413, mensajeArchivoPesado("imagen", file.size, limiteVisita));
       }
       const subida = await uploadVisitaFoto({
         buffer: Buffer.from(await file.arrayBuffer()),

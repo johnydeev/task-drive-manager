@@ -79,3 +79,18 @@ export function mensajeErrorSubida(
     pesoMB(sizeBytes)
   )}). Puede ser por el tamaño o por la señal: probá de nuevo desde WiFi, o con un archivo más liviano.`;
 }
+
+// Mensaje accionable en vez del mime crudo. HEIC/HEIF es el caso frecuente: es el formato
+// por defecto de la cámara del iPhone y llega así cuando se elige desde "Archivos". El PDF
+// se dibuja con @react-pdf/renderer, que solo soporta JPG/PNG/WEBP, así que aceptarlo
+// haría que la foto no aparezca en el informe.
+export function mensajeFormatoNoSoportado(mime: string): string {
+  if (/hei[cf]/i.test(mime)) {
+    return (
+      "Las fotos HEIC del iPhone no se pueden usar en el informe. Sacala o elegila desde " +
+      "la app de Camara/Fotos (que la convierte a JPG), o cambia Ajustes > Camara > " +
+      "Formatos a 'Mas compatible'."
+    );
+  }
+  return `Formato de imagen no soportado (${mime || "desconocido"}). Usa JPG, PNG o WEBP.`;
+}
