@@ -78,7 +78,8 @@ describe("InformeEdificio", () => {
 
     await elegirEdificio(user);
 
-    expect(await screen.findByText("Administración Morinigo")).toBeInTheDocument();
+    // El título va sin diacríticos: Big John no tiene glifos acentuados (ver lib/membrete-titulo).
+    expect(await screen.findByText("ADMINISTRACION MORINIGO")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Pendientes \(1\)/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /En Proceso \(1\)/ })).toBeInTheDocument();
     expect(screen.getByText("Reparar primer piso")).toBeInTheDocument();

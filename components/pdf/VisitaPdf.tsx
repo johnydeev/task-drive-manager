@@ -1,6 +1,8 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Configuracion, EdificioFicha } from "@/types";
 import { APP_NAME } from "@/lib/app-name";
+import { tituloMembrete } from "@/lib/membrete-titulo";
+import { BIG_JOHN, registrarFuentes } from "@/lib/pdf-fonts";
 import { BLOQUES_VISITA } from "@/lib/visitas-items";
 
 const colors = {
@@ -16,6 +18,8 @@ const styles = StyleSheet.create({
   membrete: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   logo: { width: 64, height: 64, marginRight: 14 },
   nombre: { fontSize: 20, fontFamily: "Helvetica-Bold", textAlign: "center" },
+  // Big John dibuja más ancho y con caja más alta que Helvetica al mismo tamaño.
+  nombreBigJohn: { fontSize: 17, fontFamily: BIG_JOHN, textAlign: "center" },
   contactoFila: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   email: { fontSize: 8, color: colors.link, fontFamily: "Helvetica-Bold" },
   direccion: { fontSize: 8, fontFamily: "Helvetica-Bold" },
@@ -67,6 +71,9 @@ const styles = StyleSheet.create({
   firmaTexto: { fontSize: 8, textAlign: "center" },
 });
 
+// Una vez por proceso, no por render.
+const HAY_BIG_JOHN = registrarFuentes();
+
 const ANCHOS = { item: "52%", si: "24%", no: "24%" };
 
 // Marca de check en las columnas Realizada / No realizada.
@@ -109,6 +116,11 @@ export function VisitaPdf({
 }: Props) {
   const [y, m, d] = fecha.slice(0, 10).split("-");
   const fechaAr = `${d}/${m}/${y}`;
+  // Big John no tiene acentos: el título va normalizado, y si aun así queda algún carácter
+  // fuera de su cobertura se dibuja entero en Helvetica antes que con un hueco.
+  const titulo = tituloMembrete(config.membreteNombre || APP_NAME);
+  const estiloNombre =
+    HAY_BIG_JOHN && titulo.usaBigJohn ? styles.nombreBigJohn : styles.nombre;
 
   const filasFicha: Array<[string, string]> = [
     ["Seguro - Póliza", ficha.seguroPoliza],
@@ -130,7 +142,7 @@ export function VisitaPdf({
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={config.membreteLogoUrl} style={styles.logo} />
           ) : null}
-          <Text style={styles.nombre}>{(config.membreteNombre || APP_NAME).toUpperCase()}</Text>
+          <Text style={estiloNombre}>{titulo.texto}</Text>
         </View>
         <View style={styles.contactoFila}>
           <Text style={styles.email}>{config.membreteEmail}</Text>

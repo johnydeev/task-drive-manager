@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Tipografía de la marca de la administración, solo para el título del membrete.
+   Cubre ASCII básico: no tiene acentos ni ñ — ver lib/membrete-titulo.ts. */
+@font-face {
+  font-family: "Big John";
+  src: url("/fonts/BigJohn.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;

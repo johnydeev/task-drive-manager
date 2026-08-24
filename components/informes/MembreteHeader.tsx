@@ -3,6 +3,7 @@
 import type { Configuracion } from "@/types";
 import { APP_NAME } from "@/lib/app-name";
 import { logoMembreteUrl } from "@/lib/drive-url";
+import { tituloMembrete } from "@/lib/membrete-titulo";
 
 interface Props {
   config?: Configuracion;
@@ -19,6 +20,9 @@ export function MembreteHeader({ config, edificio, desde, hasta }: Props) {
   const rango = [desde, hasta].filter(Boolean).join(" al ");
   // Un link de "Compartir" de Drive apunta a una página, no a la imagen: se traduce.
   const logo = logoMembreteUrl(config?.membreteLogoUrl);
+  // Big John no tiene acentos: el título va normalizado, y si aun así queda algún carácter
+  // fuera de su cobertura se dibuja con la fuente de siempre antes que con un hueco.
+  const titulo = tituloMembrete(config?.membreteNombre || APP_NAME);
 
   return (
     <div className="rounded-t-2xl border border-b-0 border-slate-200 bg-white p-4 md:p-6">
@@ -33,8 +37,11 @@ export function MembreteHeader({ config, edificio, desde, hasta }: Props) {
             className="h-16 w-16 shrink-0 rounded-full object-contain md:h-20 md:w-20"
           />
         ) : null}
-        <h3 className="text-center text-2xl font-bold uppercase tracking-wide text-slate-900 md:text-3xl">
-          {config?.membreteNombre || APP_NAME}
+        <h3
+          className="text-center text-2xl font-bold uppercase tracking-wide text-slate-900 md:text-3xl"
+          style={titulo.usaBigJohn ? { fontFamily: '"Big John", sans-serif' } : undefined}
+        >
+          {titulo.texto}
         </h3>
       </div>
 

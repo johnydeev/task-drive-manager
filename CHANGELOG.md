@@ -64,6 +64,16 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   y el **video** ofrece "Grabar" (cámara) y "Buscar" (archivos del teléfono)
 
 ### Changed
+- **Tipografía de la marca en el membrete**: el nombre de la administración se dibuja con
+  **Big John** (`public/fonts/BigJohn.otf`) en el informe en pantalla, el PDF de informe por
+  edificio y el PDF de visita. La fuente cubre solo ASCII básico —**no tiene vocales acentuadas,
+  ñ, arroba ni punto medio**, y `@react-pdf/renderer` no hace fallback por glifo faltante—, así
+  que se usa **únicamente en el título**: `lib/membrete-titulo.ts` lo normaliza a mayúsculas sin
+  diacríticos (`Administración Morinigo` → `ADMINISTRACION MORINIGO`) y, si aun así queda algún
+  carácter fuera de su cobertura, el título entero cae a la fuente de respaldo antes que salir
+  con un hueco. El resto del membrete y el cuerpo de los PDFs siguen en Helvetica. La hoja
+  `Configuracion` no se toca: el nombre se sigue guardando con su tilde. Si falta el archivo de
+  la fuente, los PDFs se generan igual (`lib/pdf-fonts.ts` devuelve `false`)
 - **Comentarios de trabajo nunca quedan en blanco**: al guardar vacío un comentario **en
   proceso** o de **revisión**, se persiste el texto **"Sin comentarios"** (visible para el admin
   y editable después). El default lo aplica el server (`PATCH /api/tareas/[id]`). La **nota de

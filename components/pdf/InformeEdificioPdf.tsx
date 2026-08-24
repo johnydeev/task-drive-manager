@@ -1,6 +1,8 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Configuracion } from "@/types";
 import { APP_NAME } from "@/lib/app-name";
+import { tituloMembrete } from "@/lib/membrete-titulo";
+import { BIG_JOHN, registrarFuentes } from "@/lib/pdf-fonts";
 import {
   comentarioMasReciente,
   ETIQUETA_COMENTARIO,
@@ -31,6 +33,8 @@ const styles = StyleSheet.create({
   membrete: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   logo: { width: 72, height: 72, marginRight: 16 },
   nombre: { fontSize: 24, fontFamily: "Helvetica-Bold", textAlign: "center" },
+  // Big John dibuja más ancho y con caja más alta que Helvetica al mismo tamaño.
+  nombreBigJohn: { fontSize: 21, fontFamily: BIG_JOHN, textAlign: "center" },
   contactoFila: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -69,6 +73,9 @@ const styles = StyleSheet.create({
   },
 });
 
+// Una vez por proceso, no por render.
+const HAY_BIG_JOHN = registrarFuentes();
+
 // Anchos de columna (suman 100).
 const ANCHOS = { dpto: "14%", prioridad: "10%", informe: "34%", comentario: "26%", estado: "16%" };
 
@@ -84,6 +91,11 @@ interface Props {
 export function InformeEdificioPdf({ edificio, desde, hasta, grupos, config, generatedAt }: Props) {
   const rango = [desde, hasta].filter(Boolean).join(" al ");
   const conFilas = grupos.filter((g) => g.tareas.length > 0);
+  // Big John no tiene acentos: el título va normalizado, y si aun así queda algún carácter
+  // fuera de su cobertura se dibuja entero en Helvetica antes que con un hueco.
+  const titulo = tituloMembrete(config.membreteNombre || APP_NAME);
+  const estiloNombre =
+    HAY_BIG_JOHN && titulo.usaBigJohn ? styles.nombreBigJohn : styles.nombre;
 
   return (
     <Document>
@@ -94,9 +106,7 @@ export function InformeEdificioPdf({ edificio, desde, hasta, grupos, config, gen
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={config.membreteLogoUrl} style={styles.logo} />
           ) : null}
-          <Text style={styles.nombre}>
-            {(config.membreteNombre || APP_NAME).toUpperCase()}
-          </Text>
+          <Text style={estiloNombre}>{titulo.texto}</Text>
         </View>
 
         <View style={styles.contactoFila}>
