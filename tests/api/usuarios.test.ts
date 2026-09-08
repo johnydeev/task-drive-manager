@@ -17,8 +17,10 @@ import { NextRequest } from "next/server";
 import type { Usuario } from "@/types";
 
 const US: Usuario[] = [
-  { email: "admin@x.com", nombre: "Admin", rol: "admin", activo: true, creadoEn: "" },
-  { email: "op@x.com", nombre: "Operario", rol: "supervisor", activo: true, creadoEn: "" },
+  { email: "admin@x.com", nombre: "Admin", rol: "admin", activo: true, creadoEn: "", firmaUrl: "https://drive/f1" },
+  { email: "op@x.com", nombre: "Operario", rol: "supervisor", activo: true, creadoEn: "", firmaUrl: "https://drive/f2" },
+  { email: "otro@x.com", nombre: "Otro", rol: "supervisor", activo: true, creadoEn: "", firmaUrl: "https://drive/f3" },
+  { email: "baja@x.com", nombre: "De Baja", rol: "supervisor", activo: false, creadoEn: "" },
 ];
 
 beforeEach(() => {
@@ -28,18 +30,27 @@ beforeEach(() => {
 });
 
 describe("GET /api/usuarios", () => {
-  it("el admin recibe todos", async () => {
-    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
-    const res = await GET();
-    expect(await res.json()).toHaveLength(2);
-  });
-
-  it("un no-admin recibe solo su propio registro", async () => {
+  it("un no-admin recibe a todos los integrantes activos", async () => {
     requireSession.mockResolvedValue({ user: { email: "op@x.com", rol: "supervisor" } });
     const res = await GET();
     const body = await res.json();
-    expect(body).toHaveLength(1);
-    expect(body[0].email).toBe("op@x.com");
+    expect(body.map((u: Usuario) => u.email)).toEqual(["admin@x.com", "op@x.com", "otro@x.com"]);
+  });
+
+  it("un no-admin no recibe la firma de los demás, pero sí la propia", async () => {
+    requireSession.mockResolvedValue({ user: { email: "op@x.com", rol: "supervisor" } });
+    const body = await (await GET()).json();
+    const propio = body.find((u: Usuario) => u.email === "op@x.com");
+    const ajeno = body.find((u: Usuario) => u.email === "otro@x.com");
+    expect(propio.firmaUrl).toBe("https://drive/f2");
+    expect(ajeno).not.toHaveProperty("firmaUrl");
+  });
+
+  it("el admin sigue recibiendo todos, inactivos y firmas incluidos", async () => {
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    const body = await (await GET()).json();
+    expect(body).toHaveLength(4);
+    expect(body[0].firmaUrl).toBe("https://drive/f1");
   });
 });
 

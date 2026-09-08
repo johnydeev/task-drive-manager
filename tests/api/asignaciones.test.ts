@@ -37,11 +37,13 @@ describe("GET /api/asignaciones", () => {
     expect(res.status).toBe(200);
     expect(vi.mocked(getAsignaciones)).toHaveBeenCalledWith();
   });
-  it("supervisor recibe solo las suyas", async () => {
+  it("supervisor también recibe todas (vista de equipo)", async () => {
     requireSession.mockResolvedValue({ user: { email: "b@x.com", rol: "supervisor" } });
-    vi.mocked(getAsignaciones).mockResolvedValue([]);
-    await GET(getReq(), undefined);
-    expect(vi.mocked(getAsignaciones)).toHaveBeenCalledWith("b@x.com");
+    vi.mocked(getAsignaciones).mockResolvedValue([{ email: "c@x.com", edificio: "Garay 350" }]);
+    const res = await GET(getReq(), undefined);
+    expect(res.status).toBe(200);
+    expect(vi.mocked(getAsignaciones)).toHaveBeenCalledWith();
+    expect(await res.json()).toHaveLength(1);
   });
 });
 

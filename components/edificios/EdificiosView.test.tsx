@@ -20,6 +20,16 @@ vi.mock("@/lib/api-client", () => ({
     },
     directivas: { list: vi.fn().mockResolvedValue([]), create: vi.fn(), remove: vi.fn() },
     edificios: { list: vi.fn().mockResolvedValue([{ nombre: "Garay 350" }]) },
+    tareas: {
+      list: vi.fn().mockResolvedValue([
+        { rowId: "1", objetivo: "T1", fechaInicio: "2026-01-01", fechaEstimada: "", edificio: "Garay 350",
+          parteComun: false, dpto: "1A", informe: "", imagenes: [], videos: [], documentos: [],
+          estado: "Sin asignar", prioridad: "Media", supervisor: "op@x.com" },
+        { rowId: "2", objetivo: "T2", fechaInicio: "2026-01-02", fechaEstimada: "", edificio: "garay  350",
+          parteComun: false, dpto: "2B", informe: "", imagenes: [], videos: [], documentos: [],
+          estado: "Realizada", prioridad: "Media", supervisor: "op@x.com" },
+      ]),
+    },
   },
 }));
 import { useSession } from "next-auth/react";
@@ -60,10 +70,37 @@ describe("EdificiosView", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("supervisor ve solo su propia tarjeta", async () => {
+  it("el supervisor ve a todos los integrantes, con su tarjeta primero", async () => {
     vi.mocked(useSession).mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } } } as never);
     renderView();
     await waitFor(() => expect(screen.getByText("Operario Uno")).toBeInTheDocument());
-    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
+    expect(screen.getByText("Admin")).toBeInTheDocument();
+    const nombres = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(nombres[0]).toBe("Operario Uno");
+  });
+
+  it("el supervisor no ve el bloque Directivas de los demás", async () => {
+    vi.mocked(useSession).mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } } } as never);
+    renderView();
+    await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
+    // Solo queda el bloque de su propia tarjeta.
+    expect(screen.getAllByText("Directivas")).toHaveLength(1);
+  });
+
+  it("el supervisor no ve el cartel de edificios sin asignar", async () => {
+    vi.mocked(api.asignaciones.sinAsignar).mockResolvedValue(["Nazca 2538"]);
+    vi.mocked(useSession).mockReturnValue({ data: { user: { email: "op@x.com", rol: "supervisor" } } } as never);
+    renderView();
+    await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("el pill del edificio muestra las tareas abiertas del consorcio", async () => {
+    vi.mocked(useSession).mockReturnValue({ data: { user: { email: "admin@x.com", rol: "admin" } } } as never);
+    renderView();
+    // 2 tareas en Garay 350 (una escrita "garay  350"), pero solo 1 sin Realizar.
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Garay 350 — 1 tarea pendiente/ })).toBeInTheDocument()
+    );
   });
 });

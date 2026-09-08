@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useEdificiosSinAsignar } from "@/hooks/edificios-queries";
 import { displayName } from "@/lib/user-display";
+import { pendientesDe } from "@/lib/pendientes-por-edificio";
+import { cn } from "@/lib/utils";
 import type { Asignacion, Directiva, Usuario } from "@/types";
 import { X, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { DirectivaForm } from "./DirectivaForm";
@@ -19,6 +21,11 @@ interface Props {
   readOnly: boolean;
   currentEmail: string;
   isAdmin: boolean;
+  // Falso en las tarjetas ajenas de un no-admin: el endpoint no le devuelve esas
+  // directivas, así que mostrar el bloque vacío afirmaría algo falso.
+  mostrarDirectivas: boolean;
+  // Tareas abiertas por consorcio, ya contadas por la vista (clave normalizada).
+  pendientes: Map<string, number>;
 }
 
 export function IntegranteCard({
@@ -29,6 +36,8 @@ export function IntegranteCard({
   readOnly,
   currentEmail,
   isAdmin,
+  mostrarDirectivas,
+  pendientes,
 }: Props) {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -67,33 +76,50 @@ export function IntegranteCard({
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Edificios</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {asignaciones.map((a) => (
-            <span
-              key={a.edificio}
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700"
-            >
-              <Link
-                href={`/tareas?edificio=${encodeURIComponent(a.edificio)}`}
-                className="rounded px-0.5 transition-colors hover:bg-slate-200 hover:text-slate-900"
+          {asignaciones.map((a) => {
+            const n = pendientesDe(pendientes, a.edificio);
+            return (
+              <span
+                key={a.edificio}
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700"
               >
-                {a.edificio}
-              </Link>
-              {!readOnly && (
-                <button
-                  onClick={() => removeM.mutate(a.edificio)}
-                  disabled={removeM.isPending && removeM.variables === a.edificio}
-                  aria-label={`Quitar ${a.edificio}`}
-                  className="-mr-1 ml-0.5 text-slate-400 hover:text-red-600 disabled:opacity-50"
+                {/* El link envuelve nombre + contador para que el número también sea área
+                    clickeable. El ✕ queda FUERA del anchor: un <button> dentro de un <a> es
+                    HTML inválido y en mobile el tap se pelea entre navegar y quitar. */}
+                <Link
+                  href={`/tareas?edificio=${encodeURIComponent(a.edificio)}`}
+                  aria-label={`${a.edificio} — ${
+                    n === 0 ? "sin tareas pendientes" : `${n} ${n === 1 ? "tarea pendiente" : "tareas pendientes"}`
+                  }`}
+                  className="inline-flex items-center gap-1.5 rounded px-0.5 transition-colors hover:bg-slate-200 hover:text-slate-900"
                 >
-                  {removeM.isPending && removeM.variables === a.edificio ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <X size={14} />
-                  )}
-                </button>
-              )}
-            </span>
-          ))}
+                  {a.edificio}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums",
+                      n > 0 ? "bg-red-100 text-red-700" : "bg-slate-200 text-slate-500"
+                    )}
+                  >
+                    {n}
+                  </span>
+                </Link>
+                {!readOnly && (
+                  <button
+                    onClick={() => removeM.mutate(a.edificio)}
+                    disabled={removeM.isPending && removeM.variables === a.edificio}
+                    aria-label={`Quitar ${a.edificio}`}
+                    className="-mr-1 ml-0.5 text-slate-400 hover:text-red-600 disabled:opacity-50"
+                  >
+                    {removeM.isPending && removeM.variables === a.edificio ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <X size={14} />
+                    )}
+                  </button>
+                )}
+              </span>
+            );
+          })}
           {asignaciones.length === 0 && <span className="text-sm text-slate-400">Sin edificios</span>}
         </div>
         {!readOnly && (
@@ -125,7 +151,8 @@ export function IntegranteCard({
         )}
       </div>
 
-      {/* Directivas */}
+      {/* Directivas — solo en la tarjeta propia, o para el admin. */}
+      {mostrarDirectivas && (
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Directivas</p>
         <ul className="mt-1 space-y-1.5">
@@ -157,6 +184,7 @@ export function IntegranteCard({
           />
         )}
       </div>
+      )}
     </div>
   );
 }

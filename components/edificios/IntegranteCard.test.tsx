@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntegranteCard } from "./IntegranteCard";
@@ -40,7 +40,7 @@ describe("IntegranteCard", () => {
         directivas={[]}
         readOnly={false}
         currentEmail="admin@x.com"
-        isAdmin
+        isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.getByText("Operario Uno")).toBeInTheDocument();
@@ -57,10 +57,10 @@ describe("IntegranteCard", () => {
         directivas={[]}
         readOnly={false}
         currentEmail="admin@x.com"
-        isAdmin
+        isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
-    expect(screen.getByRole("link", { name: "Garay 350" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Garay 350/ })).toHaveAttribute(
       "href",
       "/tareas?edificio=Garay%20350"
     );
@@ -71,7 +71,7 @@ describe("IntegranteCard", () => {
       <IntegranteCard
         usuario={usuario} usuarios={[usuario]} asignaciones={[]}
         directivas={[dir({ estado: "Realizada", realizadaEn: "2026-07-17T00:00:00.000Z" })]}
-        readOnly currentEmail="op@x.com" isAdmin={false}
+        readOnly currentEmail="op@x.com" isAdmin={false} mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.getByLabelText("realizada")).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe("IntegranteCard", () => {
       <IntegranteCard
         usuario={usuario} usuarios={[usuario]} asignaciones={[]}
         directivas={[dir({ estado: "Asignada" })]}
-        readOnly currentEmail="op@x.com" isAdmin={false}
+        readOnly currentEmail="op@x.com" isAdmin={false} mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.queryByLabelText("realizada")).not.toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("IntegranteCard", () => {
         directivas={[]}
         readOnly
         currentEmail="op@x.com"
-        isAdmin={false}
+        isAdmin={false} mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.queryByRole("button", { name: /asignar directiva/i })).not.toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("IntegranteCard", () => {
         directivas={[dir({ estado: "Asignada" })]}
         readOnly
         currentEmail="op@x.com"
-        isAdmin={false}
+        isAdmin={false} mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.getByRole("button", { name: /aceptar/i })).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("IntegranteCard", () => {
         directivas={[dir({ estado: "Realizada", realizadaEn: "2026-07-17T00:00:00.000Z", notaCierre: "listo" })]}
         readOnly={false}
         currentEmail="admin@x.com"
-        isAdmin
+        isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.getByRole("button", { name: /objetar/i })).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe("IntegranteCard", () => {
         directivas={[dir({ id: "d1", estado: "Asignada" })]}
         readOnly={false}
         currentEmail="admin@x.com"
-        isAdmin
+        isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
     await user.click(screen.getByRole("button", { name: "Eliminar directiva" }));
@@ -168,7 +168,7 @@ describe("IntegranteCard", () => {
         directivas={[]}
         readOnly={false}
         currentEmail="admin@x.com"
-        isAdmin
+        isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
     await waitFor(() =>
@@ -188,9 +188,64 @@ describe("IntegranteCard", () => {
         directivas={[dir({ estado: "Asignada" })]}
         readOnly
         currentEmail="op@x.com"
-        isAdmin={false}
+        isAdmin={false} mostrarDirectivas pendientes={new Map()}
       />
     );
     expect(screen.queryByRole("button", { name: "Eliminar directiva" })).not.toBeInTheDocument();
+  });
+
+  it("muestra el contador de pendientes en rojo dentro del link del pill", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[{ email: "op@x.com", edificio: "Garay 350" }]}
+        directivas={[]}
+        readOnly
+        currentEmail="op@x.com"
+        isAdmin={false}
+        mostrarDirectivas
+        pendientes={new Map([["garay 350", 3]])}
+      />
+    );
+    const link = screen.getByRole("link", { name: /Garay 350 — 3 tareas pendientes/ });
+    expect(link).toHaveAttribute("href", "/tareas?edificio=Garay%20350");
+    expect(within(link).getByText("3")).toHaveClass("text-red-700");
+  });
+
+  it("muestra el contador apagado cuando el consorcio no tiene pendientes", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[{ email: "op@x.com", edificio: "Garay 350" }]}
+        directivas={[]}
+        readOnly
+        currentEmail="op@x.com"
+        isAdmin={false}
+        mostrarDirectivas
+        pendientes={new Map()}
+      />
+    );
+    const link = screen.getByRole("link", { name: /Garay 350 — sin tareas pendientes/ });
+    expect(within(link).getByText("0")).toHaveClass("text-slate-500");
+  });
+
+  it("con mostrarDirectivas en false no renderiza el bloque Directivas", () => {
+    wrap(
+      <IntegranteCard
+        usuario={usuario}
+        usuarios={[usuario]}
+        asignaciones={[]}
+        directivas={[]}
+        readOnly
+        currentEmail="otro@x.com"
+        isAdmin={false}
+        mostrarDirectivas={false}
+        pendientes={new Map()}
+      />
+    );
+    expect(screen.queryByText("Directivas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sin directivas")).not.toBeInTheDocument();
   });
 });

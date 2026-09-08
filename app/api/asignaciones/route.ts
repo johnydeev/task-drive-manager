@@ -9,12 +9,10 @@ import { asignacionSchema } from "@/lib/schemas";
 
 export const runtime = "nodejs";
 
-export const GET = withAuth(async (_req, session) => {
-  const data =
-    session.user.rol === "admin"
-      ? await getAsignaciones()
-      : await getAsignaciones(session.user.email);
-  return NextResponse.json(data);
+// Todas las asignaciones, para cualquier rol: la vista Edificios muestra qué consorcio
+// atiende cada integrante. La escritura sigue siendo admin-only (withAdmin, más abajo).
+export const GET = withAuth(async () => {
+  return NextResponse.json(await getAsignaciones());
 });
 
 export const POST = withAdmin(async (req) => {

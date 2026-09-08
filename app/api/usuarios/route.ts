@@ -9,19 +9,32 @@ import {
 } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { firmaSchema, usuarioNuevoSchema, usuarioPatchSchema } from "@/lib/schemas";
+import type { Usuario } from "@/types";
 
 export const runtime = "nodejs";
+
+// La firma es el link público en Drive con el que se sellan los PDF de visita. No hace
+// falta para dibujar /edificios, así que no viaja en los registros ajenos.
+function sinFirma(u: Usuario): Usuario {
+  const copia = { ...u };
+  delete copia.firmaUrl;
+  return copia;
+}
 
 export async function GET() {
   try {
     const session = await requireSession();
     const usuarios = await getUsuarios();
-    // El admin recibe todos (gestión de usuarios). Un no-admin recibe solo su propio
-    // registro: lo necesita la vista Edificios para renderizar su tarjeta y su nombre,
-    // sin exponer la lista completa del equipo.
+    // El admin recibe todo (gestión de usuarios: necesita también los inactivos y las
+    // firmas). Un no-admin recibe al equipo activo para la vista Edificios, con su propio
+    // registro completo y los ajenos sin firma.
     if (session.user.rol === "admin") return NextResponse.json(usuarios);
     const email = session.user.email.toLowerCase();
-    return NextResponse.json(usuarios.filter((u) => u.email.toLowerCase() === email));
+    const esPropio = (u: Usuario) => u.email.toLowerCase() === email;
+    const visibles = usuarios
+      .filter((u) => u.activo || esPropio(u))
+      .map((u) => (esPropio(u) ? u : sinFirma(u)));
+    return NextResponse.json(visibles);
   } catch (err) {
     return handleApiError(err);
   }

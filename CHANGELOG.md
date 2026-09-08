@@ -8,6 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **Edificios a la vista de todo el equipo**: el supervisor ahora ve en **Edificios** los
+  consorcios y las tareas asignadas de **todos** los integrantes, en solo lectura — sin poder
+  asignar, quitar ni crear directivas. Las **directivas ajenas siguen siendo privadas**: el
+  bloque solo aparece en la tarjeta propia (o para el admin). Además, cada consorcio muestra
+  al lado un **contador de tareas pendientes** (todo lo que no está *Realizada*): en rojo si
+  hay trabajo abierto, apagado en `0`. El número es del **edificio**, no del integrante, y
+  tocar el pill abre el listado de tareas de ese consorcio
 - **Visitas de control por edificio**: formulario con los campos del parte en papel (datos del
   consorcio, 15 controles por sector marcados *Realizada / No realizada*, informe general y
   fotos) que al guardar **genera un PDF y lo archiva** en Drive, en

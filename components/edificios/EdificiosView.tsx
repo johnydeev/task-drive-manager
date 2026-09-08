@@ -9,6 +9,7 @@ import {
   useEdificiosSinAsignar,
   useTareas,
 } from "@/hooks/edificios-queries";
+import { contarPendientesPorEdificio } from "@/lib/pendientes-por-edificio";
 import { IntegranteCard } from "./IntegranteCard";
 import { TareasAsignadasCard } from "./TareasAsignadasCard";
 
@@ -24,11 +25,24 @@ export function EdificiosView() {
   const sinAsignar = sinAsignarQ.data ?? [];
   const tareasQ = useTareas();
 
+  // Todos los integrantes activos, para cualquier rol: el supervisor ve la misma pantalla
+  // que el admin, en lectura. La tarjeta propia va primera y el resto alfabético.
   const integrantes = useMemo(() => {
-    const all = (usuariosQ.data ?? []).filter((u) => u.activo);
-    if (isAdmin) return all;
-    return all.filter((u) => u.email.toLowerCase() === myEmail);
-  }, [usuariosQ.data, isAdmin, myEmail]);
+    const activos = (usuariosQ.data ?? []).filter((u) => u.activo);
+    return [...activos].sort((a, b) => {
+      const propioA = a.email.toLowerCase() === myEmail;
+      const propioB = b.email.toLowerCase() === myEmail;
+      if (propioA !== propioB) return propioA ? -1 : 1;
+      return (a.nombre || a.email).localeCompare(b.nombre || b.email, "es");
+    });
+  }, [usuariosQ.data, myEmail]);
+
+  // Tareas abiertas por consorcio. Se calcula una sola vez sobre las tareas que la vista
+  // ya tenía cargadas: no hay fetch nuevo.
+  const pendientes = useMemo(
+    () => contarPendientesPorEdificio(tareasQ.data ?? []),
+    [tareasQ.data]
+  );
 
   return (
     <div className="px-4 py-4 md:px-8 md:py-6 max-w-5xl mx-auto w-full">
@@ -59,6 +73,8 @@ export function EdificiosView() {
               readOnly={!isAdmin}
               currentEmail={myEmail}
               isAdmin={isAdmin}
+              mostrarDirectivas={isAdmin || u.email.toLowerCase() === myEmail}
+              pendientes={pendientes}
             />
             <TareasAsignadasCard
               tareas={(tareasQ.data ?? []).filter(
