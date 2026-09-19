@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { api } from "@/lib/api-client";
+import { api, apiFetch } from "@/lib/api-client";
 import { cn, formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
@@ -34,13 +34,13 @@ const prioridadBadge: Record<Prioridad, string> = {
 };
 
 async function fetchTareas(params: URLSearchParams): Promise<Tarea[]> {
-  const res = await fetch(`/api/tareas?${params.toString()}`);
+  const res = await apiFetch(`/api/tareas?${params.toString()}`);
   if (!res.ok) throw new Error("Error al cargar tareas");
   return res.json();
 }
 
 async function fetchEdificios(): Promise<Edificio[]> {
-  const res = await fetch("/api/edificios");
+  const res = await apiFetch("/api/edificios");
   if (!res.ok) throw new Error("Error al cargar edificios");
   return res.json();
 }

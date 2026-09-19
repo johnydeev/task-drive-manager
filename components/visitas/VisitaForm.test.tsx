@@ -12,6 +12,8 @@ vi.mock("@/lib/api-client", () => ({
     edificios: { list: vi.fn() },
     visitas: { create: vi.fn() },
   },
+  // Passthrough al fetch global (que el test stubea o no usa).
+  apiFetch: (...args: Parameters<typeof fetch>) => fetch(...args),
 }));
 // Stub del uploader: expone un botón que simula haber subido una foto a Drive.
 vi.mock("./FotosVisita", () => ({

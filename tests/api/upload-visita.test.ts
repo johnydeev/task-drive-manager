@@ -10,6 +10,8 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/google-drive", () => ({
   uploadTareaFile: vi.fn(),
   trashFileByUrl: vi.fn(),
+  extractFileId: vi.fn(),
+  estaBajoRaiz: vi.fn(),
 }));
 
 const { uploadVisitaFoto, uploadFirma } = vi.hoisted(() => ({

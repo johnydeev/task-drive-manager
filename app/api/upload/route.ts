@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { uploadTareaFile, trashFileByUrl } from "@/lib/google-drive";
+import { uploadTareaFile, trashFileByUrl, extractFileId, estaBajoRaiz } from "@/lib/google-drive";
+import { cargarReferencias, estaReferenciado } from "@/lib/archivo-referencias";
+import { isDemoMode } from "@/lib/demo-mode";
 import { uploadFirma, uploadVisitaFoto } from "@/lib/drive-visitas";
 import { getConfiguracion } from "@/lib/google-sheets";
 import { handleApiError, jsonError } from "@/lib/api-utils";
@@ -131,13 +133,42 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Borra (papelera) un archivo ya subido a Drive por su URL. Lo usa el FileUploader
-// cuando el usuario elimina una preview antes de crear la tarea (evita huérfanos).
+// gaxios (cliente HTTP de googleapis) expone el status como `code` (string) y como
+// `response.status` (number); se aceptan ambos.
+function esNotFoundDeDrive(err: unknown): boolean {
+  const e = err as { code?: unknown; response?: { status?: unknown } } | null;
+  return Number(e?.code) === 404 || e?.response?.status === 404;
+}
+
+// Manda a papelera un archivo de STAGING: subido a Drive pero que ninguna fila referencia
+// todavía (preview de tarea descartado, foto de visita quitada antes de emitir). Lo usan
+// FileUploader, FotosVisita y useVisitaForm, siempre fire-and-forget.
+//
+// Chequeos, en orden de costo: (1) que cuelgue de la raíz de la app — la service account
+// llega a toda la unidad compartida; (2) que ninguna fila lo referencie — un archivo ya
+// guardado solo se va con el DELETE de su tarea/visita (admin).
 export async function DELETE(req: NextRequest) {
   try {
     await requireSession();
     const url = req.nextUrl.searchParams.get("url");
     if (!url) return jsonError(400, "Falta url");
+    const fileId = extractFileId(url);
+    if (!fileId) return jsonError(400, "La url no es un archivo de Drive");
+
+    if (!isDemoMode()) {
+      let bajoRaiz: boolean;
+      try {
+        bajoRaiz = await estaBajoRaiz(fileId);
+      } catch (err) {
+        if (esNotFoundDeDrive(err)) return jsonError(404, "El archivo no existe");
+        throw err;
+      }
+      if (!bajoRaiz) return jsonError(403, "El archivo no pertenece a la app");
+      if (estaReferenciado(fileId, await cargarReferencias())) {
+        return jsonError(409, "El archivo está en uso por una tarea, visita o firma");
+      }
+    }
+
     await trashFileByUrl(url);
     return NextResponse.json({ ok: true });
   } catch (err) {

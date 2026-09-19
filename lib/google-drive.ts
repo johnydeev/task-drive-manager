@@ -393,3 +393,28 @@ export async function trashFileByUrl(url: string): Promise<void> {
   if (!fileId) return;
   await getDrive().files.update({ fileId, requestBody: { trashed: true }, supportsAllDrives: true });
 }
+
+// Profundidad máxima al subir por parents. La jerarquía real tiene 5 niveles como mucho
+// (raíz / Tareas / Edificio / Objetivo / archivo; Visitas suma la carpeta agrupada).
+const MAX_NIVELES_RAIZ = 8;
+
+// true si el archivo desciende de GOOGLE_DRIVE_ROOT_FOLDER_ID (por cadena de parents).
+// Lanza si Drive falla (incluido 404 por archivo inexistente): el llamador decide.
+// Un archivo con varios padres (raro en unidades compartidas) se sigue por el primero.
+export async function estaBajoRaiz(fileId: string): Promise<boolean> {
+  if (isDemoMode()) return true;
+  const root = getDriveRootFolderId();
+  let actual = fileId;
+  for (let nivel = 0; nivel < MAX_NIVELES_RAIZ; nivel++) {
+    const res = await getDrive().files.get({
+      fileId: actual,
+      fields: "id,parents",
+      supportsAllDrives: true,
+    });
+    const padre = res.data.parents?.[0];
+    if (!padre) return false;
+    if (padre === root) return true;
+    actual = padre;
+  }
+  return false;
+}

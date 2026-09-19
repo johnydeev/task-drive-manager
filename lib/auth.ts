@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import type { Session } from "next-auth";
 import { getUsuarioByEmail } from "./google-sheets";
 import { demoSession, isDemoMode } from "./demo-mode";
+import { revalidarToken } from "./auth-revalidacion";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Necesario detrás de un proxy/tunnel (Cloudflare): hace que NextAuth confíe
@@ -37,25 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return false;
       }
     },
-    // Cargamos rol y estado activo en el JWT al crear/refrescar la sesión.
-    async jwt({ token, user, trigger }) {
+    // Rol y estado activo viven en el JWT. Se releen de la hoja Usuarios en el login y
+    // después cada VENTANA_REVALIDACION_MS: si el usuario fue desactivado o borrado, el
+    // callback devuelve null y Auth.js limpia la cookie (proxy → /login, API → 401).
+    async jwt({ token, user }) {
       const email = (user?.email ?? token.email)?.toLowerCase();
       if (!email) return token;
-
-      // En login inicial o cuando lo pedimos explícitamente, refrescamos rol desde la Sheet.
-      if (user || trigger === "update" || !token.rol) {
-        try {
-          const usuario = await getUsuarioByEmail(email);
-          if (usuario) {
-            token.rol = usuario.rol;
-            token.activo = usuario.activo;
-            token.email = email;
-          }
-        } catch (err) {
-          console.error("[auth] error al refrescar rol:", err);
-        }
-      }
-      return token;
+      // Login inicial: sin validadoEn, así la regla fuerza la lectura y carga el rol.
+      const base = user ? { ...token, email, validadoEn: undefined } : token;
+      return revalidarToken(base, Date.now(), getUsuarioByEmail);
     },
     async session({ session, token }) {
       if (session.user) {

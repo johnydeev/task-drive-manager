@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, apiFetch } from "@/lib/api-client";
 import { EDIFICIO_FICHA_VACIA, type EdificioFicha, type Visita } from "@/types";
 
 type DatosFicha = Omit<EdificioFicha, "edificio" | "actualizadoEn">;
@@ -65,7 +65,7 @@ export function useVisitaForm() {
       if (guardadaRef.current) return;
       for (const url of fotosRef.current) {
         // keepalive: el request tiene que sobrevivir a la navegación que lo dispara.
-        void fetch(`/api/upload?url=${encodeURIComponent(url)}`, {
+        void apiFetch(`/api/upload?url=${encodeURIComponent(url)}`, {
           method: "DELETE",
           keepalive: true,
         });

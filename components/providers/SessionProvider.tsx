@@ -6,8 +6,9 @@ import { ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
-  // Sesión inicial inyectada desde el server. En DEMO_MODE, viene poblada
-  // con la sesión fake; en producción es null y NextAuth la hidrata vía /api/auth/session.
+  // Sesión inicial inyectada desde el server por app/layout.tsx (getActiveSession), tanto en
+  // producción como en DEMO_MODE. Por eso useSession() nunca pasa por "loading" en el
+  // primer render y no hay flicker de controles por rol.
   session?: Session | null;
 }
 

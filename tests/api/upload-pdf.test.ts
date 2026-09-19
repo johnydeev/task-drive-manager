@@ -12,6 +12,9 @@ vi.mock("@/lib/google-drive", () => ({
     name: "documento-01.pdf",
     url: "https://drive.google.com/file/d/fake-id/view",
   }),
+  trashFileByUrl: vi.fn(),
+  extractFileId: vi.fn(),
+  estaBajoRaiz: vi.fn(),
 }));
 
 vi.mock("@/lib/google-sheets", () => ({

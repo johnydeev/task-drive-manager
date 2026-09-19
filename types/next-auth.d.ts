@@ -19,5 +19,6 @@ declare module "next-auth/jwt" {
     rol?: Rol;
     activo?: boolean;
     email?: string;
+    validadoEn?: number; // epoch ms de la última relectura de Usuarios (ver lib/auth-revalidacion)
   }
 }

@@ -18,24 +18,46 @@ import type {
   VisitaNuevaInput,
 } from "@/types";
 
+// fetch + manejo central de sesión vencida. Todo request a /api/* desde el browser pasa
+// por acá (request(), upload y los pocos fetch directos de componentes). Con 401 dispara la
+// navegación a /login y DEVUELVE la respuesta igual: el llamador sigue su camino normal
+// (`!res.ok` → lanza) y ninguna promesa queda colgada mientras el navegador navega.
+export async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.status === 401) redirigirALogin();
+  return res;
+}
+
+function redirigirALogin() {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname.startsWith("/login")) return;
+  const from = window.location.pathname + window.location.search;
+  window.location.assign(`/login?from=${encodeURIComponent(from)}`);
+}
+
+// Mensaje de error a partir del body {error, ref?} de la API. El ref (solo en 500) viaja en
+// el texto para que el usuario pueda mandarlo en una captura y buscarlo en el log.
+async function mensajeDeError(res: Response): Promise<string> {
+  let message = `Error ${res.status}`;
+  try {
+    const body = await res.json();
+    if (body?.error) message = body.error;
+    if (body?.ref) message = `${message} (ref ${body.ref})`;
+  } catch {
+    /* ignore */
+  }
+  return message;
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) {
-    let message = `Error ${res.status}`;
-    try {
-      const body = await res.json();
-      if (body?.error) message = body.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
-  }
+  if (!res.ok) throw new Error(await mensajeDeError(res));
   if (res.status === 204) return undefined as T;
   return res.json();
 }
@@ -215,15 +237,8 @@ export const api = {
       form.append("objetivo", objetivo);
       form.append("dpto", dpto);
       form.append("rowId", rowId);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      if (!res.ok) {
-        let message = `Error ${res.status}`;
-        try {
-          const body = await res.json();
-          if (body?.error) message = body.error;
-        } catch {}
-        throw new Error(message);
-      }
+      const res = await apiFetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) throw new Error(await mensajeDeError(res));
       return res.json();
     },
     {

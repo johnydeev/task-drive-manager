@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, apiFetch } from "@/lib/api-client";
 import { cn, formatFecha } from "@/lib/utils";
 import { thumbUrl } from "@/lib/drive-url";
 import { FirmaCanvas } from "@/components/ui/FirmaCanvas";
@@ -46,7 +46,7 @@ export function UsuariosManager() {
       fd.append("email", email);
       // El endpoint pide edificio para el flujo de tareas; en firma no se usa.
       fd.append("edificio", "_firmas");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await apiFetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.error ?? "No se pudo subir la firma");

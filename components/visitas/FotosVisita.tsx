@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { thumbUrl } from "@/lib/drive-url";
+import { apiFetch } from "@/lib/api-client";
 
 interface Props {
   edificio: string;
@@ -33,7 +34,7 @@ export function FotosVisita({ edificio, fotos, onChange, disabled }: Props) {
         form.append("file", file);
         form.append("destino", "visita");
         form.append("edificio", edificio);
-        const res = await fetch("/api/upload", { method: "POST", body: form });
+        const res = await apiFetch("/api/upload", { method: "POST", body: form });
         if (!res.ok) {
           const body = await res.json().catch(() => null);
           throw new Error(body?.error ?? "No se pudo subir");
@@ -90,7 +91,7 @@ export function FotosVisita({ edificio, fotos, onChange, disabled }: Props) {
                   onChange(fotos.filter((f) => f !== url));
                   // La foto ya está en Drive: sacarla del formulario también la manda a
                   // la papelera, si no queda huérfana en la carpeta del consorcio.
-                  void fetch(`/api/upload?url=${encodeURIComponent(url)}`, { method: "DELETE" });
+                  void apiFetch(`/api/upload?url=${encodeURIComponent(url)}`, { method: "DELETE" });
                 }}
                 aria-label="Quitar foto"
                 className="absolute -right-1.5 -top-1.5 rounded-full bg-white p-0.5 text-slate-500 shadow hover:text-red-600"
