@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -23,7 +22,7 @@ import {
   tareasToCsv,
   timelinePorMes,
 } from "@/lib/dashboard";
-import { api } from "@/lib/api-client";
+import { useEdificios, useTareas } from "@/hooks/queries";
 import { filterTareas } from "@/lib/tareas-filter";
 import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
 import { cn, formatFecha } from "@/lib/utils";
@@ -57,12 +56,9 @@ export function Dashboard() {
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
 
-  // Key con prefijo "tareas" para que la alcance la invalidación tras cada transición.
-  const tareasQ = useQuery({
-    queryKey: ["tareas", "all"],
-    queryFn: () => api.tareas.list({}),
-  });
-  const edificiosQ = useQuery({ queryKey: ["edificios"], queryFn: api.edificios.list });
+  // Única fuente de tareas (compartida con lista/informes/detalle); se filtra en memoria.
+  const tareasQ = useTareas();
+  const edificiosQ = useEdificios();
 
   const tareasFiltradas = useMemo(
     () =>

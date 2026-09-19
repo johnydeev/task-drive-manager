@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TareaDetalle } from "@/components/tareas/TareaDetalle";
 import type { Tarea } from "@/types";
@@ -59,12 +59,32 @@ vi.mock("@/lib/api-client", () => {
 
 import { api } from "@/lib/api-client";
 
-function wrap(ui: React.ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function wrap(ui: React.ReactNode, qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
 }
 
 describe("TareaDetalle", () => {
+  it("sin red, con la tarea ya en la lista cacheada, la muestra aunque el refetch falle", async () => {
+    // La lista (["tareas","all"]) viene del cache offline; el GET del detalle no tiene red.
+    vi.mocked(api.tareas.get).mockRejectedValueOnce(new Error("Failed to fetch"));
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // updatedAt viejo: el initialData está vencido, así que el detalle intenta refetchear.
+    qc.setQueryData(["tareas", "all"], [{
+      rowId: TAREA_ROW_ID, objetivo: "Desde la lista", fechaInicio: "2026-06-14", fechaEstimada: "",
+      edificio: "Av. 123", parteComun: false, dpto: "1A", informe: "x",
+      imagenes: [], videos: [], documentos: [],
+      estado: "Sin asignar", prioridad: "Media", supervisor: "a@b.com",
+    }], { updatedAt: Date.now() - 60_000 });
+    render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />, qc));
+    await waitFor(() => expect(api.tareas.get).toHaveBeenCalled());
+    // Con el refetch fallido, la tarea de la lista sigue en pantalla: no cae al error.
+    expect(await screen.findByText("Desde la lista")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText(/no se pudo cargar la tarea/i)).not.toBeInTheDocument()
+    );
+    expect(screen.getByText("Desde la lista")).toBeInTheDocument();
+  });
+
   it("la media va en una barra colapsable: oculta hasta expandir", async () => {
     render(wrap(<TareaDetalle rowId={TAREA_ROW_ID} />));
     // La barra aparece con el total, pero el link del documento no está hasta expandir.

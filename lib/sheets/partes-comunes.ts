@@ -1,8 +1,7 @@
 import { nanoid } from "nanoid";
-import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
 import { getDemoDptos } from "../demo-data";
-import { getSheets, readRange, SHEETS } from "./core";
+import { readRange, SHEETS, writeRange } from "./core";
 import { buildHeaderMap } from "./headers";
 
 // Hoja de partes comunes: headers id · nombre.
@@ -46,11 +45,6 @@ export async function appendParteComun(nombre: string): Promise<string> {
   set("nombre", limpio);
   // Fila libre por cantidad de filas leídas (evita append/table-detection).
   const nextRow = rows.length + 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.partesComunes}!A${nextRow}:B${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [row] },
-  });
+  await writeRange(`${SHEETS.partesComunes}!A${nextRow}:B${nextRow}`, [row]);
   return limpio;
 }

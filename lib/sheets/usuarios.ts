@@ -1,8 +1,7 @@
-import { getSheetId } from "../google-auth";
 import type { Rol, Usuario } from "@/types";
 import { isDemoMode } from "../demo-mode";
 import { createDemoUsuario, getDemoUsuarios, setDemoUsuarioActivo } from "../demo-data";
-import { getSheets, readRange, SHEETS } from "./core";
+import { readRange, SHEETS, writeRange } from "./core";
 import { buildHeaderMap, colLetter } from "./headers";
 import { toBool, boolToCell } from "./values";
 import { rolEnum } from "../schemas";
@@ -54,23 +53,16 @@ export async function appendUsuario(u: Omit<Usuario, "creadoEn">): Promise<Usuar
   // la columna A + update, mismo patrón que appendTarea.
   const colA = await readRange(`${SHEETS.usuarios}!A:A`);
   const nextRow = colA.length + 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.usuarios}!A${nextRow}:F${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [
-        [
-          usuario.email,
-          usuario.nombre,
-          usuario.rol,
-          boolToCell(usuario.activo),
-          usuario.creadoEn,
-          usuario.actualizadoEn ?? "",
-        ],
-      ],
-    },
-  });
+  await writeRange(`${SHEETS.usuarios}!A${nextRow}:F${nextRow}`, [
+    [
+      usuario.email,
+      usuario.nombre,
+      usuario.rol,
+      boolToCell(usuario.activo),
+      usuario.creadoEn,
+      usuario.actualizadoEn ?? "",
+    ],
+  ]);
   return usuario;
 }
 
@@ -87,22 +79,12 @@ export async function setUsuarioActivo(email: string, activo: boolean): Promise<
   const rowNumber = idx + 2; // fila 1 = header
 
   const activoCol = colLetter(h.index("activo") + 1);
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.usuarios}!${activoCol}${rowNumber}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[boolToCell(activo)]] },
-  });
+  await writeRange(`${SHEETS.usuarios}!${activoCol}${rowNumber}`, [[boolToCell(activo)]]);
 
   // Registrar la última modificación si existe la columna.
   const updIdx = h.index("actualizado_en");
   if (updIdx !== -1) {
-    await getSheets().spreadsheets.values.update({
-      spreadsheetId: getSheetId(),
-      range: `${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[nowBuenosAiresISO()]] },
-    });
+    await writeRange(`${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`, [[nowBuenosAiresISO()]]);
   }
 }
 
@@ -120,20 +102,10 @@ export async function setUsuarioFirma(email: string, firmaUrl: string): Promise<
   const firmaIdx = h.index("firma_url");
   if (firmaIdx === -1) throw new Error("La hoja Usuarios no tiene la columna firma_url");
 
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.usuarios}!${colLetter(firmaIdx + 1)}${rowNumber}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[firmaUrl]] },
-  });
+  await writeRange(`${SHEETS.usuarios}!${colLetter(firmaIdx + 1)}${rowNumber}`, [[firmaUrl]]);
 
   const updIdx = h.index("actualizado_en");
   if (updIdx !== -1) {
-    await getSheets().spreadsheets.values.update({
-      spreadsheetId: getSheetId(),
-      range: `${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[nowBuenosAiresISO()]] },
-    });
+    await writeRange(`${SHEETS.usuarios}!${colLetter(updIdx + 1)}${rowNumber}`, [[nowBuenosAiresISO()]]);
   }
 }

@@ -1,15 +1,17 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { api, apiFetch } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
+import { useEdificios, useTareas } from "@/hooks/queries";
+import { filterTareas } from "@/lib/tareas-filter";
 import { cn, formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
-import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
+import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { Plus, Filter, Trash2, Check } from "lucide-react";
 
 const ESTADOS: (EstadoTarea | "Todos")[] = [
@@ -33,18 +35,6 @@ const prioridadBadge: Record<Prioridad, string> = {
   Baja: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
-async function fetchTareas(params: URLSearchParams): Promise<Tarea[]> {
-  const res = await apiFetch(`/api/tareas?${params.toString()}`);
-  if (!res.ok) throw new Error("Error al cargar tareas");
-  return res.json();
-}
-
-async function fetchEdificios(): Promise<Edificio[]> {
-  const res = await apiFetch("/api/edificios");
-  if (!res.ok) throw new Error("Error al cargar edificios");
-  return res.json();
-}
-
 export default function TareasPage() {
   const { data: session } = useSession();
   const myEmail = session?.user?.email?.toLowerCase() ?? "";
@@ -58,30 +48,26 @@ export default function TareasPage() {
   const [soloSinAsignar, setSoloSinAsignar] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const params = useMemo(() => {
-    const p = new URLSearchParams();
-    if (edificio) p.set("edificio", edificio);
-    if (estado !== "Todos") p.set("estado", estado);
-    if (prioridad !== "Todas") p.set("prioridad", prioridad);
-    if (soloMias && myEmail) p.set("asignado", myEmail);
-    if (soloSinAsignar) p.set("sinAsignar", "1");
-    return p;
-  }, [edificio, estado, prioridad, soloMias, soloSinAsignar, myEmail]);
+  const filtros = useMemo(
+    () => ({
+      edificio: edificio || undefined,
+      estado: estado === "Todos" ? undefined : estado,
+      prioridad: prioridad === "Todas" ? undefined : prioridad,
+      asignado: soloMias && myEmail ? myEmail : undefined,
+      sinAsignar: soloSinAsignar || undefined,
+    }),
+    [edificio, estado, prioridad, soloMias, soloSinAsignar, myEmail]
+  );
 
   const qc = useQueryClient();
   const [toDelete, setToDelete] = useState<Tarea | null>(null);
   const [deleteDone, setDeleteDone] = useState(false);
 
-  const tareasQ = useQuery({
-    queryKey: ["tareas", params.toString()],
-    queryFn: () => fetchTareas(params),
-  });
-
-  const edificiosQ = useQuery({
-    queryKey: ["edificios"],
-    queryFn: fetchEdificios,
-    staleTime: 5 * 60_000,
-  });
+  // Única fuente de tareas (compartida con dashboard/informes/detalle); los filtros corren
+  // en memoria, así cambiar un select no vuelve a pegarle a la API.
+  const tareasQ = useTareas();
+  const edificiosQ = useEdificios();
+  const tareas = useMemo(() => filterTareas(tareasQ.data ?? [], filtros), [tareasQ.data, filtros]);
 
   const eliminar = useMutation({
     mutationFn: (rowId: string) => api.tareas.remove(rowId),
@@ -100,7 +86,7 @@ export default function TareasPage() {
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Tareas</h2>
           <p className="text-sm text-slate-600">
-            {tareasQ.data ? `${tareasQ.data.length} resultado${tareasQ.data.length !== 1 ? "s" : ""}` : "Cargando…"}
+            {tareasQ.data ? `${tareas.length} resultado${tareas.length !== 1 ? "s" : ""}` : "Cargando…"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -191,7 +177,7 @@ export default function TareasPage() {
       )}
 
       <ul className="mt-4 space-y-2">
-        {tareasQ.data?.map((t) => (
+        {tareas.map((t) => (
           <li
             key={t.rowId}
             className="relative rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition"
@@ -237,7 +223,7 @@ export default function TareasPage() {
             )}
           </li>
         ))}
-        {tareasQ.data?.length === 0 && !tareasQ.isLoading && (
+        {tareasQ.data && tareas.length === 0 && (
           <li className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
             No hay tareas con esos filtros.
           </li>

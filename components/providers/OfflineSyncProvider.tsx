@@ -17,7 +17,6 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
       if (res.ok > 0) {
         // Invalidar caches para reflejar las tareas recién subidas.
         qc.invalidateQueries({ queryKey: ["tareas"] });
-        qc.invalidateQueries({ queryKey: ["tareas-all"] });
       }
     };
 
@@ -30,7 +29,6 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
     // Cuando el SW termina un Background Sync, nos avisa y refrescamos caches.
     const onSwSynced = () => {
       qc.invalidateQueries({ queryKey: ["tareas"] });
-      qc.invalidateQueries({ queryKey: ["tareas-all"] });
     };
     window.addEventListener("tareas-synced", onSwSynced);
 

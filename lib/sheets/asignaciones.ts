@@ -1,8 +1,7 @@
-import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
 import type { Asignacion, Edificio } from "@/types";
 import { getConsorciosActivos } from "../consorcios";
-import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
+import { readRange, SHEETS, writeRange, deleteRows } from "./core";
 import { buildHeaderMap } from "./headers";
 import { edificioMatches } from "../edificio-match";
 import { nowBuenosAiresISO } from "../fecha-ar";
@@ -98,12 +97,7 @@ export async function addAsignacion(
   // NO usar values.append (mete la fila al fondo del grid grande). Fila libre por
   // la cantidad de filas ya leídas + update en el rango exacto.
   const nextRow = rows.length + 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.asignaciones}!A${nextRow}:D${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [row] },
-  });
+  await writeRange(`${SHEETS.asignaciones}!A${nextRow}:D${nextRow}`, [row]);
   return asignacion;
 }
 
@@ -114,22 +108,5 @@ export async function removeAsignacion(email: string, edificio: string): Promise
   const rows = await readRange(RANGE);
   const match = parse(rows).find((a) => a.email === e && a.edificio === ed);
   if (!match) return;
-  const gid = await getSheetGid(SHEETS.asignaciones);
-  await getSheets().spreadsheets.batchUpdate({
-    spreadsheetId: getSheetId(),
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: gid,
-              dimension: "ROWS",
-              startIndex: match.rowNumber - 1,
-              endIndex: match.rowNumber,
-            },
-          },
-        },
-      ],
-    },
-  });
+  await deleteRows(SHEETS.asignaciones, [match.rowNumber]);
 }

@@ -1,4 +1,3 @@
-import { getSheetId } from "../google-auth";
 import type {
   EstadoTarea,
   Prioridad,
@@ -15,7 +14,7 @@ import {
   updateDemoTarea,
 } from "../demo-data";
 import { filterTareas, type TareaFilters } from "../tareas-filter";
-import { getSheets, readRange, SHEETS, TAREAS_RANGE, getSheetGid } from "./core";
+import { readRange, SHEETS, TAREAS_RANGE, writeRange, deleteRows } from "./core";
 import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
 import { estadoEnum, prioridadEnum } from "../schemas";
@@ -256,12 +255,7 @@ export async function appendTarea(
   const colA = await readRange(`${SHEETS.tareas}!A:A`);
   const nextRow = colA.length + 1;
   const values = tareaToRow(h, tarea);
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.tareas}!A${nextRow}:${colLetter(values.length)}${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [values] },
-  });
+  await writeRange(`${SHEETS.tareas}!A${nextRow}:${colLetter(values.length)}${nextRow}`, [values]);
   tarea.rowNumber = nextRow;
 
   // Media -> hoja hija TareaArchivos.
@@ -281,24 +275,7 @@ export async function deleteTarea(rowId: string): Promise<void> {
   if (!current) throw new Error(`Tarea con rowId ${rowId} no encontrada`);
   if (!current.rowNumber) throw new Error("rowNumber no disponible para eliminar");
 
-  const gid = await getSheetGid(SHEETS.tareas);
-  await getSheets().spreadsheets.batchUpdate({
-    spreadsheetId: getSheetId(),
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: gid,
-              dimension: "ROWS",
-              startIndex: current.rowNumber - 1,
-              endIndex: current.rowNumber,
-            },
-          },
-        },
-      ],
-    },
-  });
+  await deleteRows(SHEETS.tareas, [current.rowNumber]);
 
   // Borrar también sus archivos en la hoja hija.
   await deleteArchivosByTarea(rowId);
@@ -329,12 +306,7 @@ export async function updateTarea(input: TareaUpdateInput): Promise<Tarea> {
 
   const h = await getTareasHeaderMap();
   const values = tareaToRow(h, merged);
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.tareas}!A${current.rowNumber}:${colLetter(values.length)}${current.rowNumber}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [values] },
-  });
+  await writeRange(`${SHEETS.tareas}!A${current.rowNumber}:${colLetter(values.length)}${current.rowNumber}`, [values]);
 
   // Media -> sincronizar la hoja hija SOLO si el input trajo campos de media
   // (reemplazo total: borra las filas actuales de la tarea y reinserta el set).

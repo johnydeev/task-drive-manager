@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { useEdificios, useTareas } from "@/hooks/queries";
+import { filterTareas } from "@/lib/tareas-filter";
 import { agruparParaInforme, nombreArchivoInforme } from "@/lib/informes";
 
 // Primer día del mes actual y hoy, en formato ISO corto (lo que espera <input type="date">).
@@ -21,22 +23,22 @@ export function useInforme() {
   const [hasta, setHasta] = useState(inicial.hasta);
   const [errorExport, setErrorExport] = useState<string | null>(null);
 
-  const edificiosQ = useQuery({
-    queryKey: ["edificios"],
-    queryFn: api.edificios.list,
-    staleTime: 5 * 60_000,
-  });
+  const edificiosQ = useEdificios();
 
   const configQ = useQuery({ queryKey: ["configuracion"], queryFn: api.configuracion.get });
 
-  const tareasQ = useQuery({
-    queryKey: ["informe", edificio, desde, hasta],
-    queryFn: () => api.tareas.list({ edificio, desde, hasta }),
-    enabled: !!edificio,
-  });
+  // Única fuente de tareas; el recorte por edificio y rango se hace en memoria.
+  const tareasQ = useTareas();
+  const tareasFiltradas = useMemo(
+    () =>
+      edificio
+        ? filterTareas(tareasQ.data ?? [], { edificio, desde: desde || undefined, hasta: hasta || undefined })
+        : [],
+    [tareasQ.data, edificio, desde, hasta]
+  );
 
-  const grupos = useMemo(() => agruparParaInforme(tareasQ.data ?? []), [tareasQ.data]);
-  const total = tareasQ.data?.length ?? 0;
+  const grupos = useMemo(() => agruparParaInforme(tareasFiltradas), [tareasFiltradas]);
+  const total = tareasFiltradas.length;
 
   // La descarga no puede ir por api-client (devuelve JSON): se pide el blob y se dispara
   // un <a download> temporal.
@@ -72,8 +74,8 @@ export function useInforme() {
     config: configQ.data,
     grupos,
     total,
-    cargando: tareasQ.isLoading,
-    error: tareasQ.isError,
+    cargando: !!edificio && tareasQ.isLoading,
+    error: !!edificio && tareasQ.isError,
     exportar,
     errorExport,
   };

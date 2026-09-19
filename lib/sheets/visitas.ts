@@ -1,7 +1,6 @@
-import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
 import type { Visita } from "@/types";
-import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
+import { readRange, SHEETS, writeRange, deleteRows } from "./core";
 import { buildHeaderMap, type HeaderMap } from "./headers";
 import { toDateOnly } from "./values";
 import { edificioMatches } from "../edificio-match";
@@ -77,12 +76,7 @@ export async function appendVisita(input: {
   // Fila libre por la columna A: values.append dispersa filas al fondo del grid.
   const colA = await readRange(`${SHEETS.visitas}!A:A`);
   const nextRow = colA.length + 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.visitas}!A${nextRow}:F${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [visitaToRow(visita)] },
-  });
+  await writeRange(`${SHEETS.visitas}!A${nextRow}:F${nextRow}`, [visitaToRow(visita)]);
   return visita;
 }
 
@@ -94,22 +88,5 @@ export async function deleteVisita(id: string): Promise<void> {
   const idx = rows.slice(1).findIndex((r) => h.get(r, "id") === id);
   if (idx === -1) return;
   const rowNumber = idx + 2;
-  const gid = await getSheetGid(SHEETS.visitas);
-  await getSheets().spreadsheets.batchUpdate({
-    spreadsheetId: getSheetId(),
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: gid,
-              dimension: "ROWS",
-              startIndex: rowNumber - 1,
-              endIndex: rowNumber,
-            },
-          },
-        },
-      ],
-    },
-  });
+  await deleteRows(SHEETS.visitas, [rowNumber]);
 }

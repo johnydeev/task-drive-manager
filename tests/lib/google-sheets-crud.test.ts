@@ -38,6 +38,7 @@ import {
   getDptos,
   getEdificios,
 } from "@/lib/google-sheets";
+import { resetSheetsCache } from "@/lib/sheets/core";
 
 // Devuelve las filas segun el range pedido; el resto vacio.
 function mockRanges(byRange: Record<string, string[][]>) {
@@ -145,6 +146,38 @@ describe("updateTarea (real)", () => {
     expect(valuesUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ range: "Tareas!A2:V2" })
     );
+  });
+
+  it("con el cache encendido, la lectura posterior a la escritura ve el dato nuevo", async () => {
+    // Criterio 2 del spec de cache: lo que escribe la app se ve al instante, sin esperar el TTL.
+    vi.stubEnv("SHEETS_CACHE_TTL_MS", "30000");
+    resetSheetsCache();
+    try {
+      let estadoEnHoja = "Sin asignar";
+      valuesGet.mockImplementation(({ range }: { range: string }) => {
+        const byRange: Record<string, string[][]> = {
+          "Tareas!A:AD": [HEADER_22, tareaRow(ROW_ID, "Edif A", estadoEnHoja)],
+          "Tareas!A1:AD1": [HEADER_22],
+        };
+        return Promise.resolve({ data: { values: byRange[range] ?? [] } });
+      });
+      // Simula a Google: la escritura cambia lo que devuelve la próxima lectura.
+      valuesUpdate.mockImplementation(async () => {
+        estadoEnHoja = "Realizada";
+        return {};
+      });
+
+      expect((await getTareas())[0].estado).toBe("Sin asignar");
+      const llamadasAntes = valuesGet.mock.calls.length;
+      expect((await getTareas())[0].estado).toBe("Sin asignar"); // cache: no relee
+      expect(valuesGet.mock.calls.length).toBe(llamadasAntes);
+
+      await updateTarea({ rowId: ROW_ID, estado: "Realizada" });
+      expect((await getTareas())[0].estado).toBe("Realizada"); // invalidado por la escritura
+    } finally {
+      vi.unstubAllEnvs();
+      resetSheetsCache();
+    }
   });
 
   it("lanza si la tarea no existe", async () => {

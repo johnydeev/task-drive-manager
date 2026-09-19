@@ -9,6 +9,7 @@ vi.mock("@/lib/api-client", () => ({
     proveedores: { list: vi.fn() },
     partesComunes: { list: vi.fn(), add: vi.fn() },
     configuracion: { get: vi.fn() },
+    tareas: { list: vi.fn() },
   },
 }));
 vi.mock("@/lib/offline-db", () => ({
@@ -22,16 +23,19 @@ vi.mock("@/lib/offline-db", () => ({
   readCachedProveedores: vi.fn(),
   cachePartesComunes: vi.fn(),
   readCachedPartesComunes: vi.fn(),
+  cacheTareas: vi.fn(),
+  readCachedTareas: vi.fn(),
 }));
 
 import { api } from "@/lib/api-client";
-import { cacheEdificios, cacheDptos } from "@/lib/offline-db";
+import { cacheEdificios, cacheDptos, readCachedTareas } from "@/lib/offline-db";
 import {
   useEdificios,
   useDptos,
   usePartesComunes,
   useConfig,
   useProveedores,
+  useTareas,
 } from "./queries";
 
 function createWrapper() {
@@ -102,5 +106,13 @@ describe("hooks de datos por entidad", () => {
     const { result } = renderHook(() => useProveedores(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(["Prov 1", "Prov 2"]);
+  });
+
+  it("useTareas cae al cache de Dexie cuando la red falla", async () => {
+    vi.mocked(api.tareas.list).mockRejectedValue(new Error("offline"));
+    vi.mocked(readCachedTareas).mockResolvedValue([{ rowId: "1" }] as never);
+    const { result } = renderHook(() => useTareas(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ rowId: "1" }]);
   });
 });

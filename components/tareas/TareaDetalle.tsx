@@ -64,7 +64,9 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     );
   }
 
-  if (tareaQ.isError || !tareaQ.data) {
+  // Solo es error si no hay NADA para mostrar: con initialData desde la lista (o un refetch
+  // fallido sin red) la tarea ya cargada se sigue mostrando.
+  if (!tareaQ.data) {
     return (
       <div className="px-4 py-10 text-center">
         <p className="text-slate-600">No se pudo cargar la tarea.</p>

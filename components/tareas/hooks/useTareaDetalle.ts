@@ -20,6 +20,11 @@ export function useTareaDetalle(rowId: string) {
   const tareaQ = useQuery({
     queryKey: ["tarea", rowId],
     queryFn: () => api.tareas.get(rowId),
+    // Render inmediato desde la lista ya cargada (si está); initialDataUpdatedAt hace que
+    // TanStack respete el staleTime y refetchee en segundo plano si el dato es viejo.
+    initialData: () => qc.getQueryData<Tarea[]>(["tareas", "all"])?.find((t) => t.rowId === rowId),
+    initialDataUpdatedAt: () => qc.getQueryState(["tareas", "all"])?.dataUpdatedAt,
+    staleTime: 30_000,
   });
 
   const eliminar = useMutation({

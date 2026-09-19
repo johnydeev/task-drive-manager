@@ -13,6 +13,8 @@ import {
   readCachedProveedores,
   cachePartesComunes,
   readCachedPartesComunes,
+  cacheTareas,
+  readCachedTareas,
 } from "@/lib/offline-db";
 
 export const useEdificios = () =>
@@ -58,4 +60,17 @@ export const useProveedores = () =>
     fetcher: api.proveedores.list,
     cache: cacheProveedores,
     readCache: readCachedProveedores,
+  });
+
+// Todas las tareas: ÚNICA fuente de tareas en el cliente (lista, dashboard, informes,
+// initialData del detalle). Cada pantalla filtra en memoria con filterTareas.
+// La key ARRANCA con "tareas" a propósito: así la alcanza el
+// `invalidateQueries({ queryKey: ["tareas"] })` que corre tras cada transición.
+export const useTareas = () =>
+  useCachedQuery({
+    queryKey: ["tareas", "all"],
+    fetcher: () => api.tareas.list({}),
+    cache: cacheTareas,
+    readCache: readCachedTareas,
+    staleTime: 30_000,
   });

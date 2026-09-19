@@ -5,7 +5,7 @@
 // - cache: KV de listas (edificios, dptos, configuracion) para mostrar el form sin red
 
 import Dexie, { Table } from "dexie";
-import type { Configuracion, Dpto, Edificio, TareaPendiente } from "@/types";
+import type { Configuracion, Dpto, Edificio, Tarea, TareaPendiente } from "@/types";
 
 interface CacheEntry<T> {
   key: string;
@@ -20,6 +20,7 @@ class AppDB extends Dexie {
   cacheConfig!: Table<CacheEntry<Configuracion>, string>;
   cacheProveedores!: Table<CacheEntry<string[]>, string>;
   cachePartesComunes!: Table<CacheEntry<string[]>, string>;
+  cacheTareas!: Table<CacheEntry<Tarea[]>, string>;
 
   constructor() {
     super("task-drive-manager");
@@ -37,6 +38,10 @@ class AppDB extends Dexie {
     // v3: cache de partes comunes (hoja propia).
     this.version(3).stores({
       cachePartesComunes: "key",
+    });
+    // v4: cache de la lista de tareas (lista/detalle/dashboard sin red).
+    this.version(4).stores({
+      cacheTareas: "key",
     });
   }
 }
@@ -56,10 +61,24 @@ export function getDb(): AppDB {
 // =====================================================
 
 const TTL_MS = 30 * 60 * 1000; // 30 min — la red es la fuente, esto es para offline
+// Las tareas se guardan más tiempo: en el subsuelo sirve ver la lista de esta mañana.
+export const TTL_TAREAS_MS = 24 * 60 * 60 * 1000;
 
-function isFresh(updatedAt: string): boolean {
+export function isFresh(updatedAt: string, ttlMs: number = TTL_MS): boolean {
   const t = Date.parse(updatedAt);
-  return Number.isFinite(t) && Date.now() - t < TTL_MS;
+  return Number.isFinite(t) && Date.now() - t < ttlMs;
+}
+
+export async function cacheTareas(value: Tarea[]) {
+  const db = getDb();
+  await db.cacheTareas.put({ key: "all", value, updatedAt: new Date().toISOString() });
+}
+
+export async function readCachedTareas(): Promise<Tarea[] | null> {
+  const db = getDb();
+  const entry = await db.cacheTareas.get("all");
+  if (!entry || !isFresh(entry.updatedAt, TTL_TAREAS_MS)) return null;
+  return entry.value;
 }
 
 export async function cacheEdificios(value: Edificio[]) {

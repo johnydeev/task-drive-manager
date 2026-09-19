@@ -1,7 +1,6 @@
-import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
 import { EDIFICIO_FICHA_VACIA, type EdificioFicha } from "@/types";
-import { getSheets, readRange, SHEETS } from "./core";
+import { readRange, SHEETS, writeRange } from "./core";
 import { buildHeaderMap, type HeaderMap } from "./headers";
 import { edificioMatches } from "../edificio-match";
 import { nowBuenosAiresISO } from "../fecha-ar";
@@ -85,12 +84,7 @@ export async function guardarEdificioFicha(
   if (isDemoMode()) return merged;
 
   const rowNumber = found?.rowNumber ?? (await proximaFilaLibre());
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.edificioFicha}!A${rowNumber}:K${rowNumber}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [fichaToRow(merged)] },
-  });
+  await writeRange(`${SHEETS.edificioFicha}!A${rowNumber}:K${rowNumber}`, [fichaToRow(merged)]);
   return merged;
 }
 

@@ -30,11 +30,15 @@ vi.mock("next-auth/react", () => ({ useSession }));
 
 import { api } from "@/lib/api-client";
 
-function createWrapper() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+function wrapperCon(qc: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   };
+}
+
+function createWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  return wrapperCon(qc);
 }
 
 beforeEach(() => {
@@ -70,5 +74,20 @@ describe("useTareaDetalle", () => {
     await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
     await act(async () => { await result.current.transicionar.mutateAsync({ accion: "cerrar" }); });
     expect(api.tareas.transicionar).toHaveBeenCalledWith("r1", { accion: "cerrar" });
+  });
+
+  it("con la lista precargada, tareaQ.data está en el primer render sin llamar a api.tareas.get", () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(["tareas", "all"], [tarea]);
+    const { result } = renderHook(() => useTareaDetalle(tarea.rowId), { wrapper: wrapperCon(qc) });
+    expect(result.current.tareaQ.data).toEqual(tarea);
+    expect(api.tareas.get).not.toHaveBeenCalled();
+  });
+
+  it("sin lista precargada llama a api.tareas.get", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useTareaDetalle(tarea.rowId), { wrapper: wrapperCon(qc) });
+    await waitFor(() => expect(result.current.tareaQ.isSuccess).toBe(true));
+    expect(api.tareas.get).toHaveBeenCalledWith(tarea.rowId);
   });
 });

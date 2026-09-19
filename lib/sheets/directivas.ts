@@ -1,7 +1,6 @@
-import { getSheetId } from "../google-auth";
 import { isDemoMode } from "../demo-mode";
 import type { Directiva, DirectivaNuevaInput } from "@/types";
-import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
+import { readRange, SHEETS, writeRange, deleteRows } from "./core";
 import { buildHeaderMap, type HeaderMap } from "./headers";
 import { toDateOnly } from "./values";
 import { estadoEfectivo } from "../directivas-estado";
@@ -100,12 +99,7 @@ export async function appendDirectiva(input: DirectivaNuevaInput, creadoPor: str
   // escribimos con update en el rango exacto (mismo patrón que appendTarea).
   const colA = await readRange(`${SHEETS.directivas}!A:A`);
   const nextRow = colA.length + 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.directivas}!A${nextRow}:M${nextRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [directivaToRow(directiva)] },
-  });
+  await writeRange(`${SHEETS.directivas}!A${nextRow}:M${nextRow}`, [directivaToRow(directiva)]);
   return directiva;
 }
 
@@ -128,12 +122,7 @@ export async function updateDirectiva(id: string, patch: Partial<Directiva>): Pr
     id: found.d.id,
     actualizadoEn: nowBuenosAiresISO(),
   };
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.directivas}!A${found.rowNumber}:M${found.rowNumber}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [directivaToRow(merged)] },
-  });
+  await writeRange(`${SHEETS.directivas}!A${found.rowNumber}:M${found.rowNumber}`, [directivaToRow(merged)]);
   return merged;
 }
 
@@ -145,22 +134,5 @@ export async function deleteDirectiva(id: string): Promise<void> {
   const idx = rows.slice(1).findIndex((r) => h.get(r, "id") === id);
   if (idx === -1) return;
   const rowNumber = idx + 2;
-  const gid = await getSheetGid(SHEETS.directivas);
-  await getSheets().spreadsheets.batchUpdate({
-    spreadsheetId: getSheetId(),
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: gid,
-              dimension: "ROWS",
-              startIndex: rowNumber - 1,
-              endIndex: rowNumber,
-            },
-          },
-        },
-      ],
-    },
-  });
+  await deleteRows(SHEETS.directivas, [rowNumber]);
 }

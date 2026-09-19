@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
-import { getSheetId } from "../google-auth";
-import { getSheets, readRange, SHEETS, getSheetGid } from "./core";
+import { readRange, SHEETS, writeRange, deleteRows } from "./core";
 import { buildHeaderMap } from "./headers";
 import { nowBuenosAiresISO } from "../fecha-ar";
 
@@ -110,23 +109,7 @@ async function findRowNumbers(tareaId: string): Promise<number[]> {
 export async function deleteArchivosByTarea(tareaId: string): Promise<void> {
   const nums = await findRowNumbers(tareaId);
   if (nums.length === 0) return;
-  const gid = await getSheetGid(SHEETS.tareaArchivos);
-  const requests = nums
-    .sort((a, b) => b - a) // descendente
-    .map((rowNumber) => ({
-      deleteDimension: {
-        range: {
-          sheetId: gid,
-          dimension: "ROWS" as const,
-          startIndex: rowNumber - 1,
-          endIndex: rowNumber,
-        },
-      },
-    }));
-  await getSheets().spreadsheets.batchUpdate({
-    spreadsheetId: getSheetId(),
-    requestBody: { requests },
-  });
+  await deleteRows(SHEETS.tareaArchivos, nums);
 }
 
 // Reemplazo total: borra las filas actuales de la tarea y reinserta el set nuevo.
@@ -143,10 +126,5 @@ export async function setArchivosForTarea(
   const colA = await readRange(`${SHEETS.tareaArchivos}!A:A`);
   const nextRow = colA.length + 1;
   const lastRow = nextRow + rows.length - 1;
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.tareaArchivos}!A${nextRow}:F${lastRow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: rows },
-  });
+  await writeRange(`${SHEETS.tareaArchivos}!A${nextRow}:F${lastRow}`, rows);
 }

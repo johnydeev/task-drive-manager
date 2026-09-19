@@ -1,9 +1,8 @@
-import { getSheetId } from "../google-auth";
 import type { Configuracion } from "@/types";
 import { CONFIGURACION_DEFAULT } from "@/types";
 import { isDemoMode } from "../demo-mode";
 import { getDemoConfig, updateDemoConfig } from "../demo-data";
-import { getSheets, readRange, SHEETS } from "./core";
+import { readRange, SHEETS, writeRange } from "./core";
 
 const CONFIG_TTL_MS = 5 * 60 * 1000;
 let configCache: { data: Configuracion; expires: number } | null = null;
@@ -69,12 +68,7 @@ export async function updateConfiguracion(cfg: Configuracion): Promise<void> {
   ];
 
   // Estrategia simple: limpiar y reescribir desde A2.
-  await getSheets().spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `${SHEETS.configuracion}!A2:B${entries.length + 1}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: entries },
-  });
+  await writeRange(`${SHEETS.configuracion}!A2:B${entries.length + 1}`, entries);
 
   configCache = { data: cfg, expires: Date.now() + CONFIG_TTL_MS };
 }

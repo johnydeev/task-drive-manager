@@ -6,6 +6,12 @@ import { InformeEdificio } from "./InformeEdificio";
 import type { Tarea } from "@/types";
 import { CONFIGURACION_DEFAULT } from "@/types";
 
+vi.mock("@/lib/offline-db", () => ({
+  cacheTareas: vi.fn(),
+  readCachedTareas: vi.fn(),
+  cacheEdificios: vi.fn(),
+  readCachedEdificios: vi.fn(),
+}));
 vi.mock("@/lib/api-client", () => ({
   api: {
     edificios: { list: vi.fn() },
@@ -16,10 +22,14 @@ vi.mock("@/lib/api-client", () => ({
 
 import { api } from "@/lib/api-client";
 
+// El informe filtra por defecto el mes en curso: la fixture arranca el 1° del mes actual.
+const hoy = new Date();
+const PRIMERO_DEL_MES = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
+
 const tarea = (over: Partial<Tarea> = {}): Tarea => ({
   rowId: "2026-07-01T10:00:00.000Z",
   objetivo: "x",
-  fechaInicio: "2026-07-01",
+  fechaInicio: PRIMERO_DEL_MES,
   fechaEstimada: "",
   edificio: "Castro Barros 1310",
   parteComun: false,
@@ -65,7 +75,7 @@ describe("InformeEdificio", () => {
   it("pide elegir un edificio antes de mostrar el informe", async () => {
     renderConQuery();
     expect(await screen.findByText(/eleg[ií] un edificio para ver su informe/i)).toBeInTheDocument();
-    expect(api.tareas.list).not.toHaveBeenCalled();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
   it("al elegir un edificio muestra el membrete y las tareas agrupadas", async () => {
