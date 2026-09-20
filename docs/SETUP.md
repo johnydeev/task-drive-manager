@@ -96,8 +96,10 @@ GOOGLE_CLIENT_SECRET=...
 
 **Notificaciones push** (opcional): además de las 4 variables, en producción la pública tiene
 que llegar al build: en GitHub, **Settings → Secrets and variables → Actions → Variables →
-`NEXT_PUBLIC_VAPID_PUBLIC_KEY`** (no es secreta). Las otras tres van al `.env` de prod (secret
-`PROD_ENV_FILE`). Después del deploy cada usuario toca «Activar avisos» en el menú (en iPhone,
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`** (no es secreta). Las otras tres van al `.env` que lee
+`docker compose` en el servidor (`DEPLOY_DIR/.env`; el secret `PROD_ENV_FILE` solo lo usa el
+workflow de backfill, no el deploy). En la PC de desarrollo, si ese `.env` convive con `next dev`,
+poner `VAPID_PRIVATE_KEY=` vacío en `.env.local` para no mandar pushes reales. Después del deploy cada usuario toca «Activar avisos» en el menú (en iPhone,
 primero «Instalar app»). Los recordatorios diarios (lunes a sábado 08:00 ART) los manda el propio
 server; en dev no corren salvo `RECORDATORIOS_ENABLED=1`.
 

@@ -83,7 +83,9 @@ preexistentes de `react-hooks/set-state-in-effect`), build OK.
 ### ⏳ Setup manual pendiente (Jony)
 
 1. `npx web-push generate-vapid-keys` → `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`;
-   `VAPID_SUBJECT=mailto:…`. Las tres al `.env` de prod (secret `PROD_ENV_FILE`).
+   `VAPID_SUBJECT=mailto:…`. Las tres al `.env` que lee `docker compose` en el servidor
+   (`DEPLOY_DIR/.env`, en esta instalación la raíz del repo; el secret `PROD_ENV_FILE` NO alimenta
+   el deploy). En `.env.local` dejar `VAPID_PRIVATE_KEY=` vacío para que `next dev` no mande pushes.
 2. Variable de repo en GitHub (Settings → Secrets and variables → Actions → **Variables**):
    `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = la pública. Se hornea en el build (Dockerfile y CI ya la
    pasan como build-arg).
