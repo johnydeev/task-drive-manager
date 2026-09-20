@@ -34,6 +34,7 @@ beforeEach(() => {
   vi.stubEnv("VAPID_SUBJECT", "mailto:x@y.com");
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(() => {});
   sendNotification.mockResolvedValue({});
   deleteSuscripcion.mockResolvedValue(undefined);
 });

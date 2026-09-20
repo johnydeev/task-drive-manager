@@ -61,6 +61,10 @@ export async function notificar(emails: string[], aviso: Aviso): Promise<Resulta
         }
       }
     }
+    console.log(
+      `[push] ${aviso.tag ?? "aviso"}: ${r.enviados} enviado(s), ${r.borradas} borrada(s), ` +
+        `${subs.length} suscripción(es) para ${destinatarios.join(", ")}`
+    );
     return r;
   } catch (err) {
     console.error("[push] error:", err);

@@ -10,7 +10,7 @@ rankeados), lo que queda, y el setup manual pendiente. Cada bloque tiene spec + 
 | 2A — Cuota de Sheets | `ae12525` | `specs/2026-09-19-cache-sheets-y-query-unica-design.md` | ✅ |
 | 2B — Offline | `3804478` | `specs/2026-09-19-offline-sync-idempotente-y-cola-visible-design.md` | ✅ |
 | 3 — UX de campo | `245889f` | `specs/2026-09-19-ux-de-campo-lista-combobox-reporte-toasts-design.md` | ✅ |
-| 4 — Push + fin del cierre automático | `b70db4e` | `specs/2026-09-20-notificaciones-push-y-fin-cierre-automatico-design.md` | ✅ código · ⏳ setup manual |
+| 4 — Push + fin del cierre automático | `b70db4e` | `specs/2026-09-20-notificaciones-push-y-fin-cierre-automatico-design.md` | ✅ (setup hecho 2026-09-20) |
 
 Árbol verde al cierre: **783 tests / 114 archivos**, `tsc` limpio, lint 0 errores (6 warnings
 preexistentes de `react-hooks/set-state-in-effect`), build OK.
@@ -80,7 +80,7 @@ preexistentes de `react-hooks/set-state-in-effect`), build OK.
 - Cliente: SW `push`/`notificationclick`; `hooks/useAvisosPush.ts`; entrada «Avisos» en drawer
   y sidebar; banner una vez en `/tareas`.
 
-### ⏳ Setup manual pendiente (Jony)
+### Setup manual (hecho 2026-09-20; queda como referencia)
 
 1. `npx web-push generate-vapid-keys` → `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`;
    `VAPID_SUBJECT=mailto:…`. Las tres al `.env` que lee `docker compose` en el servidor
@@ -94,7 +94,9 @@ preexistentes de `react-hooks/set-state-in-effect`), build OK.
 4. Tras el deploy: «Activar avisos» en cada dispositivo (iPhone: primero «Instalar app»).
    Verificación manual en Chrome: DevTools → Application → Service Workers → Push / Sync.
 
-Sin las claves la app funciona igual; el log dice `[push] deshabilitado`.
+Sin las claves la app funciona igual; el log dice `[push] deshabilitado`. Cada envío loguea
+`[push] <tag>: N enviado(s), M borrada(s), K suscripción(es) para <emails>`. Una suscripción es
+por navegador y queda a nombre del último usuario logueado en él.
 
 ---
 
