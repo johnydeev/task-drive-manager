@@ -13,6 +13,7 @@ import { tareaFormSchema } from "@/lib/schemas";
 import { nowBuenosAiresISO } from "@/lib/fecha-ar";
 import { CONFIGURACION_DEFAULT, type Configuracion, type Tarea } from "@/types";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useToast } from "@/components/ui/Toaster";
 import { enqueueTarea } from "@/lib/offline-db";
 import { registerBackgroundSync } from "@/lib/background-sync";
 import {
@@ -41,9 +42,7 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
   const [videos, setVideos] = useState<string[]>(initial?.videos ?? []);
   const [documentos, setDocumentos] = useState<string[]>(initial?.documentos ?? []);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Modal de éxito tras crear/editar. Guarda la tarea resultante para navegar al cerrarlo.
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [successResult, setSuccessResult] = useState<Tarea | null>(null);
+  const toast = useToast();
   // ID estable de la tarea (timestamp ISO): agrupa los archivos en una sola carpeta de Drive
   // y se usa como rowId al guardar. En edición se reutiliza el de la tarea existente.
   const [taskRowId] = useState<string>(() => initial?.rowId ?? nowBuenosAiresISO());
@@ -163,13 +162,17 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
           // Registrar Background Sync para que el SW vacíe la cola al volver la red,
           // aunque la app esté cerrada (Chrome/Android). Safari/iOS hace fallback al reabrir.
           await registerBackgroundSync("sync-tareas");
+          toast.success("Guardada en el teléfono: se sube al volver la conexión");
           router.push("/tareas");
           router.refresh();
           return;
         }
         result = await api.tareas.create(payload);
-        setSuccessResult(result);
-        setSuccessMsg("Tarea creada exitosamente");
+        // Sin modal: el aviso va como toast y se navega al detalle de inmediato.
+        toast.success("Tarea creada");
+        onSubmitSuccess?.(result);
+        router.push(`/tareas/${encodeURIComponent(result.rowId)}`);
+        router.refresh();
         return;
       } else if (initial) {
         result = await api.tareas.update(initial.rowId, {
@@ -177,27 +180,14 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
           comentarioEnProceso: values.comentarioEnProceso,
           comentarioRealizado: values.comentarioRealizado,
         });
-        setSuccessResult(result);
-        setSuccessMsg("Tarea editada exitosamente");
+        toast.success("Tarea editada");
+        onSubmitSuccess?.(result);
         return;
       } else {
         throw new Error("Falta tarea inicial para modo edit");
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error al guardar");
-    }
-  };
-
-  // Al cerrar el modal de éxito: navegar (create) o cerrar la edición (edit).
-  const handleSuccessClose = () => {
-    const r = successResult;
-    setSuccessMsg(null);
-    setSuccessResult(null);
-    if (!r) return;
-    onSubmitSuccess?.(r);
-    if (mode === "create") {
-      router.push(`/tareas/${encodeURIComponent(r.rowId)}`);
-      router.refresh();
     }
   };
 
@@ -237,8 +227,6 @@ export function useTareaForm({ mode, initial, onSubmitSuccess }: Options) {
     // estado / ui
     online,
     submitError,
-    successMsg,
-    handleSuccessClose,
     cancel: () => router.back(),
   };
 }

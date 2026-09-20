@@ -67,8 +67,8 @@ beforeEach(() => {
 // El texto del <option> placeholder y el del estado vacío se parecen: para elegir hay que
 // esperar a que la query de edificios haya poblado el select.
 async function elegirEdificio(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: "Castro Barros 1310" });
-  await user.selectOptions(screen.getByLabelText("Edificio"), "Castro Barros 1310");
+  await user.click(screen.getByLabelText("Edificio"));
+  await user.click(await screen.findByRole("option", { name: "Castro Barros 1310" }));
 }
 
 describe("InformeEdificio", () => {

@@ -9,6 +9,7 @@ import { getActiveSession } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo-mode";
 import { DemoBanner } from "@/components/layout/DemoBanner";
 import { APP_NAME, APP_SHORT_NAME } from "@/lib/app-name";
+import { ToastProvider } from "@/components/ui/Toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,7 +71,7 @@ export default async function RootLayout({
             <RegisterPWA />
             <UpdateBanner />
             {demo && <DemoBanner />}
-            {children}
+            <ToastProvider>{children}</ToastProvider>
           </QueryProvider>
         </SessionProvider>
       </body>

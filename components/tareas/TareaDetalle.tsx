@@ -9,7 +9,6 @@ import { ComentarioEditable } from "./ComentarioEditable";
 import { AgregarArchivos } from "./AgregarArchivos";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
-import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { useTareaDetalle } from "./hooks/useTareaDetalle";
 import { useUsuarios } from "@/hooks/edificios-queries";
 import { useConfig } from "@/hooks/queries";
@@ -48,9 +47,8 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
     setEditing,
     confirmDelete,
     setConfirmDelete,
-    deleteDone,
+    esperandoReporte,
     onEditSuccess,
-    onDeleteDoneClose,
   } = useTareaDetalle(rowId);
   const usuariosQ = useUsuarios();
   const configQ = useConfig();
@@ -134,8 +132,6 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
         onConfirm={() => eliminar.mutate()}
         onCancel={() => setConfirmDelete(false)}
       />
-
-      <SuccessDialog open={deleteDone} message="Tarea eliminada exitosamente" onClose={onDeleteDoneClose} />
 
       {eliminar.isError && (
         <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
@@ -226,9 +222,15 @@ export function TareaDetalle({ rowId }: { rowId: string }) {
               <p className="mt-1 text-xs text-red-600">No se pudo generar el reporte.</p>
             )}
             {isAdmin && t.estado === "Realizada" && !t.reporteUrl && (
-              <p className="mt-2 text-xs text-slate-500">
-                El reporte se genera automáticamente al cerrar la tarea. Si no apareció todavía, puede tardar unos segundos.
-              </p>
+              esperandoReporte ? (
+                <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                  <Loader2 size={12} className="animate-spin" /> Generando el reporte…
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">
+                  El reporte no se generó. Podés generarlo con el botón.
+                </p>
+              )
             )}
           </div>
         )}

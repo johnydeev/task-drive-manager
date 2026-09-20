@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/Combobox";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -125,18 +127,16 @@ export function IntegranteCard({
         {!readOnly && (
           <>
             <div className="mt-2 flex gap-2">
-              <select
-                value={nuevoEdificio}
-                onChange={(e) => setNuevoEdificio(e.target.value)}
-                className="input flex-1"
-              >
-                <option value="">Agregar edificio…</option>
-                {(sinAsignarQ.data ?? []).map((nombre) => (
-                  <option key={nombre} value={nombre}>
-                    {nombre}
-                  </option>
-                ))}
-              </select>
+              <div className="flex-1">
+                <Combobox
+                  strict
+                  value={nuevoEdificio}
+                  onChange={setNuevoEdificio}
+                  options={sinAsignarQ.data ?? []}
+                  placeholder="Agregar edificio…"
+                  aria-label="Edificio a agregar"
+                />
+              </div>
               <button
                 disabled={!nuevoEdificio || addM.isPending}
                 onClick={() => addM.mutate(nuevoEdificio)}

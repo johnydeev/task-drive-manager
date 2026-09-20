@@ -3,6 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { requireSession } = vi.hoisted(() => ({ requireSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ requireSession }));
+// after() de next/server lanza fuera de un request real: acá ejecuta el callback en el acto.
+vi.mock("next/server", async (orig) => {
+  const real = await orig<typeof import("next/server")>();
+  return { ...real, after: (fn: () => unknown) => { void fn(); } };
+});
 
 vi.mock("@/lib/google-sheets", () => ({
   getTareaByRowId: vi.fn(),

@@ -25,6 +25,11 @@ vi.mock("@/lib/offline-db", () => ({
 vi.mock("@/lib/background-sync", () => ({ registerBackgroundSync: vi.fn() }));
 vi.mock("@/hooks/useOnlineStatus", () => ({ useOnlineStatus: vi.fn(() => true) }));
 vi.mock("next-auth/react", () => ({ useSession: () => ({ data: null }) }));
+// Mock local del router: el global crea un vi.fn() nuevo por llamada y no se puede afirmar.
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
+}));
 
 import { api } from "@/lib/api-client";
 import { enqueueTarea } from "@/lib/offline-db";
@@ -61,7 +66,7 @@ beforeEach(() => {
 });
 
 describe("useTareaForm", () => {
-  it("create online: llama api.tareas.create y muestra éxito", async () => {
+  it("create online: llama api.tareas.create y navega al detalle de inmediato", async () => {
     vi.mocked(api.tareas.create).mockResolvedValue({ ...validInitial });
     const { result } = renderHook(
       () => useTareaForm({ mode: "create", initial: validInitial }),
@@ -69,7 +74,9 @@ describe("useTareaForm", () => {
     );
     await act(async () => { await result.current.submitForm(); });
     expect(api.tareas.create).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(result.current.successMsg).toBe("Tarea creada exitosamente"));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/tareas/${encodeURIComponent(validInitial.rowId)}`)
+    );
   });
 
   it("create offline: encola y registra background sync, sin llamar a la API", async () => {
@@ -84,15 +91,16 @@ describe("useTareaForm", () => {
     expect(api.tareas.create).not.toHaveBeenCalled();
   });
 
-  it("edit: llama api.tareas.update con el rowId de la tarea", async () => {
+  it("edit: llama api.tareas.update con el rowId de la tarea y avisa onSubmitSuccess", async () => {
     vi.mocked(api.tareas.update).mockResolvedValue({ ...validInitial });
+    const onSubmitSuccess = vi.fn();
     const { result } = renderHook(
-      () => useTareaForm({ mode: "edit", initial: validInitial }),
+      () => useTareaForm({ mode: "edit", initial: validInitial, onSubmitSuccess }),
       { wrapper: createWrapper() }
     );
     await act(async () => { await result.current.submitForm(); });
     expect(api.tareas.update).toHaveBeenCalledWith(validInitial.rowId, expect.anything());
-    await waitFor(() => expect(result.current.successMsg).toBe("Tarea editada exitosamente"));
+    await waitFor(() => expect(onSubmitSuccess).toHaveBeenCalledWith(expect.objectContaining({ rowId: validInitial.rowId })));
   });
 
   it("si la API falla, setea submitError", async () => {

@@ -23,8 +23,9 @@ import {
   timelinePorMes,
 } from "@/lib/dashboard";
 import { useEdificios, useTareas } from "@/hooks/queries";
+import { Combobox } from "@/components/ui/Combobox";
 import { filterTareas } from "@/lib/tareas-filter";
-import type { EstadoTarea, Prioridad, Tarea, Edificio } from "@/types";
+import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { cn, formatFecha } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
 
@@ -104,12 +105,17 @@ export function Dashboard() {
     <div className="space-y-4">
       {/* Filtros */}
       <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-5">
-        <FiltroSelect label="Edificio" value={edificio} onChange={setEdificio}>
-          <option value="">Todos</option>
-          {edificiosQ.data?.map((e: Edificio) => (
-            <option key={e.nombre} value={e.nombre}>{e.nombre}</option>
-          ))}
-        </FiltroSelect>
+        <div className="text-sm">
+          <label htmlFor="dash-edificio" className="mb-1 block text-slate-600">Edificio</label>
+          <Combobox
+            strict
+            id="dash-edificio"
+            value={edificio}
+            onChange={setEdificio}
+            options={(edificiosQ.data ?? []).map((e) => e.nombre)}
+            placeholder="Todos"
+          />
+        </div>
         <FiltroSelect label="Estado" value={estado} onChange={(v) => setEstado(v as EstadoTarea | "Todos")}>
           {ESTADOS.map((e) => <option key={e} value={e}>{e}</option>)}
         </FiltroSelect>

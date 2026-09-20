@@ -45,8 +45,10 @@ describe("TareaForm (componente)", () => {
     expect(screen.getByRole("button", { name: /crear tarea/i })).toBeInTheDocument();
   });
 
-  it("carga los edificios en el select desde la API", async () => {
+  it("carga los edificios en el combobox desde la API", async () => {
+    const user = userEvent.setup();
     renderForm();
+    await user.click(screen.getByPlaceholderText("Elegí un edificio"));
     await waitFor(() => expect(screen.getByRole("option", { name: "Edif A" })).toBeInTheDocument());
   });
 

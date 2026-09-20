@@ -1,19 +1,18 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api-client";
-import { useEdificios, useTareas } from "@/hooks/queries";
-import { filterTareas } from "@/lib/tareas-filter";
+import { ORDENES, type OrdenTareas } from "@/lib/tareas-orden";
 import { cn, formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SuccessDialog } from "@/components/ui/SuccessDialog";
+import { Combobox } from "@/components/ui/Combobox";
+import { useToast } from "@/components/ui/Toaster";
 import { PendientesDeSubir } from "@/components/tareas/PendientesDeSubir";
+import { useListaTareas } from "@/components/tareas/hooks/useListaTareas";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
-import { Plus, Filter, Trash2, Check } from "lucide-react";
+import { Plus, Filter, Trash2, Check, Search } from "lucide-react";
 
 const ESTADOS: (EstadoTarea | "Todos")[] = [
   "Todos", "Sin asignar", "Asignada", "Aceptada", "En Proceso", "En Revisión", "Objetada", "Realizada",
@@ -37,45 +36,21 @@ const prioridadBadge: Record<Prioridad, string> = {
 };
 
 export default function TareasPage() {
-  const { data: session } = useSession();
-  const myEmail = session?.user?.email?.toLowerCase() ?? "";
-  const isAdmin = !session?.user || session.user.rol === "admin";
-
-  const searchParams = useSearchParams();
-  const [edificio, setEdificio] = useState<string>(searchParams.get("edificio") ?? "");
-  const [estado, setEstado] = useState<EstadoTarea | "Todos">("Todos");
-  const [prioridad, setPrioridad] = useState<Prioridad | "Todas">("Todas");
-  const [soloMias, setSoloMias] = useState(false);
-  const [soloSinAsignar, setSoloSinAsignar] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-
-  const filtros = useMemo(
-    () => ({
-      edificio: edificio || undefined,
-      estado: estado === "Todos" ? undefined : estado,
-      prioridad: prioridad === "Todas" ? undefined : prioridad,
-      asignado: soloMias && myEmail ? myEmail : undefined,
-      sinAsignar: soloSinAsignar || undefined,
-    }),
-    [edificio, estado, prioridad, soloMias, soloSinAsignar, myEmail]
-  );
+  // Filtros (persistidos en la URL), búsqueda y orden: todo en el hook; acá solo JSX.
+  const { filtros, setFiltro, tareas, tareasQ, edificiosQ, hayFiltrosAvanzados, isAdmin } =
+    useListaTareas();
+  const [showFilters, setShowFilters] = useState(hayFiltrosAvanzados);
 
   const qc = useQueryClient();
+  const toast = useToast();
   const [toDelete, setToDelete] = useState<Tarea | null>(null);
-  const [deleteDone, setDeleteDone] = useState(false);
-
-  // Única fuente de tareas (compartida con dashboard/informes/detalle); los filtros corren
-  // en memoria, así cambiar un select no vuelve a pegarle a la API.
-  const tareasQ = useTareas();
-  const edificiosQ = useEdificios();
-  const tareas = useMemo(() => filterTareas(tareasQ.data ?? [], filtros), [tareasQ.data, filtros]);
 
   const eliminar = useMutation({
     mutationFn: (rowId: string) => api.tareas.remove(rowId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tareas"] });
       setToDelete(null);
-      setDeleteDone(true);
+      toast.success("Tarea eliminada");
     },
   });
 
@@ -106,12 +81,39 @@ export default function TareasPage() {
         </div>
       </div>
 
+      <div className="mt-3 flex flex-col gap-2 md:flex-row">
+        <div className="relative flex-1">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="search"
+            aria-label="Buscar tareas"
+            placeholder="Buscar por objetivo, edificio, dpto…"
+            value={filtros.q}
+            onChange={(e) => setFiltro("q", e.target.value)}
+            className="input pl-9"
+          />
+        </div>
+        <select
+          aria-label="Ordenar por"
+          value={filtros.orden}
+          onChange={(e) => setFiltro("orden", e.target.value as OrdenTareas)}
+          className="input md:w-48"
+        >
+          {ORDENES.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="mt-3 flex flex-wrap gap-2">
         <button
-          onClick={() => { setSoloMias((v) => !v); setSoloSinAsignar(false); }}
+          onClick={() => setFiltro("mias", !filtros.mias)}
           className={cn(
             "rounded-full border px-3 py-1 text-xs font-medium transition",
-            soloMias
+            filtros.mias
               ? "border-slate-900 bg-slate-900 text-white"
               : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
           )}
@@ -120,10 +122,10 @@ export default function TareasPage() {
         </button>
         {isAdmin && (
           <button
-            onClick={() => { setSoloSinAsignar((v) => !v); setSoloMias(false); }}
+            onClick={() => setFiltro("sinAsignar", !filtros.sinAsignar)}
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium transition",
-              soloSinAsignar
+              filtros.sinAsignar
                 ? "border-red-500 bg-red-500 text-white"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
             )}
@@ -138,24 +140,24 @@ export default function TareasPage() {
 
       {showFilters && (
         <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3">
-          <label className="text-sm">
-            <span className="block text-slate-600 mb-1">Edificio</span>
-            <select
-              value={edificio}
-              onChange={(e) => setEdificio(e.target.value)}
-              className="w-full rounded-md border border-slate-300 bg-white px-2 py-2"
-            >
-              <option value="">Todos</option>
-              {edificiosQ.data?.map((e) => (
-                <option key={e.nombre} value={e.nombre}>{e.nombre}</option>
-              ))}
-            </select>
-          </label>
+          <div className="text-sm">
+            <label htmlFor="filtro-edificio" className="block text-slate-600 mb-1">Edificio</label>
+            <Combobox
+              strict
+              id="filtro-edificio"
+              value={filtros.edificio}
+              onChange={(v) => setFiltro("edificio", v)}
+              options={(edificiosQ.data ?? []).map((e) => e.nombre)}
+              placeholder="Todos"
+            />
+          </div>
           <label className="text-sm">
             <span className="block text-slate-600 mb-1">Estado</span>
             <select
-              value={estado}
-              onChange={(e) => setEstado(e.target.value as EstadoTarea | "Todos")}
+              value={filtros.estado || "Todos"}
+              onChange={(e) =>
+                setFiltro("estado", e.target.value === "Todos" ? "" : (e.target.value as EstadoTarea))
+              }
               className="w-full rounded-md border border-slate-300 bg-white px-2 py-2"
             >
               {ESTADOS.map((e) => <option key={e} value={e}>{e}</option>)}
@@ -164,8 +166,10 @@ export default function TareasPage() {
           <label className="text-sm">
             <span className="block text-slate-600 mb-1">Prioridad</span>
             <select
-              value={prioridad}
-              onChange={(e) => setPrioridad(e.target.value as Prioridad | "Todas")}
+              value={filtros.prioridad || "Todas"}
+              onChange={(e) =>
+                setFiltro("prioridad", e.target.value === "Todas" ? "" : (e.target.value as Prioridad))
+              }
               className="w-full rounded-md border border-slate-300 bg-white px-2 py-2"
             >
               {PRIORIDADES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -229,7 +233,7 @@ export default function TareasPage() {
         ))}
         {tareasQ.data && tareas.length === 0 && (
           <li className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            No hay tareas con esos filtros.
+            {filtros.q ? `No hay tareas que coincidan con "${filtros.q}"` : "No hay tareas con esos filtros."}
           </li>
         )}
       </ul>
@@ -243,11 +247,6 @@ export default function TareasPage() {
         onCancel={() => setToDelete(null)}
       />
 
-      <SuccessDialog
-        open={deleteDone}
-        message="Tarea eliminada exitosamente"
-        onClose={() => setDeleteDone(false)}
-      />
     </div>
   );
 }

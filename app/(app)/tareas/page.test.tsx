@@ -65,9 +65,9 @@ beforeEach(() => {
   useSession.mockReturnValue({ data: { user: { email: "yo@x.com", rol: "admin" } } });
   vi.mocked(api.edificios.list).mockResolvedValue([{ nombre: "E1" }, { nombre: "E2" }]);
   vi.mocked(api.tareas.list).mockResolvedValue([
-    tarea({ rowId: "1", objetivo: "Pintar", estado: "Sin asignar", edificio: "E1" }),
-    tarea({ rowId: "2", objetivo: "Plomería", estado: "Realizada", edificio: "E2", asignadoA: "yo@x.com" }),
-    tarea({ rowId: "3", objetivo: "Luz", estado: "En Proceso", edificio: "E1", asignadoA: "otro@x.com" }),
+    tarea({ rowId: "2026-09-01T10:00:00.000-03:00", objetivo: "Pintar", estado: "Sin asignar", edificio: "E1" }),
+    tarea({ rowId: "2026-09-02T10:00:00.000-03:00", objetivo: "Plomería", estado: "Realizada", edificio: "E2", asignadoA: "yo@x.com" }),
+    tarea({ rowId: "2026-09-03T10:00:00.000-03:00", objetivo: "Luz", estado: "En Proceso", edificio: "E1", asignadoA: "otro@x.com" }),
   ]);
 });
 
@@ -121,5 +121,25 @@ describe("TareasPage — filtros en memoria", () => {
     await user.selectOptions(screen.getByLabelText("Estado"), "En Proceso");
     await screen.findByText("1 resultado");
     expect(screen.getByText("Cargada sin señal")).toBeInTheDocument();
+  });
+
+  it("buscar reduce la lista en memoria", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("3 resultados");
+    await user.type(screen.getByLabelText("Buscar tareas"), "plom");
+    expect(await screen.findByText("1 resultado")).toBeInTheDocument();
+    expect(screen.getByText("Plomería")).toBeInTheDocument();
+    expect(api.tareas.list).toHaveBeenCalledTimes(1);
+  });
+
+  it("orden por defecto abiertas primero; 'Más antiguas' invierte", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("3 resultados");
+    const titulos = () => screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(titulos()[titulos().length - 1]).toBe("Plomería"); // la Realizada al final
+    await user.selectOptions(screen.getByLabelText("Ordenar por"), "antiguas");
+    expect(titulos()[0]).toBe("Pintar");
   });
 });

@@ -171,10 +171,8 @@ describe("IntegranteCard", () => {
         isAdmin mostrarDirectivas pendientes={new Map()}
       />
     );
-    await waitFor(() =>
-      expect(screen.getByRole("option", { name: "Belgrano 1429" })).toBeInTheDocument()
-    );
-    await user.selectOptions(screen.getByRole("combobox"), "Belgrano 1429");
+    await user.click(screen.getByRole("combobox", { name: "Edificio a agregar" }));
+    await user.click(await screen.findByRole("option", { name: "Belgrano 1429" }));
     await user.click(screen.getByRole("button", { name: "Agregar edificio" }));
     await waitFor(() => expect(screen.getByText(/ya está asignado/i)).toBeInTheDocument());
   });

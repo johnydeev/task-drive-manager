@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/Combobox";
+
 import { Download, Loader2 } from "lucide-react";
 import { useInforme } from "./hooks/useInforme";
 import { MembreteHeader } from "./MembreteHeader";
@@ -29,21 +31,17 @@ export function InformeEdificio() {
       <p className="text-sm text-slate-600">Informe de tareas por edificio, listo para exportar</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
-        <label className="text-sm md:col-span-2">
-          <span className="mb-1 block text-slate-600">Edificio</span>
-          <select
+        <div className="text-sm md:col-span-2">
+          <label htmlFor="informe-edificio" className="mb-1 block text-slate-600">Edificio</label>
+          <Combobox
+            strict
+            id="informe-edificio"
             value={edificio}
-            onChange={(e) => setEdificio(e.target.value)}
-            className="w-full rounded-md border border-slate-300 bg-white px-2 py-2"
-          >
-            <option value="">Elegí un edificio…</option>
-            {edificios.map((e) => (
-              <option key={e.nombre} value={e.nombre}>
-                {e.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={setEdificio}
+            options={edificios.map((e) => e.nombre)}
+            placeholder="Elegí un edificio…"
+          />
+        </div>
         <label className="text-sm">
           <span className="mb-1 block text-slate-600">Desde</span>
           <input

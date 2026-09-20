@@ -4,7 +4,6 @@ import { Controller } from "react-hook-form";
 import type { Tarea } from "@/types";
 import { FileUploader } from "./FileUploader";
 import { Combobox } from "@/components/ui/Combobox";
-import { SuccessDialog } from "@/components/ui/SuccessDialog";
 import { Loader2, CloudOff, Plus } from "lucide-react";
 import { useTareaForm } from "./hooks/useTareaForm";
 
@@ -19,7 +18,6 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
 
   return (
     <>
-    <SuccessDialog open={!!f.successMsg} message={f.successMsg ?? ""} onClose={f.handleSuccessClose} />
     <form onSubmit={f.submitForm} className="space-y-4">
       {!f.online && mode === "create" && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -42,14 +40,19 @@ export function TareaForm({ mode, initial, onSubmitSuccess }: Props) {
           />
         </Field>
         <Field label="Edificio" error={f.errors.edificio?.message}>
-          <select {...f.register("edificio")} className="input">
-            <option value="">Seleccionar…</option>
-            {f.edificiosQ.data?.map((e) => (
-              <option key={e.nombre} value={e.nombre}>
-                {e.nombre}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={f.control}
+            name="edificio"
+            render={({ field }) => (
+              <Combobox
+                strict
+                value={field.value}
+                onChange={field.onChange}
+                options={(f.edificiosQ.data ?? []).map((e) => e.nombre)}
+                placeholder="Elegí un edificio"
+              />
+            )}
+          />
         </Field>
       </div>
 

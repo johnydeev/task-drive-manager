@@ -48,8 +48,8 @@ function renderForm() {
 }
 
 async function elegirEdificio(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: "Castro Barros 1310" });
-  await user.selectOptions(screen.getByLabelText("Edificio"), "Castro Barros 1310");
+  await user.click(screen.getByLabelText("Edificio"));
+  await user.click(await screen.findByRole("option", { name: "Castro Barros 1310" }));
 }
 
 beforeEach(() => {

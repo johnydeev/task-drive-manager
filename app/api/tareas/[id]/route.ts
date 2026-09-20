@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { withAuth } from "@/lib/http/withAuth";
 import {
   deleteTarea,
@@ -196,11 +196,16 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     fechaRealizado: now.slice(0, 10),
   });
 
-  // Auto-reporte al cerrar (fire-and-forget). Si falla, queda cerrada sin reporte; se
-  // puede regenerar a mano desde la UI.
-  generateAndUploadReporte(updated)
-    .then((r) => updateTarea({ rowId: updated.rowId, reporteUrl: r.url }))
-    .catch((err) => console.error("[reporte-auto] error:", err));
+  // Auto-reporte al cerrar: after() garantiza que corre después de responder, dentro del
+  // maxDuration. Si falla, queda cerrada sin reporte; el admin puede generarlo a mano.
+  after(async () => {
+    try {
+      const r = await generateAndUploadReporte(updated);
+      await updateTarea({ rowId: updated.rowId, reporteUrl: r.url });
+    } catch (err) {
+      console.error("[reporte-auto] error:", err);
+    }
+  });
 
   return NextResponse.json(updated);
 });
