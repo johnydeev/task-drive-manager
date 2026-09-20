@@ -122,6 +122,52 @@ self.addEventListener("message", (event: ExtendableMessageEvent) => {
   }
 });
 
+// =====================================================
+// Web Push — muestra el aviso y, al tocarlo, abre/enfoca la app en la URL del aviso.
+// El payload lo arma lib/push.ts (tipo Aviso).
+// =====================================================
+interface AvisoPush {
+  titulo: string;
+  cuerpo: string;
+  url: string;
+  tag?: string;
+}
+
+self.addEventListener("push", (event: PushEvent) => {
+  let aviso: AvisoPush | null = null;
+  try {
+    aviso = event.data?.json() as AvisoPush;
+  } catch {
+    return;
+  }
+  if (!aviso?.titulo) return;
+  event.waitUntil(
+    self.registration.showNotification(aviso.titulo, {
+      body: aviso.cuerpo,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: aviso.tag,
+      data: { url: aviso.url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event: NotificationEvent) => {
+  event.notification.close();
+  const url = (event.notification.data as { url?: string } | undefined)?.url ?? "/tareas";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clientes) => {
+      const abierta = clientes.find((c): c is WindowClient => "focus" in c);
+      if (abierta) {
+        await abierta.focus();
+        if ("navigate" in abierta) await abierta.navigate(url);
+        return;
+      }
+      await self.clients.openWindow(url);
+    })
+  );
+});
+
 // Implementación de sync dentro del SW. No puede importar offline-sync.ts (asume `window`
 // y Dexie); replica la lógica con IndexedDB nativo y la misma regla red/rechazo
 // (lib/sync-clasificacion). Ninguna transacción abarca un `await fetch`: IndexedDB cierra

@@ -16,6 +16,7 @@ export const SHEETS = {
   partesComunes: "Partes Comunes",
   visitas: "Visitas",
   edificioFicha: "EdificioFicha",
+  suscripciones: "Suscripciones",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:AD`;

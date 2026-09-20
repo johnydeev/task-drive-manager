@@ -11,9 +11,8 @@ import type { Tarea } from "@/types";
 // Lógica del detalle de tarea: query + mutations (eliminar / asignar / transicionar /
 // generar reporte), permisos por rol y estado de UI. El componente arma el JSX.
 const MAX_INTENTOS_REPORTE = 20; // 20 × 3 s = 1 min
-// Solo se espera el reporte de un cierre RECIENTE: el cierre manual setea realizadaEn = now;
-// una tarea cerrada por la derivación de 72 h no lo tiene, y una cuyo reporte falló hace
-// días tampoco debe disparar 20 GETs cada vez que alguien la abre.
+// Solo se espera el reporte de un cierre RECIENTE (realizadaEn = now al cerrar): una tarea
+// cuyo reporte falló hace días no debe disparar 20 GETs cada vez que alguien la abre.
 const VENTANA_CIERRE_RECIENTE_MS = 10 * 60 * 1000;
 
 function cierreReciente(realizadaEn: string | undefined, now: number): boolean {

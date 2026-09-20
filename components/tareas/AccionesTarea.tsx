@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { formatDateTime, formatFecha } from "@/lib/utils";
+import { formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Tarea, Usuario } from "@/types";
 import { Loader2 } from "lucide-react";
@@ -76,11 +76,6 @@ export function AccionesTarea({
     t.estado === "En Revisión" ||
     (esAsignado && ["Asignada", "Aceptada", "En Proceso", "Objetada"].includes(t.estado));
   if (!mostrarPanel) return null;
-
-  // Fecha de cierre automático (revisionEn + 72h). Pura: no lee el reloj actual.
-  const venceISO = t.revisionEn
-    ? new Date(new Date(t.revisionEn).getTime() + 72 * 3600 * 1000).toISOString()
-    : null;
 
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
@@ -185,7 +180,6 @@ export function AccionesTarea({
 
       {t.estado === "En Revisión" && (
         <div className="space-y-2">
-          {venceISO && <p className="text-xs text-purple-700">Cierre automático: {formatDateTime(venceISO)}</p>}
           {esAsignado && !isAdmin && (
             <p className="text-xs text-slate-500">Enviada a revisión. Esperando el cierre del admin.</p>
           )}

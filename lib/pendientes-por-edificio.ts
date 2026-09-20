@@ -7,8 +7,8 @@
 // Ninguna de las dos se toca: este contador responde "cuánto trabajo abierto tiene el
 // edificio", que es lo que se muestra en el pill de /edificios.
 //
-// El `estado` que llega de la API ya es el EFECTIVO (lib/sheets/tareas.ts aplica
-// estadoEfectivoTarea al leer), así que una tarea auto-cerrada a las 72 h no cuenta.
+// El `estado` es el persistido en la hoja: no hay cierre automático (una tarea En Revisión
+// cuenta como pendiente hasta que el admin la cierre).
 //
 // IMPORTANTE: este módulo lo importa un componente de cliente. NO puede depender de
 // lib/sheets/*, que arrastra `googleapis` y rompe el build con

@@ -33,6 +33,8 @@ import {
   setUsuarioActivo,
   appendUsuario,
   getConfiguracion,
+  getConfigValor,
+  setConfigValor,
   updateConfiguracion,
   resetConfigCache,
   getDptos,
@@ -74,8 +76,8 @@ beforeEach(() => {
   batchUpdate.mockReset().mockResolvedValue({});
 });
 
-describe("getTareas — estado derivado a 72h", () => {
-  it("una tarea En Revisión con revision_en de hace >72h se lee como Realizada", async () => {
+describe("getTareas — sin cierre automático", () => {
+  it("una tarea En Revisión con revision_en viejo se lee En Revisión (el cierre es humano)", async () => {
     const header = new Array(24).fill("");
     header[0] = "id"; header[1] = "objetivo"; header[2] = "fecha_inicio"; header[3] = "fecha_estimada";
     header[4] = "edificio"; header[5] = "parte_comun"; header[6] = "dpto"; header[7] = "informe";
@@ -90,7 +92,7 @@ describe("getTareas — estado derivado a 72h", () => {
     mockRanges({ "Tareas!A:AD": [header, row], "TareaArchivos!A:F": [] });
     const ts = await getTareas();
     expect(ts).toHaveLength(1);
-    expect(ts[0].estado).toBe("Realizada");
+    expect(ts[0].estado).toBe("En Revisión");
   });
 });
 
@@ -292,6 +294,27 @@ describe("setUsuarioActivo (real)", () => {
   it("lanza si el usuario no existe", async () => {
     mockRanges({ "Usuarios!A:G": [["email", "nombre", "rol", "activo", "creado_en", "actualizado_en"]] });
     await expect(setUsuarioActivo("nope@x.com", true)).rejects.toThrow();
+  });
+});
+
+describe("getConfigValor / setConfigValor", () => {
+  const filas = [["max_imagenes", "6"], ["recordatorios_ultimo_envio", "2026-09-19"]];
+  it("lee una clave existente y undefined si no está", async () => {
+    mockRanges({ "Configuracion!A:B": filas });
+    expect(await getConfigValor("recordatorios_ultimo_envio")).toBe("2026-09-19");
+    expect(await getConfigValor("no_existe")).toBeUndefined();
+  });
+  it("escribe en la fila de la clave existente", async () => {
+    mockRanges({ "Configuracion!A:B": filas });
+    await setConfigValor("recordatorios_ultimo_envio", "2026-09-20");
+    expect(valuesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ range: "Configuracion!A2:B2", requestBody: { values: [["recordatorios_ultimo_envio", "2026-09-20"]] } })
+    );
+  });
+  it("una clave nueva va al final", async () => {
+    mockRanges({ "Configuracion!A:B": filas });
+    await setConfigValor("otra", "1");
+    expect(valuesUpdate).toHaveBeenCalledWith(expect.objectContaining({ range: "Configuracion!A3:B3" }));
   });
 });
 

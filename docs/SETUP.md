@@ -32,6 +32,8 @@ npm run icons  # genera íconos PWA desde public/logo-source.png
 - `Dptos` — A=ID dpto, B=DPTO, C=Edificio ref (incluye un "edificio" virtual `Parte Común` con las partes comunes posibles)
 - `Usuarios` — A=email, B=nombre, C=rol (admin/supervisor), D=activo, E=creado_en
 - `Configuracion` — A=clave, B=valor. **⚠ El tab va SIN tilde** (`Configuracion`)
+- `Suscripciones` — notificaciones push, una fila por dispositivo. Headers exactos en A1:G1:
+  `id | email | endpoint | p256dh | auth | user_agent | creado_en`. La llena la app.
 
 **Archivo de consorcios** (`GOOGLE_CONSORCIOS_SHEET_ID`, externo, solo lectura) — tabs:
 
@@ -83,7 +85,21 @@ GOOGLE_CLIENT_SECRET=...
 # ⚠ NEXT_PUBLIC_* se hornea en el BUILD (ver Dockerfile / docs/DEPLOY.md).
 # NEXT_PUBLIC_APP_NAME=
 # NEXT_PUBLIC_APP_SHORT_NAME=
+
+# Opcional — notificaciones push (Web Push). Generar las claves una vez:
+#   npx web-push generate-vapid-keys
+# VAPID_PUBLIC_KEY=
+# VAPID_PRIVATE_KEY=
+# VAPID_SUBJECT=mailto:contacto@tu-dominio.com
+# NEXT_PUBLIC_VAPID_PUBLIC_KEY=      # = VAPID_PUBLIC_KEY; se hornea en el build
 ```
+
+**Notificaciones push** (opcional): además de las 4 variables, en producción la pública tiene
+que llegar al build: en GitHub, **Settings → Secrets and variables → Actions → Variables →
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`** (no es secreta). Las otras tres van al `.env` de prod (secret
+`PROD_ENV_FILE`). Después del deploy cada usuario toca «Activar avisos» en el menú (en iPhone,
+primero «Instalar app»). Los recordatorios diarios (lunes a sábado 08:00 ART) los manda el propio
+server; en dev no corren salvo `RECORDATORIOS_ENABLED=1`.
 
 > ⚠ `GOOGLE_PRIVATE_KEY` debe contener los `\n` literales. Si lo pegás del JSON, ya vienen correctos.
 

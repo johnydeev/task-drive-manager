@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/app-name";
 import { OfflineIndicator } from "./OfflineIndicator";
 import { MobileDrawer } from "./MobileDrawer";
+import { AvisosPush } from "./AvisosPush";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {
   ClipboardList,
@@ -86,6 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="px-3 pb-5">
+          <AvisosPush />
           {canInstall && (
             <button
               onClick={() => promptInstall()}

@@ -114,6 +114,11 @@ describe("AccionesTarea — salto En Proceso → En Revisión", () => {
 describe("AccionesTarea — confirmación de cerrar / objetar (admin)", () => {
   const enRevision = () => tarea({ estado: "En Revisión", asignadoA: "op@x.com" });
 
+  it("no anuncia ningún cierre automático (el cierre es del admin)", () => {
+    renderPanel(enRevision(), { isAdmin: true, esAsignado: false });
+    expect(screen.queryByText(/cierre automático/i)).not.toBeInTheDocument();
+  });
+
   it("el modal de Cerrar dice 'Cerrar tarea' (no 'Eliminar')", () => {
     renderPanel(enRevision(), { isAdmin: true, esAsignado: false });
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "todo ok" } });

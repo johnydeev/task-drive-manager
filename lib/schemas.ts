@@ -228,6 +228,13 @@ export const visitaNuevaSchema = z.object({
 });
 
 // Firma de un usuario (la carga el admin en Usuarios): URL de Drive ya subida.
+// Suscripción Web Push (lo que devuelve PushSubscription.toJSON()).
+export const suscripcionPushSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+  userAgent: z.string().max(120).optional(),
+});
+
 export const firmaSchema = z.object({
   email: z.string().email().transform((e) => e.toLowerCase()),
   firmaUrl: z.string().url().or(z.literal("")),

@@ -19,7 +19,6 @@ import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
 import { estadoEnum, prioridadEnum } from "../schemas";
 import { nowBuenosAiresISO } from "../fecha-ar";
-import { estadoEfectivoTarea } from "../tareas-estado";
 import {
   getAllArchivos,
   mediaFromArchivos,
@@ -163,7 +162,6 @@ export async function getTareas(filters: TareaFilters = {}): Promise<Tarea[]> {
   const conMedia = tareas.map((t) => ({
     ...t,
     ...mediaFromArchivos(archivos, t.rowId),
-    estado: estadoEfectivoTarea(t), // cierre derivado a 72h (nunca persistido)
   }));
   return filterTareas(conMedia, filters);
 }
@@ -174,15 +172,10 @@ export async function getTareaByRowId(rowId: string): Promise<Tarea | null> {
   return tareas.find((t) => t.rowId === rowId) ?? null;
 }
 
-// Igual que getTareaByRowId pero SIN derivar el estado (72h). Se usa para validar
-// transiciones contra el estado PERSISTIDO en la hoja.
+// Ya no hay estado derivado (el cierre automático a 72 h se eliminó): es lo mismo que
+// getTareaByRowId. Se conserva el nombre porque la ruta de transiciones y sus tests lo usan.
 export async function getTareaPersistida(rowId: string): Promise<Tarea | null> {
-  if (isDemoMode()) return getDemoTareaById(rowId);
-  const rows = await readRange(TAREAS_RANGE);
-  const tarea = parseTareasRows(rows).find((t) => t.rowId === rowId) ?? null;
-  if (!tarea) return null;
-  const archivos = await getAllArchivos();
-  return { ...tarea, ...mediaFromArchivos(archivos, tarea.rowId) };
+  return getTareaByRowId(rowId);
 }
 
 // Lee el header row de Tareas y devuelve el HeaderMap.

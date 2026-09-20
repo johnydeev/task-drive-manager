@@ -9,6 +9,9 @@ import {
 } from "@/lib/google-sheets";
 import { trashTareaFolder } from "@/lib/google-drive";
 import { generateAndUploadReporte } from "@/lib/pdf-generator";
+import { notificar } from "@/lib/push";
+import { avisoDeTarea } from "@/lib/avisos-tarea";
+import { displayName } from "@/lib/user-display";
 import { jsonError } from "@/lib/api-utils";
 import {
   tareaAgregarArchivosSchema,
@@ -22,8 +25,8 @@ export const maxDuration = 60;
 
 type Params = { params: Promise<{ id: string }> };
 
-// Lectura del detalle: compartida, cualquier integrante autenticado la abre. El estado
-// se muestra derivado (72h). La escritura valida rol/estado de origen abajo.
+// Lectura del detalle: compartida, cualquier integrante autenticado la abre. La escritura
+// valida rol/estado de origen abajo.
 export const GET = withAuth<Params>(async (_req, _session, { params }) => {
   const { id } = await params;
   const tarea = await getTareaByRowId(decodeURIComponent(id));
@@ -59,8 +62,13 @@ export const DELETE = withAuth<Params>(async (_req, session, { params }) => {
   return NextResponse.json({ ok: true });
 });
 
+// Destinatarios de un push sin quien hizo la acción (nadie recibe aviso de lo que hizo).
+function sinActor(emails: string[], actor: string): string[] {
+  return emails.filter((e) => e && e.toLowerCase() !== actor);
+}
+
 // PATCH: asignar (body {asignadoA}) o transición (body {accion,...}). El estado de origen
-// se valida contra el PERSISTIDO (getTareaPersistida), no el derivado a 72h.
+// se valida contra lo persistido en la hoja (getTareaPersistida).
 export const PATCH = withAuth<Params>(async (req, session, { params }) => {
   const { id } = await params;
   const t = await getTareaPersistida(decodeURIComponent(id));
@@ -85,16 +93,17 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     if (!usuarios.some((u) => u.email === asignadoA && u.activo)) {
       return jsonError(400, `El usuario "${asignadoA}" no existe o está inactivo`);
     }
-    return NextResponse.json(
-      await updateTarea({
-        rowId: t.rowId,
-        asignadoA,
-        estado: "Asignada",
-        asignadaEn: now,
-        aceptadaEn: "", // D3: reasignar resetea el ciclo
-        revisionEn: "",
-      })
-    );
+    const asignada = await updateTarea({
+      rowId: t.rowId,
+      asignadoA,
+      estado: "Asignada",
+      asignadaEn: now,
+      aceptadaEn: "", // D3: reasignar resetea el ciclo
+      revisionEn: "",
+    });
+    // Push al asignado (nunca a quien hizo la acción). after(): no demora la respuesta.
+    after(() => notificar(sinActor([asignadoA], email), avisoDeTarea("asignar", asignada)));
+    return NextResponse.json(asignada);
   }
 
   // --- Agregar archivos (asignado, En Proceso u Objetada) ---
@@ -149,14 +158,22 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     if (t.estado !== "En Proceso" && t.estado !== "Objetada") {
       return jsonError(409, "La tarea no está En Proceso ni Objetada");
     }
-    return NextResponse.json(
-      await updateTarea({
-        rowId: t.rowId,
-        estado: "En Revisión",
-        revisionEn: now,
-        comentarioRevision: conDefault(comentario),
-      })
-    );
+    const enRevision = await updateTarea({
+      rowId: t.rowId,
+      estado: "En Revisión",
+      revisionEn: now,
+      comentarioRevision: conDefault(comentario),
+    });
+    // Push a todos los admins activos (menos el actor, si es admin).
+    after(async () => {
+      const usuarios = await getUsuarios();
+      const admins = usuarios.filter((u) => u.rol === "admin" && u.activo).map((u) => u.email);
+      await notificar(
+        sinActor(admins, email),
+        avisoDeTarea("revisar", enRevision, { asignadoNombre: displayName(email, usuarios) })
+      );
+    });
+    return NextResponse.json(enRevision);
   }
 
   // Editar un comentario ya cargado: solo el asignado, mientras la tarea siga activa
@@ -174,14 +191,15 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     if (!esAdmin) return jsonError(403, "Solo el admin puede objetar");
     if (t.estado !== "En Revisión") return jsonError(409, "Solo se puede objetar una tarea En Revisión");
     if (!nota?.trim()) return jsonError(400, "El motivo de la objeción es requerido");
-    return NextResponse.json(
-      await updateTarea({
-        rowId: t.rowId,
-        estado: "Objetada",
-        notaObjecion: nota.trim(),
-        objetadaEn: now,
-      })
-    );
+    const objetada = await updateTarea({
+      rowId: t.rowId,
+      estado: "Objetada",
+      notaObjecion: nota.trim(),
+      objetadaEn: now,
+    });
+    // Push al asignado.
+    after(() => notificar(sinActor([t.asignadoA ?? ""], email), avisoDeTarea("objetar", objetada)));
+    return NextResponse.json(objetada);
   }
 
   // cerrar (admin). La nota de cierre es obligatoria (a diferencia de en proceso/revisión).

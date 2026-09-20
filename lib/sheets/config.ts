@@ -72,3 +72,21 @@ export async function updateConfiguracion(cfg: Configuracion): Promise<void> {
 
   configCache = { data: cfg, expires: Date.now() + CONFIG_TTL_MS };
 }
+
+// Claves sueltas de Configuracion que no forman parte del formulario del admin (ej. la marca
+// del último envío de recordatorios). Buscan la fila por clave; si no existe, la agregan al
+// final. NO pasan por updateConfiguracion, que reescribe solo las 11 claves fijas.
+export async function getConfigValor(clave: string): Promise<string | undefined> {
+  if (isDemoMode()) return undefined;
+  const rows = await readRange(`${SHEETS.configuracion}!A:B`);
+  const fila = rows.find((r) => (r[0] ?? "").trim() === clave);
+  return fila ? (fila[1] ?? "").toString().trim() : undefined;
+}
+
+export async function setConfigValor(clave: string, valor: string): Promise<void> {
+  if (isDemoMode()) return;
+  const rows = await readRange(`${SHEETS.configuracion}!A:B`);
+  const idx = rows.findIndex((r) => (r[0] ?? "").trim() === clave);
+  const fila = idx === -1 ? rows.length + 1 : idx + 1;
+  await writeRange(`${SHEETS.configuracion}!A${fila}:B${fila}`, [[clave, valor]]);
+}

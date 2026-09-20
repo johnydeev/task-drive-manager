@@ -17,6 +17,8 @@ vi.mock("@/lib/google-sheets", () => ({
   getUsuarios: vi.fn(),
 }));
 vi.mock("@/lib/google-drive", () => ({ trashTareaFolder: vi.fn() }));
+const { notificar } = vi.hoisted(() => ({ notificar: vi.fn().mockResolvedValue({ enviados: 0, borradas: 0 }) }));
+vi.mock("@/lib/push", () => ({ notificar }));
 vi.mock("@/lib/pdf-generator", () => ({
   generateAndUploadReporte: vi.fn().mockResolvedValue({ url: "https://drive/r.pdf", fileId: "r" }),
 }));
@@ -349,5 +351,67 @@ describe("PATCH transiciones — editar comentarios (asignado)", () => {
     );
     const res = await patch({ accion: "editarComentarioRevision", comentario: "x" });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  const usuarios = [
+    { email: "admin@x.com", nombre: "Admin", rol: "admin", activo: true },
+    { email: "admin2@x.com", nombre: "Admin Dos", rol: "admin", activo: true },
+    { email: "inactivo@x.com", nombre: "Ex", rol: "admin", activo: false },
+    { email: "op@x.com", nombre: "Operario", rol: "supervisor", activo: true },
+  ];
+
+  beforeEach(() => {
+    notificar.mockClear();
+    vi.mocked(getUsuarios).mockResolvedValue(usuarios as never);
+    vi.mocked(updateTarea).mockImplementation(async (input) => ({ ...tarea(), ...input }) as Tarea);
+  });
+
+  it("asignar → push al asignado con el aviso de asignación", async () => {
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Sin asignar" }));
+    await patch({ asignadoA: "op@x.com" });
+    await flush();
+    expect(notificar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Te asignaron una tarea" }));
+  });
+
+  it("el admin que se asigna a sí mismo no se notifica", async () => {
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Sin asignar" }));
+    await patch({ asignadoA: "admin@x.com" });
+    await flush();
+    expect(notificar).toHaveBeenCalledWith([], expect.anything());
+  });
+
+  it("revisar → push a los admins activos (sin el actor)", async () => {
+    requireSession.mockResolvedValue({ user: { email: "op@x.com", rol: "supervisor" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Proceso", asignadoA: "op@x.com" }));
+    await patch({ accion: "revisar", comentario: "listo" });
+    await flush();
+    expect(notificar).toHaveBeenCalledWith(
+      ["admin@x.com", "admin2@x.com"],
+      expect.objectContaining({ titulo: "Tarea lista para revisar", cuerpo: expect.stringContaining("Operario") })
+    );
+  });
+
+  it("objetar → push al asignado", async () => {
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "op@x.com" }));
+    await patch({ accion: "objetar", nota: "falta foto" });
+    await flush();
+    expect(notificar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Tu tarea fue objetada" }));
+  });
+
+  it("aceptar y cerrar no notifican", async () => {
+    requireSession.mockResolvedValue({ user: { email: "op@x.com", rol: "supervisor" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Asignada", asignadoA: "op@x.com" }));
+    await patch({ accion: "aceptar" });
+    requireSession.mockResolvedValue({ user: { email: "admin@x.com", rol: "admin" } });
+    vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "op@x.com" }));
+    await patch({ accion: "cerrar", nota: "ok" });
+    await flush();
+    expect(notificar).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AvisosPush } from "./AvisosPush";
 import { signOut } from "next-auth/react";
 import { useEffect } from "react";
 import { Download, LogOut, X } from "lucide-react";
@@ -68,6 +69,7 @@ export function MobileDrawer({ open, onClose, email, items, canInstall, onInstal
           ))}
         </nav>
         <div className="border-t border-slate-200 px-2 py-2">
+          <AvisosPush />
           {canInstall && (
             <button
               type="button"

@@ -226,3 +226,26 @@ export interface VisitaNuevaInput {
   informeGeneral?: string;
   fotos: string[]; // URLs de Drive ya subidas
 }
+
+// =====================================================
+// Notificaciones push
+// =====================================================
+
+// Una suscripción Web Push = un dispositivo de un usuario. Hoja `Suscripciones`.
+export interface Suscripcion {
+  id: string;
+  email: string; // minúsculas
+  endpoint: string; // único por suscripción
+  p256dh: string;
+  auth: string;
+  userAgent: string;
+  creadoEn: string;
+}
+
+// Lo que viaja en el payload del push y muestra el Service Worker.
+export interface Aviso {
+  titulo: string;
+  cuerpo: string;
+  url: string; // ruta dentro de la app; el SW la abre al tocar
+  tag?: string; // agrupa/reemplaza en el sistema
+}

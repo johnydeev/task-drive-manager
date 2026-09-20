@@ -12,6 +12,13 @@ vi.mock("next-auth/react", () => ({ useSession }));
 // La página monta PendientesDeSubir: Dexie (useLiveQuery) no tiene IndexedDB en jsdom.
 vi.mock("@/hooks/usePendingTareas", () => ({ usePendingTareas }));
 vi.mock("@/hooks/useOnlineStatus", () => ({ useOnlineStatus: () => true }));
+// BannerAvisos: sin soporte push en jsdom → no renderiza.
+vi.mock("@/hooks/useAvisosPush", () => ({
+  useAvisosPush: () => ({
+    soporte: "sin-soporte", permiso: "no-disponible", suscripto: false, ocupado: false, error: null,
+    claveConfigurada: false, activar: vi.fn(), desactivar: vi.fn(),
+  }),
+}));
 vi.mock("@/lib/offline-sync", () => ({ syncPendingTareas: vi.fn() }));
 vi.mock("@/lib/api-client", () => ({
   api: {

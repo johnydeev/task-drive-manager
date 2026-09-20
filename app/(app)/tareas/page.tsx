@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Combobox } from "@/components/ui/Combobox";
 import { useToast } from "@/components/ui/Toaster";
 import { PendientesDeSubir } from "@/components/tareas/PendientesDeSubir";
+import { BannerAvisos } from "@/components/tareas/BannerAvisos";
 import { useListaTareas } from "@/components/tareas/hooks/useListaTareas";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { Plus, Filter, Trash2, Check, Search } from "lucide-react";
@@ -137,6 +138,7 @@ export default function TareasPage() {
 
       {/* Cola offline: fuera de los filtros, desaparece sola al sincronizar. */}
       <PendientesDeSubir />
+      <BannerAvisos />
 
       {showFilters && (
         <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3">
