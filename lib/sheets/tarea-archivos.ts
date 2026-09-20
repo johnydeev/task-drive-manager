@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { readRange, SHEETS, writeRange, deleteRows } from "./core";
+import { readRange, SHEETS, writeRange, deleteRows, conLockDeHoja } from "./core";
 import { buildHeaderMap } from "./headers";
 import { nowBuenosAiresISO } from "../fecha-ar";
 
@@ -123,8 +123,10 @@ export async function setArchivosForTarea(
   // NO usar values.append: en hojas con grid grande dispersa las filas al fondo.
   // Calculamos la fila libre por la columna A y escribimos con update el bloque
   // completo (dimensionando el rango a la cantidad de archivos).
-  const colA = await readRange(`${SHEETS.tareaArchivos}!A:A`);
-  const nextRow = colA.length + 1;
-  const lastRow = nextRow + rows.length - 1;
-  await writeRange(`${SHEETS.tareaArchivos}!A${nextRow}:F${lastRow}`, rows);
+  await conLockDeHoja(SHEETS.tareaArchivos, async () => {
+    const colA = await readRange(`${SHEETS.tareaArchivos}!A:A`);
+    const nextRow = colA.length + 1;
+    const lastRow = nextRow + rows.length - 1;
+    await writeRange(`${SHEETS.tareaArchivos}!A${nextRow}:F${lastRow}`, rows);
+  });
 }

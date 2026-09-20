@@ -20,7 +20,7 @@ vi.mock("googleapis", () => ({
 }));
 vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getSheetId: () => "sheet-id" }));
 
-import { readRange, writeRange, deleteRows, invalidarHoja, resetSheetsCache, hojaDeRango } from "./core";
+import { readRange, writeRange, deleteRows, invalidarHoja, resetSheetsCache, hojaDeRango, conLockDeHoja } from "./core";
 
 const filas = (...v: string[]) => ({ data: { values: v.map((x) => [x]) } });
 const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { code: String(status) });
@@ -202,5 +202,60 @@ describe("conReintentos (vía readRange)", () => {
     await vi.advanceTimersByTimeAsync(500);
     await p;
     expect(valuesUpdate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("conLockDeHoja", () => {
+  const diferido = <T,>() => {
+    let resolve!: (v: T) => void;
+    let reject!: (e: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+
+  it("dos llamadas de la misma hoja corren en orden", async () => {
+    const orden: string[] = [];
+    const a = diferido<void>();
+    const p1 = conLockDeHoja("Tareas", async () => {
+      orden.push("a-start");
+      await a.promise;
+      orden.push("a-end");
+    });
+    const p2 = conLockDeHoja("Tareas", async () => {
+      orden.push("b-start");
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(orden).toEqual(["a-start"]);
+    a.resolve();
+    await Promise.all([p1, p2]);
+    expect(orden).toEqual(["a-start", "a-end", "b-start"]);
+  });
+
+  it("hojas distintas corren en paralelo", async () => {
+    const orden: string[] = [];
+    const a = diferido<void>();
+    const p1 = conLockDeHoja("Visitas", async () => {
+      orden.push("a-start");
+      await a.promise;
+    });
+    const p2 = conLockDeHoja("Usuarios", async () => {
+      orden.push("b-start");
+    });
+    await p2;
+    expect(orden).toEqual(["a-start", "b-start"]);
+    a.resolve();
+    await p1;
+  });
+
+  it("si la primera rechaza, la segunda corre igual", async () => {
+    const p1 = conLockDeHoja("Directivas", async () => {
+      throw new Error("boom");
+    });
+    const p2 = conLockDeHoja("Directivas", async () => "ok");
+    await expect(p1).rejects.toThrow("boom");
+    expect(await p2).toBe("ok");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { api, apiFetch } from "./api-client";
+import { api, apiFetch, ApiClientError } from "./api-client";
 
 const fetchMock = vi.fn();
 const assign = vi.fn();
@@ -49,6 +49,15 @@ describe("request (vía api.*)", () => {
   it("un 4xx sin ref conserva el mensaje del server", async () => {
     fetchMock.mockResolvedValue(respuesta(403, { error: "Solo el admin puede asignar" }));
     await expect(api.tareas.list()).rejects.toThrow("Solo el admin puede asignar");
+  });
+
+  it("un 4xx lanza ApiClientError con status y el mismo mensaje", async () => {
+    fetchMock.mockResolvedValue(respuesta(409, { error: "El archivo está en uso" }));
+    const err = await api.tareas.list().catch((e) => e);
+    expect(err).toBeInstanceOf(ApiClientError);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.status).toBe(409);
+    expect(err.message).toBe("El archivo está en uso");
   });
 
   it("un 401 lanza además de redirigir", async () => {

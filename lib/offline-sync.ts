@@ -1,42 +1,37 @@
 // Procesa la cola de tareas pendientes contra /api/tareas.
-// Estrategia: simple loop con incremento de retries. Sin SW; corre en el cliente.
+// Estrategia: loop secuencial. Fallo de red → se reintenta en el próximo disparo, sin tope.
+// Rechazo del server (4xx) → queda marcada (errorMsg) hasta que el usuario reintente o descarte.
+// Corre en el cliente; el Service Worker (app/sw.ts) tiene su propia versión con la misma regla.
 
 import { api } from "./api-client";
-import {
-  getDb,
-  incrementRetries,
-  listPendientes,
-  markSynced,
-} from "./offline-db";
+import { getDb, incrementRetries, listPendientes, markSynced, marcarRechazada } from "./offline-db";
+import { clasificarFalloSync } from "./sync-clasificacion";
 import type { TareaPendiente } from "@/types";
-
-const MAX_RETRIES = 3;
 
 export interface SyncResult {
   ok: number;
-  failed: number;
-  skipped: number;
+  failed: number; // red: se reintentan solas
+  rechazadas: number; // 4xx: esperan al usuario
 }
 
 let syncing = false;
 
 export async function syncPendingTareas(): Promise<SyncResult> {
-  if (typeof window === "undefined") return { ok: 0, failed: 0, skipped: 0 };
-  if (!navigator.onLine) return { ok: 0, failed: 0, skipped: 0 };
-  if (syncing) return { ok: 0, failed: 0, skipped: 0 };
+  const vacio: SyncResult = { ok: 0, failed: 0, rechazadas: 0 };
+  if (typeof window === "undefined") return vacio;
+  if (!navigator.onLine) return vacio;
+  if (syncing) return vacio;
 
   syncing = true;
-  const result: SyncResult = { ok: 0, failed: 0, skipped: 0 };
+  const result: SyncResult = { ok: 0, failed: 0, rechazadas: 0 };
 
   try {
     const pendientes = await listPendientes();
     for (const p of pendientes) {
-      if ((p.retries ?? 0) >= MAX_RETRIES) {
-        result.skipped++;
-        continue;
-      }
       try {
+        // rowId: el server es idempotente por id (un reintento o el SW en paralelo no duplican).
         const created = await api.tareas.create({
+          rowId: p.rowId,
           objetivo: p.objetivo,
           fechaInicio: p.fechaInicio,
           fechaEstimada: p.fechaEstimada,
@@ -55,9 +50,18 @@ export async function syncPendingTareas(): Promise<SyncResult> {
         await markSynced(p.localId, created.rowId);
         result.ok++;
       } catch (err) {
-        console.warn("[offline-sync] no se pudo subir", p.localId, err);
-        await incrementRetries(p.localId);
-        result.failed++;
+        if (clasificarFalloSync(err) === "rechazo") {
+          console.warn("[offline-sync] rechazada por el server", p.localId, err);
+          await marcarRechazada(
+            p.localId,
+            err instanceof Error ? err.message : "Rechazada por el servidor"
+          );
+          result.rechazadas++;
+        } else {
+          console.warn("[offline-sync] no se pudo subir (red)", p.localId, err);
+          await incrementRetries(p.localId);
+          result.failed++;
+        }
       }
     }
   } finally {

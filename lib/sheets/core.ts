@@ -126,6 +126,27 @@ export function resetSheetsCache(): void {
 }
 
 // =====================================================
+// Lock de append por hoja
+// =====================================================
+
+// Serializa las escrituras "fila libre por columna A" de una misma hoja dentro del proceso:
+// dos altas concurrentes leerían el mismo A:A (el dedup de readRange lo garantiza) y
+// escribirían en la misma fila. Cadena de promesas por hoja; un fallo no corta la cadena.
+const locksPorHoja = new Map<string, Promise<unknown>>();
+
+export function conLockDeHoja<T>(sheetTitle: string, fn: () => Promise<T>): Promise<T> {
+  const previo = locksPorHoja.get(sheetTitle) ?? Promise.resolve();
+  const propio = previo.catch(() => undefined).then(fn);
+  locksPorHoja.set(sheetTitle, propio);
+  propio
+    .catch(() => undefined)
+    .finally(() => {
+      if (locksPorHoja.get(sheetTitle) === propio) locksPorHoja.delete(sheetTitle);
+    });
+  return propio;
+}
+
+// =====================================================
 // Escrituras (invalidan la hoja al confirmar)
 // =====================================================
 

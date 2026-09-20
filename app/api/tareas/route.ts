@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/http/withAuth";
-import { appendTarea, getTareas, type TareaFilters } from "@/lib/google-sheets";
+import { appendTarea, getTareaByRowId, getTareas, type TareaFilters } from "@/lib/google-sheets";
 import { getConsorciosActivos } from "@/lib/consorcios";
 import { resolveCuit } from "@/lib/edificio-cuit";
 import { jsonError } from "@/lib/api-utils";
 import { tareaNuevaSchema } from "@/lib/schemas";
-import type { EstadoTarea, Prioridad } from "@/types";
+import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -30,28 +30,45 @@ export const GET = withAuth(async (req) => {
   return NextResponse.json(data);
 });
 
-export const POST = withAuth(async (req, session) => {
-  const body = await req.json();
-  const parsed = tareaNuevaSchema.parse(body);
+// Un mismo rowId puede llegar dos veces (sync in-page y Background Sync del SW sobre la
+// misma cola, doble tap, reintento tras timeout). La primera crea; las demás reciben la
+// misma tarea. El lock cubre la ventana entre "no existe" y "ya escribí".
+const creandoPorRowId = new Map<string, Promise<Tarea>>();
 
-  const consorcios = await getConsorciosActivos();
-  const edificioValido = consorcios.some((c) => c.nombre === parsed.edificio);
-  if (!edificioValido) {
-    return jsonError(400, `Edificio "${parsed.edificio}" no es válido o no está activo`);
+export const POST = withAuth(async (req, session) => {
+  const parsed = tareaNuevaSchema.parse(await req.json());
+  const rowId = parsed.rowId?.trim();
+
+  if (rowId) {
+    const existente = await getTareaByRowId(rowId);
+    if (existente) return NextResponse.json(existente, { status: 200 });
+    const enCurso = creandoPorRowId.get(rowId);
+    if (enCurso) return NextResponse.json(await enCurso, { status: 200 });
   }
 
-  const tarea = await appendTarea(
-    {
-      ...parsed,
-      // fechaEstimada es opcional: se guarda "" si no se cargó.
-      fechaEstimada: parsed.fechaEstimada ?? "",
-      // dpto es obligatorio (validado por tareaNuevaSchema): parte común específica
-      // si parteComun=true, o el dpto elegido si es false.
-      dpto: parsed.dpto?.trim() ?? "",
-      // CUIT estable resuelto por nombre contra _Consorcios (ya cargados arriba).
-      edificioCuit: resolveCuit(parsed.edificio, consorcios) ?? undefined,
-    },
-    session.user.email
-  );
-  return NextResponse.json(tarea, { status: 201 });
+  const crear = async (): Promise<Tarea> => {
+    const consorcios = await getConsorciosActivos();
+    if (!consorcios.some((c) => c.nombre === parsed.edificio)) {
+      throw jsonError(400, `Edificio "${parsed.edificio}" no es válido o no está activo`);
+    }
+    return appendTarea(
+      {
+        ...parsed,
+        // fechaEstimada es opcional: se guarda "" si no se cargó.
+        fechaEstimada: parsed.fechaEstimada ?? "",
+        // dpto es obligatorio (validado por tareaNuevaSchema): parte común específica
+        // si parteComun=true, o el dpto elegido si es false.
+        dpto: parsed.dpto?.trim() ?? "",
+        // CUIT estable resuelto por nombre contra _Consorcios (ya cargados arriba).
+        edificioCuit: resolveCuit(parsed.edificio, consorcios) ?? undefined,
+      },
+      session.user.email
+    );
+  };
+
+  if (!rowId) return NextResponse.json(await crear(), { status: 201 });
+
+  const p = crear().finally(() => creandoPorRowId.delete(rowId));
+  creandoPorRowId.set(rowId, p);
+  return NextResponse.json(await p, { status: 201 });
 });

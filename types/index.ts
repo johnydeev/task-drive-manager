@@ -127,8 +127,9 @@ export interface TareaPendiente extends TareaNuevaInput {
   localId: string;
   pendingSync: boolean;
   createdAt: string; // ISO datetime
-  retries: number;
+  retries: number; // informativo: intentos de red fallidos. Sin tope.
   sheetRowId?: string; // se setea al sincronizar
+  errorMsg?: string; // rechazo del server: queda fuera del sync automático hasta Reintentar
 }
 
 // =====================================================

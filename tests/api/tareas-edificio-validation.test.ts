@@ -14,6 +14,7 @@ vi.mock("@/lib/consorcios", () => ({
 vi.mock("@/lib/google-sheets", () => ({
   appendTarea: vi.fn().mockImplementation(async (input) => ({ rowId: "fake-id", ...input })),
   getTareas: vi.fn().mockResolvedValue([]),
+  getTareaByRowId: vi.fn().mockResolvedValue(null),
 }));
 
 const baseInput = {

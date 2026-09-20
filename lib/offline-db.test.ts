@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { put, get } = vi.hoisted(() => ({ put: vi.fn(), get: vi.fn() }));
+const { put, get, pendPut, pendGet, pendUpdate, pendDelete, pendFilter } = vi.hoisted(() => ({
+  put: vi.fn(),
+  get: vi.fn(),
+  pendPut: vi.fn(),
+  pendGet: vi.fn(),
+  pendUpdate: vi.fn(),
+  pendDelete: vi.fn(),
+  pendFilter: vi.fn(),
+}));
 vi.mock("dexie", () => {
   class FakeDexie {
     cacheTareas = { put, get };
+    tareasPendientes = { put: pendPut, get: pendGet, update: pendUpdate, delete: pendDelete, filter: pendFilter };
     version() {
       return { stores: () => this };
     }
@@ -11,7 +20,17 @@ vi.mock("dexie", () => {
   return { default: FakeDexie, Table: class {} };
 });
 
-import { cacheTareas, readCachedTareas, isFresh, TTL_TAREAS_MS } from "./offline-db";
+import {
+  cacheTareas,
+  readCachedTareas,
+  isFresh,
+  TTL_TAREAS_MS,
+  listPendientes,
+  marcarRechazada,
+  reintentarPendiente,
+  descartarPendiente,
+} from "./offline-db";
+import type { TareaPendiente } from "@/types";
 
 beforeEach(() => {
   put.mockReset().mockResolvedValue(undefined);
@@ -55,5 +74,43 @@ describe("cacheTareas / readCachedTareas", () => {
     expect(await readCachedTareas()).toBeNull();
     get.mockResolvedValue(undefined);
     expect(await readCachedTareas()).toBeNull();
+  });
+});
+
+describe("cola de pendientes", () => {
+  const pend = (over: Partial<TareaPendiente>): TareaPendiente =>
+    ({ localId: "L1", pendingSync: true, createdAt: "", retries: 0, objetivo: "x", ...over }) as TareaPendiente;
+
+  beforeEach(() => {
+    pendUpdate.mockReset().mockResolvedValue(1);
+    pendDelete.mockReset().mockResolvedValue(undefined);
+    pendFilter.mockReset();
+  });
+
+  it("listPendientes excluye las rechazadas (errorMsg) y las ya subidas", async () => {
+    const filas = [
+      pend({ localId: "a" }),
+      pend({ localId: "b", errorMsg: "no" }),
+      pend({ localId: "c", pendingSync: false }),
+    ];
+    pendFilter.mockImplementation((fn: (t: TareaPendiente) => boolean) => ({
+      toArray: async () => filas.filter(fn),
+    }));
+    expect((await listPendientes()).map((t) => t.localId)).toEqual(["a"]);
+  });
+
+  it("marcarRechazada guarda el mensaje", async () => {
+    await marcarRechazada("L1", "Edificio inválido");
+    expect(pendUpdate).toHaveBeenCalledWith("L1", { errorMsg: "Edificio inválido" });
+  });
+
+  it("reintentarPendiente borra el mensaje", async () => {
+    await reintentarPendiente("L1");
+    expect(pendUpdate).toHaveBeenCalledWith("L1", { errorMsg: undefined });
+  });
+
+  it("descartarPendiente elimina la fila", async () => {
+    await descartarPendiente("L1");
+    expect(pendDelete).toHaveBeenCalledWith("L1");
   });
 });

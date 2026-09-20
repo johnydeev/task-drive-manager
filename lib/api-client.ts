@@ -35,6 +35,18 @@ function redirigirALogin() {
   window.location.assign(`/login?from=${encodeURIComponent(from)}`);
 }
 
+// Error de la API con el status HTTP a mano. `message` es el mismo texto que antes, así que
+// todo `err.message` existente sigue igual; el status lo usa el sync offline para decidir si
+// reintenta (red/5xx/429) o marca la tarea como rechazada (4xx).
+export class ApiClientError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = status;
+  }
+}
+
 // Mensaje de error a partir del body {error, ref?} de la API. El ref (solo en 500) viaja en
 // el texto para que el usuario pueda mandarlo en una captura y buscarlo en el log.
 async function mensajeDeError(res: Response): Promise<string> {
@@ -57,7 +69,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) throw new Error(await mensajeDeError(res));
+  if (!res.ok) throw new ApiClientError(await mensajeDeError(res), res.status);
   if (res.status === 204) return undefined as T;
   return res.json();
 }
@@ -238,7 +250,7 @@ export const api = {
       form.append("dpto", dpto);
       form.append("rowId", rowId);
       const res = await apiFetch("/api/upload", { method: "POST", body: form });
-      if (!res.ok) throw new Error(await mensajeDeError(res));
+      if (!res.ok) throw new ApiClientError(await mensajeDeError(res), res.status);
       return res.json();
     },
     {

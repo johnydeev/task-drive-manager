@@ -150,9 +150,26 @@ export async function enqueueTarea(t: TareaPendiente) {
   await db.tareasPendientes.put(t);
 }
 
+// Solo las auto-sincronizables: las rechazadas por el server (errorMsg) esperan a que el
+// usuario las reintente o descarte. La UI (usePendingTareas) muestra todas las pendingSync.
 export async function listPendientes(): Promise<TareaPendiente[]> {
   const db = getDb();
-  return db.tareasPendientes.filter((t) => t.pendingSync === true).toArray();
+  return db.tareasPendientes.filter((t) => t.pendingSync === true && !t.errorMsg).toArray();
+}
+
+export async function marcarRechazada(localId: string, errorMsg: string) {
+  const db = getDb();
+  await db.tareasPendientes.update(localId, { errorMsg });
+}
+
+export async function reintentarPendiente(localId: string) {
+  const db = getDb();
+  await db.tareasPendientes.update(localId, { errorMsg: undefined });
+}
+
+export async function descartarPendiente(localId: string) {
+  const db = getDb();
+  await db.tareasPendientes.delete(localId);
 }
 
 export async function markSynced(localId: string, sheetRowId: string) {

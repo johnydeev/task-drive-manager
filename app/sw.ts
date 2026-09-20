@@ -13,6 +13,7 @@
 // - assets de Next    → defaultCache (CacheFirst con versionado de hash)
 
 import { defaultCache } from "@serwist/next/worker";
+import { clasificarStatus } from "@/lib/sync-clasificacion";
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
 import {
   CacheFirst,
@@ -121,27 +122,30 @@ self.addEventListener("message", (event: ExtendableMessageEvent) => {
   }
 });
 
-// Implementación de sync dentro del SW. No puede importar offline-sync.ts
-// (ese módulo asume `window`); replica la lógica leyendo IndexedDB con la
-// API nativa del SW y posteando a /api/tareas.
+// Implementación de sync dentro del SW. No puede importar offline-sync.ts (asume `window`
+// y Dexie); replica la lógica con IndexedDB nativo y la misma regla red/rechazo
+// (lib/sync-clasificacion). Ninguna transacción abarca un `await fetch`: IndexedDB cierra
+// la transacción apenas no quedan requests pendientes, y un put posterior tira
+// TransactionInactiveError.
 async function syncPendingFromSW(): Promise<void> {
-  // Abrir Dexie DB con la API estándar de IndexedDB.
-  const db = await openDb("task-drive-manager", 1);
-  const tx = db.transaction("tareasPendientes", "readwrite");
-  const store = tx.objectStore("tareasPendientes");
+  const db = await openDb("task-drive-manager");
+  // Si el SW despertó antes de que la app creara la base, no hay store ni cola.
+  if (!db.objectStoreNames.contains("tareasPendientes")) {
+    db.close();
+    return;
+  }
 
-  // Obtener todas las pendientes con pendingSync === true.
-  const all = await reqToPromise<unknown[]>(store.getAll());
-  const pendientes = (all as PendienteRow[]).filter(
-    (r) => r.pendingSync === true && (r.retries ?? 0) < 3
-  );
+  const todas = await leerPendientes(db);
+  const pendientes = todas.filter((r) => r.pendingSync === true && !r.errorMsg);
 
   for (const p of pendientes) {
+    let cambio: Partial<PendienteRow>;
     try {
       const res = await fetch("/api/tareas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          rowId: p.rowId,
           objetivo: p.objetivo,
           fechaInicio: p.fechaInicio,
           fechaEstimada: p.fechaEstimada,
@@ -151,23 +155,28 @@ async function syncPendingFromSW(): Promise<void> {
           informe: p.informe,
           imagenes: p.imagenes ?? [],
           videos: p.videos ?? [],
+          documentos: p.documentos ?? [],
           proveedor: p.proveedor,
           estado: p.estado,
           presupuesto: p.presupuesto,
           prioridad: p.prioridad,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const created = (await res.json()) as { rowId: string };
-      p.pendingSync = false;
-      p.sheetRowId = created.rowId;
+      if (res.ok) {
+        const created = (await res.json()) as { rowId: string };
+        cambio = { pendingSync: false, sheetRowId: created.rowId };
+      } else if (clasificarStatus(res.status) === "rechazo") {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        cambio = { errorMsg: body?.error ?? `Rechazada por el servidor (${res.status})` };
+      } else {
+        cambio = { retries: (p.retries ?? 0) + 1 };
+      }
     } catch {
-      p.retries = (p.retries ?? 0) + 1;
+      cambio = { retries: (p.retries ?? 0) + 1 };
     }
-    await reqToPromise(store.put(p));
+    await guardarPendiente(db, { ...p, ...cambio });
   }
 
-  await txDone(tx);
   db.close();
 
   // Notificar a las pestañas abiertas para que invaliden TanStack Query.
@@ -177,9 +186,11 @@ async function syncPendingFromSW(): Promise<void> {
 
 interface PendienteRow {
   localId: string;
+  rowId?: string;
   pendingSync: boolean;
   retries?: number;
   sheetRowId?: string;
+  errorMsg?: string;
   objetivo: string;
   fechaInicio: string;
   fechaEstimada: string;
@@ -189,19 +200,33 @@ interface PendienteRow {
   informe: string;
   imagenes?: string[];
   videos?: string[];
+  documentos?: string[];
   proveedor?: string;
   estado: string;
   presupuesto?: number;
   prioridad: string;
 }
 
-// Helpers IndexedDB nativos.
-function openDb(name: string, version: number): Promise<IDBDatabase> {
+// Helpers IndexedDB nativos. Sin versión: abre la vigente (la que creó Dexie desde la app).
+function openDb(name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name, version);
+    const req = indexedDB.open(name);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
+
+async function leerPendientes(db: IDBDatabase): Promise<PendienteRow[]> {
+  const tx = db.transaction("tareasPendientes", "readonly");
+  const rows = await reqToPromise<unknown[]>(tx.objectStore("tareasPendientes").getAll());
+  await txDone(tx);
+  return rows as PendienteRow[];
+}
+
+async function guardarPendiente(db: IDBDatabase, row: PendienteRow): Promise<void> {
+  const tx = db.transaction("tareasPendientes", "readwrite");
+  await reqToPromise(tx.objectStore("tareasPendientes").put(row));
+  await txDone(tx);
 }
 
 function reqToPromise<T>(req: IDBRequest<T>): Promise<T> {

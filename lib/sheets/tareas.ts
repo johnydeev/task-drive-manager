@@ -14,7 +14,7 @@ import {
   updateDemoTarea,
 } from "../demo-data";
 import { filterTareas, type TareaFilters } from "../tareas-filter";
-import { readRange, SHEETS, TAREAS_RANGE, writeRange, deleteRows } from "./core";
+import { readRange, SHEETS, TAREAS_RANGE, writeRange, deleteRows, conLockDeHoja } from "./core";
 import { buildHeaderMap, colLetter, type HeaderMap } from "./headers";
 import { toBool, boolToCell, toDateOnly } from "./values";
 import { estadoEnum, prioridadEnum } from "../schemas";
@@ -251,12 +251,16 @@ export async function appendTarea(
 
   // La columna A tiene los rowId (timestamps). Calculamos la fila libre por A
   // (evita el "table detection" de append, que se confunde con tablas auxiliares).
-  const h = await getTareasHeaderMap();
-  const colA = await readRange(`${SHEETS.tareas}!A:A`);
-  const nextRow = colA.length + 1;
-  const values = tareaToRow(h, tarea);
-  await writeRange(`${SHEETS.tareas}!A${nextRow}:${colLetter(values.length)}${nextRow}`, [values]);
-  tarea.rowNumber = nextRow;
+  // Bajo lock: otra alta concurrente en Tareas espera a que esta termine (y su writeRange
+  // invalide A:A) antes de calcular su propia fila libre.
+  tarea.rowNumber = await conLockDeHoja(SHEETS.tareas, async () => {
+    const h = await getTareasHeaderMap();
+    const colA = await readRange(`${SHEETS.tareas}!A:A`);
+    const nextRow = colA.length + 1;
+    const values = tareaToRow(h, tarea);
+    await writeRange(`${SHEETS.tareas}!A${nextRow}:${colLetter(values.length)}${nextRow}`, [values]);
+    return nextRow;
+  });
 
   // Media -> hoja hija TareaArchivos.
   if (media.imagenes.length || media.videos.length || media.documentos.length) {

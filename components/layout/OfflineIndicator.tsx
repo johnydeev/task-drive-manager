@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePendingCount } from "@/hooks/usePendingTareas";
 import { cn } from "@/lib/utils";
+import { syncPendingTareas } from "@/lib/offline-sync";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface Props {
   className?: string;
@@ -21,7 +23,19 @@ export function OfflineIndicator({ className }: Props) {
   const online = useOnlineStatus();
   const pending = usePendingCount();
   const [modalOpen, setModalOpen] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
   const autoShownRef = useRef(false);
+
+  const sincronizarAhora = async () => {
+    setSincronizando(true);
+    try {
+      const r = await syncPendingTareas();
+      // OfflineSyncProvider escucha este evento e invalida ["tareas"].
+      if (r.ok > 0) window.dispatchEvent(new CustomEvent("tareas-synced"));
+    } finally {
+      setSincronizando(false);
+    }
+  };
 
   // Apertura automática única al primer offline de la sesión.
   useEffect(() => {
@@ -86,6 +100,26 @@ export function OfflineIndicator({ className }: Props) {
                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" /> Rojo: sin conexión
               </li>
             </ul>
+            {pending > 0 && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  disabled={!online || sincronizando}
+                  onClick={sincronizarAhora}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {sincronizando ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={14} />
+                  )}
+                  Sincronizar ahora ({pending})
+                </button>
+                {!online && (
+                  <p className="mt-1 text-center text-xs text-slate-500">Sin conexión</p>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setModalOpen(false)}

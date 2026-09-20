@@ -11,6 +11,7 @@ import { filterTareas } from "@/lib/tareas-filter";
 import { cn, formatFecha } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessDialog } from "@/components/ui/SuccessDialog";
+import { PendientesDeSubir } from "@/components/tareas/PendientesDeSubir";
 import type { EstadoTarea, Prioridad, Tarea } from "@/types";
 import { Plus, Filter, Trash2, Check } from "lucide-react";
 
@@ -131,6 +132,9 @@ export default function TareasPage() {
           </button>
         )}
       </div>
+
+      {/* Cola offline: fuera de los filtros, desaparece sola al sincronizar. */}
+      <PendientesDeSubir />
 
       {showFilters && (
         <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3">

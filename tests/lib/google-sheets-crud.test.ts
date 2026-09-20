@@ -134,6 +134,37 @@ describe("appendTarea (real)", () => {
   });
 });
 
+describe("appendTarea (real) — concurrencia", () => {
+  it("dos altas concurrentes caen en filas distintas (lock por hoja)", async () => {
+    vi.stubEnv("SHEETS_CACHE_TTL_MS", "30000");
+    resetSheetsCache();
+    try {
+      // A:A crece una fila por cada escritura, como en la Sheet real.
+      let filasA = [["h"], ["x"]];
+      valuesGet.mockImplementation(({ range }: { range: string }) =>
+        Promise.resolve({ data: { values: range === "Tareas!A:A" ? filasA : [HEADER_22] } })
+      );
+      valuesUpdate.mockImplementation(async () => {
+        filasA = [...filasA, ["nueva"]];
+        return {};
+      });
+      const base = {
+        objetivo: "obj", fechaInicio: "2026-07-16", fechaEstimada: "", edificio: "Edif A",
+        parteComun: false, dpto: "1A", informe: "x", estado: "Sin asignar" as const,
+        prioridad: "Media" as const, imagenes: [], videos: [], documentos: [],
+      };
+      const [t1, t2] = await Promise.all([
+        appendTarea({ ...base, rowId: "2026-07-16T10:00:00.000Z" }, "sup@x.com"),
+        appendTarea({ ...base, rowId: "2026-07-16T10:00:01.000Z" }, "sup@x.com"),
+      ]);
+      expect([t1.rowNumber, t2.rowNumber].sort()).toEqual([3, 4]);
+    } finally {
+      vi.unstubAllEnvs();
+      resetSheetsCache();
+    }
+  });
+});
+
 describe("updateTarea (real)", () => {
   it("mergea sobre la tarea existente y escribe en su fila", async () => {
     mockRanges({

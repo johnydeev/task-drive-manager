@@ -4,8 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Tarea } from "@/types";
 
-const { useSession } = vi.hoisted(() => ({ useSession: vi.fn() }));
+const { useSession, usePendingTareas } = vi.hoisted(() => ({
+  useSession: vi.fn(),
+  usePendingTareas: vi.fn(),
+}));
 vi.mock("next-auth/react", () => ({ useSession }));
+// La página monta PendientesDeSubir: Dexie (useLiveQuery) no tiene IndexedDB en jsdom.
+vi.mock("@/hooks/usePendingTareas", () => ({ usePendingTareas }));
+vi.mock("@/hooks/useOnlineStatus", () => ({ useOnlineStatus: () => true }));
+vi.mock("@/lib/offline-sync", () => ({ syncPendingTareas: vi.fn() }));
 vi.mock("@/lib/api-client", () => ({
   api: {
     tareas: { list: vi.fn(), remove: vi.fn() },
@@ -17,6 +24,8 @@ vi.mock("@/lib/offline-db", () => ({
   readCachedTareas: vi.fn(),
   cacheEdificios: vi.fn(),
   readCachedEdificios: vi.fn(),
+  reintentarPendiente: vi.fn(),
+  descartarPendiente: vi.fn(),
 }));
 
 import { api } from "@/lib/api-client";
@@ -52,6 +61,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  usePendingTareas.mockReturnValue([]);
   useSession.mockReturnValue({ data: { user: { email: "yo@x.com", rol: "admin" } } });
   vi.mocked(api.edificios.list).mockResolvedValue([{ nombre: "E1" }, { nombre: "E2" }]);
   vi.mocked(api.tareas.list).mockResolvedValue([
@@ -66,6 +76,8 @@ describe("TareasPage — filtros en memoria", () => {
     const user = userEvent.setup();
     renderPage();
     expect(await screen.findByText("3 resultados")).toBeInTheDocument();
+    // Sin cola offline no hay sección de pendientes.
+    expect(screen.queryByText(/pendientes de subir/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /filtros/i }));
     await user.selectOptions(screen.getByLabelText("Estado"), "En Proceso");
@@ -91,5 +103,23 @@ describe("TareasPage — filtros en memoria", () => {
     renderPage();
     await screen.findByText("3 resultados");
     expect(screen.queryByRole("button", { name: "Sin asignar" })).not.toBeInTheDocument();
+  });
+
+  it("la sección de pendientes va arriba y no la afectan los filtros", async () => {
+    usePendingTareas.mockReturnValue([
+      {
+        localId: "L1", pendingSync: true, createdAt: "2026-09-19T10:00:00.000-03:00", retries: 0,
+        objetivo: "Cargada sin señal", fechaInicio: "2026-09-19", fechaEstimada: "", edificio: "E2",
+        parteComun: false, dpto: "1A", informe: "", prioridad: "Media",
+      },
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("3 resultados");
+    expect(screen.getByText("Cargada sin señal")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /filtros/i }));
+    await user.selectOptions(screen.getByLabelText("Estado"), "En Proceso");
+    await screen.findByText("1 resultado");
+    expect(screen.getByText("Cargada sin señal")).toBeInTheDocument();
   });
 });
