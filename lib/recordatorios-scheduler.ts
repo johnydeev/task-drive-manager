@@ -1,7 +1,9 @@
 import { getTareas } from "./sheets/tareas";
 import { getUsuarios } from "./sheets/usuarios";
 import { getConfigValor, setConfigValor } from "./sheets/config";
-import { notificar } from "./push";
+import { avisarLote, RETENCION_AVISOS_MS } from "./avisos";
+import { purgarAvisos } from "./sheets/avisos";
+import type { TipoAviso } from "@/types";
 import { armarRecordatorios } from "./recordatorios";
 import { toBuenosAiresISO } from "./fecha-ar";
 import { isDemoMode } from "./demo-mode";
@@ -30,9 +32,19 @@ export async function correrRecordatoriosSiCorresponde(
   if ((await getConfigValor(CLAVE_ULTIMO_ENVIO)) === fecha) return "omitido";
   const [tareas, usuarios] = await Promise.all([getTareas(), getUsuarios()]);
   const recordatorios = armarRecordatorios(tareas, usuarios, now);
-  for (const r of recordatorios) await notificar([r.email], r.aviso);
+  await avisarLote(
+    recordatorios.map((r) => ({ email: r.email, aviso: r.aviso, tipo: r.aviso.tag as TipoAviso }))
+  );
   await setConfigValor(CLAVE_ULTIMO_ENVIO, fecha);
   console.log(`[recordatorios] ${fecha}: ${recordatorios.length} aviso(s)`);
+  // Purga de avisos viejos: después de la marca y aparte, para que un fallo acá no re-mande
+  // los pushes en el próximo tick.
+  try {
+    const n = await purgarAvisos(now - RETENCION_AVISOS_MS);
+    if (n > 0) console.log(`[avisos] purga: ${n} fila(s)`);
+  } catch (err) {
+    console.error("[avisos] error purgando:", err);
+  }
   return "enviado";
 }
 

@@ -9,7 +9,7 @@ import {
 } from "@/lib/google-sheets";
 import { trashTareaFolder } from "@/lib/google-drive";
 import { generateAndUploadReporte } from "@/lib/pdf-generator";
-import { notificar } from "@/lib/push";
+import { avisar } from "@/lib/avisos";
 import { avisoDeTarea } from "@/lib/avisos-tarea";
 import { displayName } from "@/lib/user-display";
 import { jsonError } from "@/lib/api-utils";
@@ -102,7 +102,7 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
       revisionEn: "",
     });
     // Push al asignado (nunca a quien hizo la acción). after(): no demora la respuesta.
-    after(() => notificar(sinActor([asignadoA], email), avisoDeTarea("asignar", asignada)));
+    after(() => avisar(sinActor([asignadoA], email), avisoDeTarea("asignar", asignada), "asignar"));
     return NextResponse.json(asignada);
   }
 
@@ -168,9 +168,10 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
     after(async () => {
       const usuarios = await getUsuarios();
       const admins = usuarios.filter((u) => u.rol === "admin" && u.activo).map((u) => u.email);
-      await notificar(
+      await avisar(
         sinActor(admins, email),
-        avisoDeTarea("revisar", enRevision, { asignadoNombre: displayName(email, usuarios) })
+        avisoDeTarea("revisar", enRevision, { asignadoNombre: displayName(email, usuarios) }),
+        "revisar"
       );
     });
     return NextResponse.json(enRevision);
@@ -198,7 +199,9 @@ export const PATCH = withAuth<Params>(async (req, session, { params }) => {
       objetadaEn: now,
     });
     // Push al asignado.
-    after(() => notificar(sinActor([t.asignadoA ?? ""], email), avisoDeTarea("objetar", objetada)));
+    after(() =>
+      avisar(sinActor([t.asignadoA ?? ""], email), avisoDeTarea("objetar", objetada), "objetar")
+    );
     return NextResponse.json(objetada);
   }
 

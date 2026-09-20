@@ -3,6 +3,7 @@
 
 import type {
   Asignacion,
+  AvisoGuardado,
   Configuracion,
   Directiva,
   DirectivaNuevaInput,
@@ -77,6 +78,10 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 export const api = {
   edificios: {
     list: () => request<Edificio[]>("/api/edificios"),
+  },
+  avisos: {
+    list: () => request<{ avisos: AvisoGuardado[]; noLeidos: number }>("/api/avisos"),
+    leer: () => request<{ ok: true; marcados: number }>("/api/avisos/leer", { method: "PATCH" }),
   },
   dptos: {
     list: (edificio?: string) =>

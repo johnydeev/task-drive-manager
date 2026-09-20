@@ -103,6 +103,11 @@ poner `VAPID_PRIVATE_KEY=` vacío en `.env.local` para no mandar pushes reales. 
 primero «Instalar app»). Los recordatorios diarios (lunes a sábado 08:00 ART) los manda el propio
 server; en dev no corren salvo `RECORDATORIOS_ENABLED=1`.
 
+**Campana de avisos**: hoja `Avisos` en la planilla, encabezados exactos en `A1:H1`:
+`id | email | titulo | cuerpo | url | tipo | creado_en | leido_en`. Guarda cada aviso (los mismos
+que van por push) por destinatario durante 30 días; la campana arriba a la derecha los lista y
+marca leídos al abrir. Sin la hoja, el push sigue saliendo y la campana muestra un error.
+
 > ⚠ `GOOGLE_PRIVATE_KEY` debe contener los `\n` literales. Si lo pegás del JSON, ya vienen correctos.
 
 ## 5. Correr en dev

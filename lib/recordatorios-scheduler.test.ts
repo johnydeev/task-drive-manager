@@ -1,19 +1,21 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { getTareas, getUsuarios, getConfigValor, setConfigValor, notificar, isDemoMode } =
+const { getTareas, getUsuarios, getConfigValor, setConfigValor, avisarLote, purgarAvisos, isDemoMode } =
   vi.hoisted(() => ({
     getTareas: vi.fn(),
     getUsuarios: vi.fn(),
     getConfigValor: vi.fn(),
     setConfigValor: vi.fn(),
-    notificar: vi.fn(),
+    avisarLote: vi.fn(),
+    purgarAvisos: vi.fn(),
     isDemoMode: vi.fn(() => false),
   }));
 vi.mock("./sheets/tareas", () => ({ getTareas }));
 vi.mock("./sheets/usuarios", () => ({ getUsuarios }));
 vi.mock("./sheets/config", () => ({ getConfigValor, setConfigValor }));
-vi.mock("./push", () => ({ notificar }));
+vi.mock("./avisos", () => ({ avisarLote, RETENCION_AVISOS_MS: 30 * 24 * 3600 * 1000 }));
+vi.mock("./sheets/avisos", () => ({ purgarAvisos }));
 vi.mock("./demo-mode", () => ({ isDemoMode }));
 
 import {
@@ -43,8 +45,10 @@ beforeEach(() => {
   setConfigValor.mockResolvedValue(undefined);
   getTareas.mockResolvedValue([tareaTrabada]);
   getUsuarios.mockResolvedValue([admin]);
-  notificar.mockResolvedValue({ enviados: 1, borradas: 0 });
+  avisarLote.mockResolvedValue(undefined);
+  purgarAvisos.mockResolvedValue(0);
   vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -64,18 +68,37 @@ describe("correrRecordatoriosSiCorresponde", () => {
 
   it("lunes 08:00 sin envío hoy → envía y guarda la fecha", async () => {
     expect(await correrRecordatoriosSiCorresponde(LUNES_0800)).toBe("enviado");
-    expect(notificar).toHaveBeenCalledWith(["admin@x.com"], expect.objectContaining({ tag: "recordatorio-revision" }));
+    expect(avisarLote).toHaveBeenCalledWith([
+      {
+        email: "admin@x.com",
+        aviso: expect.objectContaining({ tag: "recordatorio-revision" }),
+        tipo: "recordatorio-revision",
+      },
+    ]);
     expect(setConfigValor).toHaveBeenCalledWith(CLAVE_ULTIMO_ENVIO, "2026-09-21");
+  });
+
+  it("purga los avisos de más de 30 días DESPUÉS de guardar la marca", async () => {
+    purgarAvisos.mockResolvedValue(3);
+    expect(await correrRecordatoriosSiCorresponde(LUNES_0800)).toBe("enviado");
+    expect(purgarAvisos).toHaveBeenCalledWith(LUNES_0800 - 30 * 24 * 3600 * 1000);
+    expect(setConfigValor.mock.invocationCallOrder[0]).toBeLessThan(purgarAvisos.mock.invocationCallOrder[0]);
+  });
+
+  it("si la purga lanza, igual devuelve enviado", async () => {
+    purgarAvisos.mockRejectedValue(new Error("boom"));
+    expect(await correrRecordatoriosSiCorresponde(LUNES_0800)).toBe("enviado");
+    expect(setConfigValor).toHaveBeenCalled();
   });
 
   it("ya enviado hoy → omitido", async () => {
     getConfigValor.mockResolvedValue("2026-09-21");
     expect(await correrRecordatoriosSiCorresponde(LUNES_0800)).toBe("omitido");
-    expect(notificar).not.toHaveBeenCalled();
+    expect(avisarLote).not.toHaveBeenCalled();
   });
 
-  it("si notificar lanza, no guarda la fecha (reintenta en el próximo tick)", async () => {
-    notificar.mockRejectedValue(new Error("boom"));
+  it("si avisarLote lanza, no guarda la fecha (reintenta en el próximo tick)", async () => {
+    avisarLote.mockRejectedValue(new Error("boom"));
     await expect(correrRecordatoriosSiCorresponde(LUNES_0800)).rejects.toThrow("boom");
     expect(setConfigValor).not.toHaveBeenCalled();
   });

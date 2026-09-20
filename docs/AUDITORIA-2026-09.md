@@ -10,6 +10,7 @@ rankeados), lo que queda, y el setup manual pendiente. Cada bloque tiene spec + 
 | 2A — Cuota de Sheets | `ae12525` | `specs/2026-09-19-cache-sheets-y-query-unica-design.md` | ✅ |
 | 2B — Offline | `3804478` | `specs/2026-09-19-offline-sync-idempotente-y-cola-visible-design.md` | ✅ |
 | 3 — UX de campo | `245889f` | `specs/2026-09-19-ux-de-campo-lista-combobox-reporte-toasts-design.md` | ✅ |
+| 4b — Campana de avisos | — | `specs/2026-09-20-campana-de-avisos-design.md` | ✅ código · ⏳ hoja `Avisos` |
 | 4 — Push + fin del cierre automático | `b70db4e` | `specs/2026-09-20-notificaciones-push-y-fin-cierre-automatico-design.md` | ✅ (setup hecho 2026-09-20) |
 
 Árbol verde al cierre: **783 tests / 114 archivos**, `tsc` limpio, lint 0 errores (6 warnings
@@ -96,7 +97,22 @@ preexistentes de `react-hooks/set-state-in-effect`), build OK.
 
 Sin las claves la app funciona igual; el log dice `[push] deshabilitado`. Cada envío loguea
 `[push] <tag>: N enviado(s), M borrada(s), K suscripción(es) para <emails>`. Una suscripción es
-por navegador y queda a nombre del último usuario logueado en él.
+por navegador (perfil de Chrome) y queda a nombre del último usuario logueado en él: dos cuentas
+en el mismo perfil se pisan. Para probar dos roles en una PC, usar otro navegador o perfil.
+
+## Bloque 4b — Campana de avisos
+
+- Hoja `Avisos` (`id | email | titulo | cuerpo | url | tipo | creado_en | leido_en`), una fila
+  por destinatario. `lib/avisos.ts` (`avisar` / `avisarLote`) guarda y después manda el push;
+  reemplaza a las llamadas directas a `notificar`. Nunca lanza; sin VAPID igual guarda.
+- Recordatorios diarios: el de hoy reemplaza al de ayer del mismo tipo (`reemplazarRecordatorios`).
+  Purga a 30 días en la corrida diaria, después de la marca del día.
+- `GET /api/avisos` (30 días, tope 50, `noLeidos`) y `PATCH /api/avisos/leer` (una sola llamada
+  `values.batchUpdate` vía `writeRanges` en `core.ts`).
+- Cliente: `useAvisos` (polling 60 s + foco), SW `push` → `postMessage AVISO_NUEVO` →
+  `RegisterPWA` → evento `aviso-nuevo` → invalidar. `CampanaAvisos` en barra superior desktop
+  (nueva, con el punto de conexión que salió del sidebar) y en el header mobile.
+- **Setup manual:** crear la hoja `Avisos` con esos 8 encabezados.
 
 ---
 

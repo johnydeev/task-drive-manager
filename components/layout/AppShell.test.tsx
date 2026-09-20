@@ -5,6 +5,7 @@ vi.mock("next-auth/react", () => ({ useSession: vi.fn(), signOut: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/tareas" }));
 vi.mock("@/hooks/useOnlineStatus", () => ({ useOnlineStatus: () => true }));
 vi.mock("@/hooks/usePendingTareas", () => ({ usePendingCount: () => 0 }));
+vi.mock("./CampanaAvisos", () => ({ CampanaAvisos: () => <button type="button" aria-label="Avisos" /> }));
 
 import { useSession } from "next-auth/react";
 import { AppShell } from "./AppShell";
@@ -118,5 +119,17 @@ describe("AppShell — sección Informes", () => {
     expect(within(dialog).getByRole("link", { name: /informes/i })).toBeInTheDocument();
     // El supervisor no ve los destinos de admin
     expect(within(dialog).queryByRole("link", { name: /usuarios/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("AppShell — campana de avisos", () => {
+  it("hay una campana en la barra desktop y otra en el header mobile", () => {
+    asSupervisor();
+    render(
+      <AppShell>
+        <div>contenido</div>
+      </AppShell>
+    );
+    expect(screen.getAllByLabelText("Avisos")).toHaveLength(2);
   });
 });

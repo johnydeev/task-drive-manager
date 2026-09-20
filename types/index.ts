@@ -249,3 +249,19 @@ export interface Aviso {
   url: string; // ruta dentro de la app; el SW la abre al tocar
   tag?: string; // agrupa/reemplaza en el sistema
 }
+
+export type TipoAviso =
+  | "asignar"
+  | "revisar"
+  | "objetar"
+  | "recordatorio-revision"
+  | "recordatorio-mias";
+
+// Fila de la hoja Avisos: lo que muestra la campana.
+export interface AvisoGuardado extends Aviso {
+  id: string;
+  email: string;
+  tipo: TipoAviso;
+  creadoEn: string;
+  leidoEn: string | null;
+}

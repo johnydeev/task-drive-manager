@@ -68,10 +68,13 @@ export function RegisterPWA() {
     };
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
-    // Listener de mensajes desde el SW (ej: 'TAREAS_SYNCED' tras background sync).
+    // Listener de mensajes desde el SW: 'TAREAS_SYNCED' tras background sync, 'AVISO_NUEVO'
+    // cuando llega un push (la campana lo escucha en window).
     const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "TAREAS_SYNCED") {
         window.dispatchEvent(new CustomEvent("tareas-synced"));
+      } else if (event.data?.type === "AVISO_NUEVO") {
+        window.dispatchEvent(new CustomEvent("aviso-nuevo"));
       }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);

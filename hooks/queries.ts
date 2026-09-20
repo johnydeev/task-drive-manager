@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useCachedQuery } from "./useCachedQuery";
 import { api } from "@/lib/api-client";
 import {
@@ -72,5 +73,17 @@ export const useTareas = () =>
     fetcher: () => api.tareas.list({}),
     cache: cacheTareas,
     readCache: readCachedTareas,
+    staleTime: 30_000,
+  });
+
+// Historial de avisos del usuario (campana). Polling suave + refetch al volver el foco; el SW
+// avisa por mensaje cuando llega un push y CampanaAvisos invalida la key.
+export const AVISOS_KEY = ["avisos"] as const;
+export const useAvisos = () =>
+  useQuery({
+    queryKey: AVISOS_KEY,
+    queryFn: api.avisos.list,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
     staleTime: 30_000,
   });

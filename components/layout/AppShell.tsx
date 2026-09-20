@@ -9,6 +9,7 @@ import { APP_NAME } from "@/lib/app-name";
 import { OfflineIndicator } from "./OfflineIndicator";
 import { MobileDrawer } from "./MobileDrawer";
 import { AvisosPush } from "./AvisosPush";
+import { CampanaAvisos } from "./CampanaAvisos";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {
   ClipboardList,
@@ -55,13 +56,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Sidebar desktop (sin cambios salvo el indicador) */}
+      {/* Sidebar desktop */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-slate-200 md:bg-white">
         <div className="px-6 py-5">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg font-semibold text-slate-900">{APP_NAME}</h1>
-            <OfflineIndicator />
-          </div>
+          <h1 className="text-lg font-semibold text-slate-900">{APP_NAME}</h1>
           {session?.user?.email && (
             <p className="mt-1 truncate text-xs text-slate-500">{session.user.email}</p>
           )}
@@ -109,6 +107,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Contenido + header/bottom nav mobile */}
       <main className="flex-1 pb-24 md:pb-0">
+        {/* Barra superior desktop: campana + conexión, arriba a la derecha */}
+        <div className="sticky top-0 z-30 hidden h-12 items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 md:flex">
+          <CampanaAvisos />
+          <OfflineIndicator />
+        </div>
         <header className="sticky top-0 z-30 grid grid-cols-3 items-center border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <button
             type="button"
@@ -119,7 +122,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu size={22} />
           </button>
           <h1 className="text-center text-base font-semibold text-slate-900">{APP_NAME}</h1>
-          <div className="justify-self-end">
+          <div className="flex items-center gap-3 justify-self-end">
+            <CampanaAvisos />
             <OfflineIndicator />
           </div>
         </header>

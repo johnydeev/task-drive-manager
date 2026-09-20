@@ -17,6 +17,7 @@ export const SHEETS = {
   visitas: "Visitas",
   edificioFicha: "EdificioFicha",
   suscripciones: "Suscripciones",
+  avisos: "Avisos",
 } as const;
 
 export const TAREAS_RANGE = `${SHEETS.tareas}!A:AD`;
@@ -161,6 +162,21 @@ export async function writeRange(range: string, values: (string | number)[][]): 
     })
   );
   invalidarHoja(hojaDeRango(range));
+}
+
+// Varios rangos en UNA llamada (values.batchUpdate). Para marcar leídos N filas sueltas sin
+// N escrituras contra la cuota. Lista vacía → no llama a Google.
+export async function writeRanges(
+  entradas: { range: string; values: (string | number)[][] }[]
+): Promise<void> {
+  if (entradas.length === 0) return;
+  await conReintentos(() =>
+    getSheets().spreadsheets.values.batchUpdate({
+      spreadsheetId: getSheetId(),
+      requestBody: { valueInputOption: "USER_ENTERED", data: entradas },
+    })
+  );
+  for (const hoja of new Set(entradas.map((e) => hojaDeRango(e.range)))) invalidarHoja(hoja);
 }
 
 // Borra filas (1-based) de una hoja en un solo batchUpdate, de abajo hacia arriba para que

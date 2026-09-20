@@ -1,4 +1,4 @@
-import type { Aviso, EstadoTarea, Tarea, Usuario } from "@/types";
+import type { Aviso, EstadoTarea, Tarea, TipoAviso, Usuario } from "@/types";
 
 export const UMBRAL_TRABADA_MS = 24 * 60 * 60 * 1000;
 
@@ -56,7 +56,7 @@ export function armarRecordatorios(tareas: Tarea[], usuarios: Usuario[], now: nu
       titulo: "Tareas esperando tu revisión",
       cuerpo,
       url: `/tareas?${new URLSearchParams({ estado: "En Revisión", orden: "antiguas" })}`,
-      tag: "recordatorio-revision",
+      tag: "recordatorio-revision" satisfies TipoAviso,
     };
     for (const a of admins) out.push({ email: a.email.toLowerCase(), aviso });
   }
@@ -78,7 +78,7 @@ export function armarRecordatorios(tareas: Tarea[], usuarios: Usuario[], now: nu
         titulo: "Tenés tareas sin avanzar",
         cuerpo,
         url: `/tareas?${new URLSearchParams({ mias: "1", orden: "antiguas" })}`,
-        tag: "recordatorio-mias",
+        tag: "recordatorio-mias" satisfies TipoAviso,
       },
     });
   }

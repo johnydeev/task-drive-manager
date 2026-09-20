@@ -17,8 +17,8 @@ vi.mock("@/lib/google-sheets", () => ({
   getUsuarios: vi.fn(),
 }));
 vi.mock("@/lib/google-drive", () => ({ trashTareaFolder: vi.fn() }));
-const { notificar } = vi.hoisted(() => ({ notificar: vi.fn().mockResolvedValue({ enviados: 0, borradas: 0 }) }));
-vi.mock("@/lib/push", () => ({ notificar }));
+const { avisar } = vi.hoisted(() => ({ avisar: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/avisos", () => ({ avisar }));
 vi.mock("@/lib/pdf-generator", () => ({
   generateAndUploadReporte: vi.fn().mockResolvedValue({ url: "https://drive/r.pdf", fileId: "r" }),
 }));
@@ -364,7 +364,7 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
   ];
 
   beforeEach(() => {
-    notificar.mockClear();
+    avisar.mockClear();
     vi.mocked(getUsuarios).mockResolvedValue(usuarios as never);
     vi.mocked(updateTarea).mockImplementation(async (input) => ({ ...tarea(), ...input }) as Tarea);
   });
@@ -374,7 +374,7 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Sin asignar" }));
     await patch({ asignadoA: "op@x.com" });
     await flush();
-    expect(notificar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Te asignaron una tarea" }));
+    expect(avisar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Te asignaron una tarea" }), "asignar");
   });
 
   it("el admin que se asigna a sí mismo no se notifica", async () => {
@@ -382,7 +382,7 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "Sin asignar" }));
     await patch({ asignadoA: "admin@x.com" });
     await flush();
-    expect(notificar).toHaveBeenCalledWith([], expect.anything());
+    expect(avisar).toHaveBeenCalledWith([], expect.anything(), "asignar");
   });
 
   it("revisar → push a los admins activos (sin el actor)", async () => {
@@ -390,9 +390,10 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Proceso", asignadoA: "op@x.com" }));
     await patch({ accion: "revisar", comentario: "listo" });
     await flush();
-    expect(notificar).toHaveBeenCalledWith(
+    expect(avisar).toHaveBeenCalledWith(
       ["admin@x.com", "admin2@x.com"],
-      expect.objectContaining({ titulo: "Tarea lista para revisar", cuerpo: expect.stringContaining("Operario") })
+      expect.objectContaining({ titulo: "Tarea lista para revisar", cuerpo: expect.stringContaining("Operario") }),
+      "revisar"
     );
   });
 
@@ -401,7 +402,7 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "op@x.com" }));
     await patch({ accion: "objetar", nota: "falta foto" });
     await flush();
-    expect(notificar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Tu tarea fue objetada" }));
+    expect(avisar).toHaveBeenCalledWith(["op@x.com"], expect.objectContaining({ titulo: "Tu tarea fue objetada" }), "objetar");
   });
 
   it("aceptar y cerrar no notifican", async () => {
@@ -412,6 +413,6 @@ describe("PATCH — notificaciones push (after() ejecuta en el acto en tests)", 
     vi.mocked(getTareaPersistida).mockResolvedValue(tarea({ estado: "En Revisión", asignadoA: "op@x.com" }));
     await patch({ accion: "cerrar", nota: "ok" });
     await flush();
-    expect(notificar).not.toHaveBeenCalled();
+    expect(avisar).not.toHaveBeenCalled();
   });
 });

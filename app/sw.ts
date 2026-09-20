@@ -142,13 +142,19 @@ self.addEventListener("push", (event: PushEvent) => {
   }
   if (!aviso?.titulo) return;
   event.waitUntil(
-    self.registration.showNotification(aviso.titulo, {
-      body: aviso.cuerpo,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      tag: aviso.tag,
-      data: { url: aviso.url },
-    })
+    Promise.all([
+      self.registration.showNotification(aviso.titulo, {
+        body: aviso.cuerpo,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        tag: aviso.tag,
+        data: { url: aviso.url },
+      }),
+      // Pestañas abiertas: que la campana se refresque sin esperar el polling.
+      self.clients
+        .matchAll({ type: "window" })
+        .then((clientes) => clientes.forEach((c) => c.postMessage({ type: "AVISO_NUEVO" }))),
+    ])
   );
 });
 

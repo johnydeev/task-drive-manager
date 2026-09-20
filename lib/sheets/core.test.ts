@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { valuesGet, valuesUpdate, batchUpdate, spreadsheetsGet } = vi.hoisted(() => ({
+const { valuesGet, valuesUpdate, valuesBatchUpdate, batchUpdate, spreadsheetsGet } = vi.hoisted(() => ({
   valuesGet: vi.fn(),
   valuesUpdate: vi.fn(),
+  valuesBatchUpdate: vi.fn(),
   batchUpdate: vi.fn(),
   spreadsheetsGet: vi.fn(),
 }));
@@ -11,7 +12,7 @@ vi.mock("googleapis", () => ({
   google: {
     sheets: () => ({
       spreadsheets: {
-        values: { get: valuesGet, update: valuesUpdate },
+        values: { get: valuesGet, update: valuesUpdate, batchUpdate: valuesBatchUpdate },
         get: spreadsheetsGet,
         batchUpdate,
       },
@@ -20,7 +21,7 @@ vi.mock("googleapis", () => ({
 }));
 vi.mock("@/lib/google-auth", () => ({ getGoogleAuth: () => ({}), getSheetId: () => "sheet-id" }));
 
-import { readRange, writeRange, deleteRows, invalidarHoja, resetSheetsCache, hojaDeRango, conLockDeHoja } from "./core";
+import { readRange, writeRange, writeRanges, deleteRows, invalidarHoja, resetSheetsCache, hojaDeRango, conLockDeHoja } from "./core";
 
 const filas = (...v: string[]) => ({ data: { values: v.map((x) => [x]) } });
 const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { code: String(status) });
@@ -30,6 +31,7 @@ beforeEach(() => {
   resetSheetsCache();
   valuesGet.mockReset();
   valuesUpdate.mockReset().mockResolvedValue({});
+  valuesBatchUpdate.mockReset().mockResolvedValue({});
   batchUpdate.mockReset().mockResolvedValue({});
   spreadsheetsGet.mockReset().mockResolvedValue({
     data: { sheets: [{ properties: { sheetId: 77, title: "Tareas" } }] },
@@ -257,5 +259,25 @@ describe("conLockDeHoja", () => {
     const p2 = conLockDeHoja("Directivas", async () => "ok");
     await expect(p1).rejects.toThrow("boom");
     expect(await p2).toBe("ok");
+  });
+});
+
+describe("writeRanges", () => {
+  it("escribe varios rangos en un solo values.batchUpdate e invalida las hojas", async () => {
+    valuesGet.mockResolvedValue(filas("a"));
+    await readRange("Avisos!A:H");
+    await writeRanges([
+      { range: "Avisos!H2", values: [["x"]] },
+      { range: "Avisos!H5", values: [["y"]] },
+    ]);
+    expect(valuesBatchUpdate).toHaveBeenCalledTimes(1);
+    expect(valuesBatchUpdate.mock.calls[0][0].requestBody.data).toHaveLength(2);
+    await readRange("Avisos!A:H");
+    expect(valuesGet).toHaveBeenCalledTimes(2);
+  });
+
+  it("lista vacía → no llama a Google", async () => {
+    await writeRanges([]);
+    expect(valuesBatchUpdate).not.toHaveBeenCalled();
   });
 });
