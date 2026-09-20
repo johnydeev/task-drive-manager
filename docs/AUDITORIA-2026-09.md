@@ -10,11 +10,25 @@ rankeados), lo que queda, y el setup manual pendiente. Cada bloque tiene spec + 
 | 2A — Cuota de Sheets | `ae12525` | `specs/2026-09-19-cache-sheets-y-query-unica-design.md` | ✅ |
 | 2B — Offline | `3804478` | `specs/2026-09-19-offline-sync-idempotente-y-cola-visible-design.md` | ✅ |
 | 3 — UX de campo | `245889f` | `specs/2026-09-19-ux-de-campo-lista-combobox-reporte-toasts-design.md` | ✅ |
-| 4b — Campana de avisos | — | `specs/2026-09-20-campana-de-avisos-design.md` | ✅ código · ⏳ hoja `Avisos` |
 | 4 — Push + fin del cierre automático | `b70db4e` | `specs/2026-09-20-notificaciones-push-y-fin-cierre-automatico-design.md` | ✅ (setup hecho 2026-09-20) |
+| 4b — Campana de avisos | `d9365e2` | `specs/2026-09-20-campana-de-avisos-design.md` | ✅ deploy + hoja creada · ⏳ prueba manual |
 
-Árbol verde al cierre: **783 tests / 114 archivos**, `tsc` limpio, lint 0 errores (6 warnings
+Árbol verde al cierre: **823 tests / 119 archivos**, `tsc` limpio, lint 0 errores (6 warnings
 preexistentes de `react-hooks/set-state-in-effect`), build OK.
+
+## ⏳ Pendiente de verificar en vivo (próxima sesión)
+
+1. **Campana**: asignar una tarea desde admin a un supervisor → badge `1` en el navegador del
+   supervisor (≤ 60 s, o al instante con push) → abrir → badge 0 → recargar → sigue leído. Ver
+   fila en la hoja `Avisos`. Log del server: `[avisos] error guardando:` solo si algo falla.
+2. **Recordatorios**: primera corrida lunes 2026-09-21 08:00 ART. Esperado en
+   `docker compose logs web | grep -E "recordatorios|avisos"`:
+   `[recordatorios] 2026-09-21: N aviso(s)` y `[push] recordatorio-…: …`; en `Configuracion`,
+   `recordatorios_ultimo_envio = 2026-09-21`. La tarea «PRUEBA Notificaciones» (En Revisión desde
+   el 20/09 ~15:40) cumple 24 h el martes: el primer «Tareas esperando tu revisión» es el
+   **martes 22** 08:00.
+3. Push a un supervisor en la PC: recordar que una suscripción es por perfil de Chrome y toma el
+   email del último usuario logueado ahí (ver Bloque 4).
 
 ---
 
@@ -112,7 +126,8 @@ en el mismo perfil se pisan. Para probar dos roles en una PC, usar otro navegado
 - Cliente: `useAvisos` (polling 60 s + foco), SW `push` → `postMessage AVISO_NUEVO` →
   `RegisterPWA` → evento `aviso-nuevo` → invalidar. `CampanaAvisos` en barra superior desktop
   (nueva, con el punto de conexión que salió del sidebar) y en el header mobile.
-- **Setup manual:** crear la hoja `Avisos` con esos 8 encabezados.
+- Hoja `Avisos` creada y deployado (`d9365e2`, 2026-09-20). **Pendiente:** prueba manual
+  (asignar desde admin → badge en el supervisor → abrir → leído persiste).
 
 ---
 
