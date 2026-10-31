@@ -7,6 +7,69 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+_Nada todavía._
+
+## [1.2.0] - 2026-09-20
+
+Auditoría UX + código de septiembre 2026. Detalle técnico en `docs/AUDITORIA-2026-09.md`.
+Cada entrada lleva el commit que la introdujo.
+
+### Added
+- **Avisos en el celular (push).** Menú → «Activar avisos». En iPhone hay que instalar la app en
+  la pantalla de inicio primero — [`b70db4e`](https://github.com/johnydeev/task-drive-manager/commit/b70db4e)
+- **Avisos inmediatos.** Al asignar una tarea le llega al asignado; al enviarla a revisión, a los
+  administradores; al objetarla, vuelve al asignado — [`b70db4e`](https://github.com/johnydeev/task-drive-manager/commit/b70db4e)
+- **Recordatorios diarios.** Lunes a sábado 08:00: resumen de lo trabado hace más de un día,
+  tareas por revisar (administradores) o por avanzar (supervisores) — [`b70db4e`](https://github.com/johnydeev/task-drive-manager/commit/b70db4e)
+- **Campana de avisos.** Arriba a la derecha, con contador de no leídos; guarda los avisos de los
+  últimos 30 días para consultarlos aunque se haya perdido la notificación — [`d9365e2`](https://github.com/johnydeev/task-drive-manager/commit/d9365e2)
+- **Búsqueda y orden en la lista de tareas.** Búsqueda por texto sin importar acentos, orden por
+  prioridad/fecha, y los filtros quedan en el enlace: al volver atrás o compartirlo se mantienen — [`245889f`](https://github.com/johnydeev/task-drive-manager/commit/245889f)
+- **Selector de edificio con buscador** en todos los formularios (tareas, visitas, informes,
+  dashboard): se escribe parte del nombre y aparece — [`245889f`](https://github.com/johnydeev/task-drive-manager/commit/245889f)
+- **Pendientes de subir.** Sección arriba de la lista con las tareas creadas sin conexión,
+  con Reintentar/Descartar, y botón «Sincronizar ahora» en el indicador de conexión — [`3804478`](https://github.com/johnydeev/task-drive-manager/commit/3804478)
+
+### Changed
+- **Las tareas ya no se cierran solas.** Una tarea en revisión queda así hasta que un
+  administrador la cierre u objete; los recordatorios insisten hasta que se resuelva — [`b70db4e`](https://github.com/johnydeev/task-drive-manager/commit/b70db4e)
+- **Confirmaciones más livianas.** Los mensajes de guardado aparecen como aviso breve en vez de
+  una ventana que hay que cerrar (el modal queda solo para «visita guardada», que tiene acciones) — [`245889f`](https://github.com/johnydeev/task-drive-manager/commit/245889f)
+- **Informe PDF al cerrar.** Aparece solo en la tarea a los pocos segundos, sin recargar — [`245889f`](https://github.com/johnydeev/task-drive-manager/commit/245889f)
+- **Más rápido y estable.** Menos llamadas a la planilla de Google: la lista carga más rápido y
+  desaparecen los errores por cuota excedida cuando varios usan la app a la vez — [`ae12525`](https://github.com/johnydeev/task-drive-manager/commit/ae12525)
+
+### Fixed
+- **Sin señal, sin duplicados.** Las tareas creadas sin conexión no se duplican al sincronizar;
+  una tarea rechazada por el server queda marcada en vez de reintentarse para siempre — [`3804478`](https://github.com/johnydeev/task-drive-manager/commit/3804478)
+
+### Security
+- **Usuario desactivado pierde el acceso en menos de 15 minutos** (antes seguía entrando hasta
+  7 días). Si la sesión vence, la app lleva al inicio de sesión en vez de mostrar errores — [`796228e`](https://github.com/johnydeev/task-drive-manager/commit/796228e)
+- **Papelera de Drive restringida**: solo se pueden papelear archivos de la carpeta de la app y
+  que ninguna tarea/visita/firma use. Los errores internos ya no exponen detalles, solo una
+  referencia para buscar en el log — [`796228e`](https://github.com/johnydeev/task-drive-manager/commit/796228e)
+
+## [1.1.0] - 2026-09-08
+
+Todo lo deployado entre la 1.0.0 (junio) y septiembre. Commits principales por feature:
+
+| Feature | Commits |
+|---|---|
+| Edificios: vista de todo el equipo + contador de pendientes | [`cbe05d7`](https://github.com/johnydeev/task-drive-manager/commit/cbe05d7) |
+| Tipografía Big John en el membrete | [`e2dcf18`](https://github.com/johnydeev/task-drive-manager/commit/e2dcf18) |
+| Visitas de control (formulario → PDF archivado, ficha del edificio, compartir) | [`ece97cf`](https://github.com/johnydeev/task-drive-manager/commit/ece97cf) · [`40d7c79`](https://github.com/johnydeev/task-drive-manager/commit/40d7c79) · [`de6bc70`](https://github.com/johnydeev/task-drive-manager/commit/de6bc70) · [`a3d053e`](https://github.com/johnydeev/task-drive-manager/commit/a3d053e) |
+| Informes por edificio con PDF y membrete configurable | [`991a51b`](https://github.com/johnydeev/task-drive-manager/commit/991a51b) · [`37c1331`](https://github.com/johnydeev/task-drive-manager/commit/37c1331) · [`ae24c0b`](https://github.com/johnydeev/task-drive-manager/commit/ae24c0b) |
+| Instalar app (PWA) e indicador de conexión | [`677c391`](https://github.com/johnydeev/task-drive-manager/commit/677c391) · [`605e1f0`](https://github.com/johnydeev/task-drive-manager/commit/605e1f0) |
+| Agregar archivos y editar comentarios desde el detalle | [`8c97934`](https://github.com/johnydeev/task-drive-manager/commit/8c97934) · [`fd153c0`](https://github.com/johnydeev/task-drive-manager/commit/fd153c0) |
+| Ciclo de asignación: aceptar / en proceso / revisión / objeción / cierre con nota | [`3d0116f`](https://github.com/johnydeev/task-drive-manager/commit/3d0116f) · [`a83c354`](https://github.com/johnydeev/task-drive-manager/commit/a83c354) · [`6e2bc4c`](https://github.com/johnydeev/task-drive-manager/commit/6e2bc4c) · [`71cd6ee`](https://github.com/johnydeev/task-drive-manager/commit/71cd6ee) |
+| Partes comunes | [`9017ccc`](https://github.com/johnydeev/task-drive-manager/commit/9017ccc) |
+| Límites y mensajes claros al subir archivos | [`2522a18`](https://github.com/johnydeev/task-drive-manager/commit/2522a18) |
+| Vista Edificios con asignaciones y directivas | [`3d9d621`](https://github.com/johnydeev/task-drive-manager/commit/3d9d621) · [`4baf7fd`](https://github.com/johnydeev/task-drive-manager/commit/4baf7fd) |
+| Reestructura de tablas (headers por nombre, consorcios, backfill CUIT) | [`72effc6`](https://github.com/johnydeev/task-drive-manager/commit/72effc6) · [`26a6439`](https://github.com/johnydeev/task-drive-manager/commit/26a6439) · [`2f3dbd4`](https://github.com/johnydeev/task-drive-manager/commit/2f3dbd4) |
+| Proveedores, adjuntos, carpetas de Drive, eliminar tarea, modales | [`56e0366`](https://github.com/johnydeev/task-drive-manager/commit/56e0366) |
+| Pipeline CI/CD de 3 fases (Test → Build → Deploy) | [`2cc2355`](https://github.com/johnydeev/task-drive-manager/commit/2cc2355) |
+
 ### Added
 - **Edificios a la vista de todo el equipo**: el supervisor ahora ve en **Edificios** los
   consorcios y las tareas asignadas de **todos** los integrantes, en solo lectura — sin poder
@@ -246,3 +309,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 - Implementación inicial: tareas, dashboard, usuarios, configuración, PWA, offline mode
+
+[Unreleased]: https://github.com/johnydeev/task-drive-manager/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/johnydeev/task-drive-manager/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/johnydeev/task-drive-manager/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/johnydeev/task-drive-manager/releases/tag/v1.0.0
