@@ -3,7 +3,12 @@ import { isDemoMode } from "@/lib/demo-mode";
 import { NextResponse } from "next/server";
 
 // Rutas que NO requieren auth.
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+// /api/health va acá a propósito: lo llama el healthcheck de Docker desde DENTRO del
+// contenedor, sin sesión. Si se redirige al login, el Location sale absoluto contra el
+// dominio público y el chequeo termina pasando por Cloudflare: el contenedor se declara
+// "sano" o "enfermo" según el túnel, no según la app (y el túnel, que espera a que web
+// esté healthy, se traba con él). Ver tests/proxy-matcher.test.ts.
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/health"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

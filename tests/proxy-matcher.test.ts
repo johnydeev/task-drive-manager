@@ -10,8 +10,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth", () => ({ auth: (fn: unknown) => fn }));
+vi.mock("@/lib/demo-mode", () => ({ isDemoMode: () => false }));
 
-import { config } from "@/proxy";
+import { NextRequest } from "next/server";
+import proxy, { config } from "@/proxy";
 
 const matches = (pathname: string) =>
   config.matcher.some((p) => new RegExp(`^${p}$`).test(pathname));
@@ -33,5 +35,29 @@ describe("matcher del proxy", () => {
   it("sigue interceptando el resto de las API routes", () => {
     expect(matches("/api/tareas")).toBe(true);
     expect(matches("/api/directivas")).toBe(true);
+  });
+});
+
+// El healthcheck de Docker corre DENTRO del contenedor y no tiene sesión. Si el proxy lo
+// manda a /login, el Location es absoluto contra el dominio público: el fetch sale a
+// internet, pasa por Cloudflare y el "estado" del contenedor termina dependiendo del
+// túnel. Con el túnel caído eso se traba solo (el túnel espera a que web esté healthy).
+describe("rutas públicas del proxy", () => {
+  const pedir = (pathname: string) => {
+    const req = new NextRequest(`http://localhost:3000${pathname}`);
+    (req as unknown as { auth: null }).auth = null; // sin sesión
+    return proxy(req as never, undefined as never) as Response;
+  };
+
+  it("deja pasar /api/health sin sesión (no redirige)", () => {
+    const res = pedir("/api/health");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("sigue redirigiendo al login una ruta privada sin sesión", () => {
+    const res = pedir("/api/tareas");
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login");
   });
 });
