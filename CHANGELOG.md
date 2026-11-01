@@ -7,7 +7,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
-_Nada todavía._
+### Fixed
+- **La app quedaba caída si se caía el túnel de Cloudflare.** El chequeo de salud del contenedor
+  salía a internet en vez de validarse adentro: con el túnel caído, la app se declaraba enferma y
+  el túnel esperaba a que la app estuviera sana — ninguno de los dos levantaba. Ahora el chequeo
+  no sale del contenedor — [`bd7851c`](https://github.com/johnydeev/task-drive-manager/commit/bd7851c)
 
 ## [1.2.0] - 2026-09-20
 
