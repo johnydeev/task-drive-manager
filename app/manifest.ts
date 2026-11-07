@@ -11,7 +11,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/tareas",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
+    // "any": la rotación la decide el dispositivo. Con "portrait" la app instalada queda
+    // trabada en vertical — el sistema respeta lo que pide el manifest. En el navegador
+    // igual rota, porque ahí el manifest no aplica a la pestaña.
+    orientation: "any",
     // Theme: slate-blue del logo, para que el status bar del celu se integre con el header.
     theme_color: "#7c92aa",
     background_color: "#f8fafc",

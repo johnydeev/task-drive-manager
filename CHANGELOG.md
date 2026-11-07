@@ -8,6 +8,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Fixed
+- **La app instalada no rotaba en tablets.** Quedaba trabada en vertical aunque se girara el
+  dispositivo (en el navegador sí rotaba). Ahora la orientación la decide la tablet. En iPad hay
+  que desinstalar y volver a instalar la app para que tome el cambio
 - **La app quedaba caída si se caía el túnel de Cloudflare.** El chequeo de salud del contenedor
   salía a internet en vez de validarse adentro: con el túnel caído, la app se declaraba enferma y
   el túnel esperaba a que la app estuviera sana — ninguno de los dos levantaba. Ahora el chequeo
